@@ -4,7 +4,7 @@ import type { UserSession } from './session-store';
 
 const execFileAsync = promisify(execFile);
 
-const OPENCLAW_IMAGE = process.env.MYCLAWGO_OPENCLAW_IMAGE || 'node:22-bookworm-slim';
+const OPENCLAW_IMAGE = process.env.MYCLAWGO_OPENCLAW_IMAGE || 'ubuntu:24.04';
 const HOST_OPENCLAW_CONFIG =
   process.env.MYCLAWGO_SEED_CONFIG_PATH || '/home/openclaw/.openclaw/openclaw.json';
 const HOST_AUTH_PROFILES =
@@ -33,7 +33,9 @@ async function bootstrapOpenClaw(containerName: string) {
     'if [ -f /seed/openclaw.json ] && [ ! -f /root/.openclaw/openclaw.json ]; then cp /seed/openclaw.json /root/.openclaw/openclaw.json; fi',
     'mkdir -p /root/.openclaw/agents/main/agent',
     'if [ -f /seed/auth-profiles.json ] && [ ! -f /root/.openclaw/agents/main/agent/auth-profiles.json ]; then cp /seed/auth-profiles.json /root/.openclaw/agents/main/agent/auth-profiles.json; fi',
-    'if ! command -v git >/dev/null 2>&1; then apt-get update && apt-get install -y git ca-certificates; fi',
+    'export DEBIAN_FRONTEND=noninteractive',
+    'if ! command -v openclaw >/dev/null 2>&1; then apt-get update && apt-get install -y curl git ca-certificates procps less vim nano bash; fi',
+    'if ! command -v node >/dev/null 2>&1; then curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && apt-get install -y nodejs; fi',
     'if ! command -v openclaw >/dev/null 2>&1; then npm install -g openclaw@latest; fi',
     'openclaw models set openrouter/auto || true',
     'openclaw gateway start || true',
