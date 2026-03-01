@@ -121,7 +121,7 @@ export default function BotPage() {
         <div className="mt-6 space-y-3 rounded-xl border border-white/10 bg-slate-900/60 p-4">
           {messages.length === 0 ? (
             <p className="text-sm text-slate-400">
-              Start chatting naturally. Example: 安装一下gog这个skill / 列出有哪些skill。These actions run only in your own container.
+              Start chatting naturally. Example: install gog skill / list available skills. All actions run only inside your own container, and your conversation context is stored in your private My Claw Go workspace.
             </p>
           ) : (
             messages.map((m, i) => (
@@ -140,7 +140,7 @@ export default function BotPage() {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && onSend()}
             className="h-11 flex-1 rounded-lg border border-white/10 bg-slate-900 px-3 text-sm"
-            placeholder="Ask naturally, e.g. 安装一下gog这个skill"
+            placeholder="Ask naturally, e.g. install gog skill"
           />
           <button
             onClick={onSend}
