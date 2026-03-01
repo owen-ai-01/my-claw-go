@@ -65,7 +65,7 @@ const features = [
 const faq = [
   {
     q: 'Do I need to buy a VPS first?',
-    a: 'No. My OpenClaw is designed for users who do not want to buy and configure servers. Sign up, choose a plan, and start using your private workspace directly.',
+    a: 'No. My Claw Go is designed for users who do not want to buy and configure servers. Sign up, choose a plan, and start using your private workspace directly.',
   },
   {
     q: 'Do I need my own computer running 24/7?',
@@ -85,7 +85,7 @@ const faq = [
   },
   {
     q: 'Who is this product best for?',
-    a: 'My OpenClaw is best for non-technical and semi-technical founders, creators, and operators who want AI automation without infrastructure burden.',
+    a: 'My Claw Go is best for non-technical and semi-technical founders, creators, and operators who want AI automation without infrastructure burden.',
   },
 ];
 
