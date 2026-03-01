@@ -70,7 +70,7 @@ async function bootstrapOpenClaw(containerName: string) {
     "python3 - <<'PYCFG'\nimport json\np='/home/openclaw/.openclaw/openclaw.json'\ntry:\n  c=json.load(open(p))\n  c.setdefault('agents',{}).setdefault('defaults',{}).setdefault('model',{})['primary']='openrouter/google/gemini-2.5-flash-lite'\n  c['agents']['defaults']['model']['fallbacks']=['openrouter/google/gemini-2.5-flash-lite','openrouter/z-ai/glm-4.7-flash','openai/gpt-4o-mini']\n  json.dump(c,open(p,'w'),ensure_ascii=False,indent=2);open(p,'a').write('\n')\nexcept Exception:\n  pass\nPYCFG",
     "su - openclaw -c \"if ! command -v node >/dev/null 2>&1; then curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash - && sudo apt-get install -y nodejs; fi\"",
     "su - openclaw -c 'if ! command -v openclaw >/dev/null 2>&1; then sudo npm install -g openclaw@latest; fi'",
-    "su - openclaw -c 'openclaw models set openrouter/auto || true'",
+    "su - openclaw -c 'openclaw models set openrouter/minimax/minimax-m2.5 || true'",
     "su - openclaw -c 'pgrep -f \"openclaw gateway run\" >/dev/null || nohup openclaw gateway run --auth none --bind loopback --port 18789 > /home/openclaw/.openclaw/gateway.log 2>&1 &'",
   ].join('; ');
 
