@@ -1,0 +1,1363 @@
+{
+  "Metadata": {
+    "name": "UrlToVideo",
+    "title": "UrlToVideo: Convert any URL into amazing videos with AI",
+    "description": "Transform any URL into engaging videos instantly with AI. Create professional content for marketing, social media, and e-commerce in minutes with UrlToVideo."
+  },
+  "Studio": {
+    "sidebar": {
+      "textToVideo": "Text to Video",
+      "imageToVideo": "Image to Video",
+      "videoToVideo": "Video to Video"
+    },
+    "header": {
+      "backToHome": "Back to Home"
+    }
+  },
+  "HomePage": {
+    "title": "UrlToVideo: Turn any URL into Video",
+    "description": "Transform web content into engaging videos. UrlToVideo offers Web-to-Video, Text-to-Video, and Image-to-Video creation.",
+    "hero": {
+      "title": "Turn any URL into Video",
+      "description": "Enter a website, article, or product URL and our AI will automatically generate a stunning promotional video for you.",
+      "primary": "Generate Video",
+      "tabs": {
+        "textToVideo": "Text to Video",
+        "imageToVideo": "Image to Video",
+        "webToVideo": "Web to Video"
+      },
+      "form": {
+        "promptPlaceholder": "https://example.com/product",
+        "uploadPlaceholder": "Upload Image",
+        "generate": "Generate Video",
+        "generating": "Generating...",
+        "settings": {
+          "title": "Settings",
+          "aspectRatio": {
+            "label": "Aspect Ratio",
+            "16:9": "16:9 Landscape",
+            "9:16": "9:16 Portrait",
+            "1:1": "1:1 Square",
+            "4:3": "4:3 Standard",
+            "3:4": "3:4 Portrait",
+            "21:9": "21:9 Ultrawide",
+            "9:21": "9:21 Vertical"
+          },
+          "resolution": {
+            "label": "Resolution"
+          },
+          "duration": {
+            "label": "Duration",
+            "5s": "5 Seconds",
+            "7s": "7 Seconds",
+            "10s": "10 Seconds",
+            "12s": "12 Seconds"
+          },
+          "analyzeButton": "Analyze Website & Create Prompt",
+          "analyzing": "Analyzing Website...",
+          "webUrlLabel": "Website URL",
+          "webAnalysisInfo": "We analyze the website and create an optimal video prompt."
+        },
+        "placeholder": {
+          "title": "Ready to Create",
+          "description": "Enter your prompt or URL on the left or upload an image to generate your video."
+        },
+        "preview": {
+          "example": "Example",
+          "originalImage": "Original Image",
+          "generatedVideo": "Generated Video",
+          "prompt": "Prompt",
+          "examplePrompt": "A red sports car speeding along a scenic coastal road at sunset."
+        },
+        "messages": {
+          "uploadImage": "Please upload an image file",
+          "uploadSuccess": "Image uploaded successfully",
+          "uploadError": "Error uploading image",
+          "enterPrompt": "Please enter a prompt or URL",
+          "uploadImageFirst": "Please upload an image first",
+          "startGenerationError": "Error starting generation",
+          "videoGenerated": "Video generated successfully!",
+          "generationFailed": "Generation failed",
+          "genericError": "Something went wrong",
+          "download": "Download Video",
+          "downloadFailed": "Download failed, opening in new tab...",
+          "loginRequired": "Please log in to continue",
+          "insufficientCredits": "Insufficient credits. Cost: {cost}, Available: {credits}",
+          "analyzeUrlError": "Error analyzing website",
+          "enterUrl": "Please enter a URL",
+          "analysisSuccess": "Website analyzed! Prompt created."
+        },
+        "loginTitle": "Login"
+      }
+    },
+    "textToVideoShowcase": {
+      "title": "Text to Video",
+      "subtitle": "Creative examples from text prompts",
+      "items": {
+        "item1": {
+          "prompt": "A futuristic city with flying cars in cyberpunk style"
+        },
+        "item2": {
+          "prompt": "A cute kitten playing piano at sunset"
+        },
+        "item3": {
+          "prompt": "Cinematic drone shot of a coastal landscape in Iceland"
+        },
+        "item4": {
+          "prompt": "A robot watering flowers in a garden, 3D animation"
+        }
+      }
+    },
+    "imageToVideoShowcase": {
+      "title": "Bring Images to Life",
+      "subtitle": "Turn static images into dynamic videos",
+      "inputLabel": "Input Image",
+      "outputLabel": "Generated Video",
+      "promptLabel": "Prompt",
+      "items": {
+        "item1": {
+          "prompt": "A futuristic city with flying cars, cinematic, 8k"
+        },
+        "item2": {
+          "prompt": "A calm lake at sunset, reflections in the water"
+        },
+        "item3": {
+          "prompt": "A cyberpunk character in neon light, rain"
+        },
+        "item4": {
+          "prompt": "Picturesque autumn forest with falling leaves"
+        }
+      }
+    },
+    "features": {
+      "title": "Powerful AI Features",
+      "subtitle": "Everything you need for professional videos",
+      "description": "Discover the diverse possibilities of UrlToVideo.",
+      "items": {
+        "item-1": {
+          "title": "Text to Video",
+          "description": "Describe your scene with text and let AI generate the video. Perfect for storytelling and marketing."
+        },
+        "item-2": {
+          "title": "Image to Video",
+          "description": "Bring static images to life. Upload a photo and let it move."
+        },
+        "item-3": {
+          "title": "Video to Video",
+          "description": "Change the style of your existing videos. Turn real footage into cartoons or art."
+        },
+        "item-4": {
+          "title": "Fast Generation",
+          "description": "Get your videos in seconds thanks to our optimized pipeline."
+        },
+        "item-5": {
+          "title": "High Quality",
+          "description": "Generate videos in high resolution with smooth movements."
+        },
+        "item-6": {
+          "title": "Easy to Use",
+          "description": "No prior knowledge needed. Our intuitive interface makes video generation child's play."
+        }
+      }
+    },
+    "urlToVideoFeatures": {
+      "title": "URL to Video Features",
+      "description": "Powerful capabilities that make URL to Video the best choice for automated video creation.",
+      "item-1": {
+        "title": "Any URL Works",
+        "description": "URL to Video supports product pages, blog articles, landing pages, portfolios, and any public webpage."
+      },
+      "item-2": {
+        "title": "Lightning Fast",
+        "description": "URL to Video generates complete videos in just minutes, not hours. Rapid AI processing at scale."
+      },
+      "item-3": {
+        "title": "Multi-Platform",
+        "description": "URL to Video outputs videos in any format: YouTube 16:9, TikTok 9:16, Instagram 1:1, and more."
+      },
+      "item-4": {
+        "title": "AI Narration",
+        "description": "URL to Video automatically creates professional voiceover from your webpage content."
+      }
+    },
+    "examples": {
+      "title": "Inspiring Examples",
+      "description": "See what's possible with UrlToVideo."
+    },
+    "tutorial": {
+      "title": "How URL to Video Works",
+      "subtitle": "3 Simple Steps",
+      "description": "Transform any webpage into a professional URL to Video in minutes.",
+      "steps": {
+        "step1": {
+          "title": "1. Paste Your URL",
+          "description": "Enter any webpage URL - product pages, blog articles, landing pages, or any public content."
+        },
+        "step2": {
+          "title": "2. AI Creates Video",
+          "description": "URL to Video analyzes your page, generates a storyboard, creates assets, and composes the video."
+        },
+        "step3": {
+          "title": "3. Download & Share",
+          "description": "Download your professional URL to Video and share across social media or your website."
+        }
+      },
+      "footer": "Start now and create your first URL to Video!"
+    },
+    "pricing": {
+      "title": "Flexible Pricing",
+      "subtitle": "Choose the right plan",
+      "description": "Choose a plan to start video generation."
+    },
+    "faqs": {
+      "title": "Frequently Asked Questions",
+      "subtitle": "Answers to your questions about URL to Video",
+      "items": {
+        "item-1": {
+          "question": "What is URL to Video and how does it work?",
+          "answer": "URL to Video is an AI-powered tool that automatically converts any webpage into a professional video. Simply paste a URL, and our AI analyzes the content, creates a storyboard, generates assets, and produces a complete video in minutes."
+        },
+        "item-2": {
+          "question": "Is URL to Video free to use?",
+          "answer": "URL to Video requires credits to generate videos. Due to the high computing costs of AI video generation, payment is required. We offer flexible pricing plans to suit different needs."
+        },
+        "item-3": {
+          "question": "How long does URL to Video take to generate?",
+          "answer": "The URL to Video process typically takes 2-5 minutes depending on the complexity of the webpage and selected video settings. Our AI works as fast as possible while maintaining high quality."
+        },
+        "item-4": {
+          "question": "What types of URLs work with URL to Video?",
+          "answer": "URL to Video works with most public web pages including product pages, blog articles, landing pages, portfolio sites, news articles, and documentation pages. The AI adapts to different content types automatically."
+        },
+        "item-5": {
+          "question": "Can I use URL to Video for commercial purposes?",
+          "answer": "Yes, videos generated with URL to Video on paid plans come with full commercial usage rights. You can use them for marketing, advertising, social media, and business presentations."
+        },
+        "item-6": {
+          "question": "What video formats and resolutions does URL to Video support?",
+          "answer": "URL to Video generates MP4 videos in multiple resolutions (480p, 720p, 1080p) and aspect ratios (16:9, 9:16, 1:1, 4:3) to suit different platforms like YouTube, TikTok, and Instagram."
+        },
+        "item-7": {
+          "question": "Does URL to Video include narration or voiceover?",
+          "answer": "Yes, URL to Video automatically generates AI narration based on the webpage content. The voiceover is synced with the visual scenes for a professional presentation."
+        },
+        "item-8": {
+          "question": "How is my data handled with URL to Video?",
+          "answer": "URL to Video only accesses public webpage content. Your generated videos are stored temporarily for download and are automatically deleted after 24 hours for security."
+        }
+      }
+    },
+    "testimonials": {
+      "title": "What our Users say",
+      "subtitle": "Feedback from the community",
+      "items": {
+        "item-1": {
+          "name": "Lisa M.",
+          "role": "Content Creator",
+          "image": "/testimonials/user-1.jpg",
+          "quote": "UrlToVideo revolutionized my workflow. I create Tiktoks in minutes now."
+        },
+        "item-2": {
+          "name": "Tom B.",
+          "role": "Marketing Manager",
+          "image": "/testimonials/user-2.jpg",
+          "quote": "Incredible quality for the price. Perfect for quick social media ads."
+        },
+        "item-3": {
+          "name": "Sarah K.",
+          "role": "Designer",
+          "image": "/testimonials/user-3.jpg",
+          "quote": "I use the Image-to-Video feature to bring my designs to life. My clients love it."
+        },
+        "item-4": {
+          "name": "Michael R.",
+          "role": "YouTuber",
+          "image": "/testimonials/user-4.jpg",
+          "quote": "Finally a tool that understands what I want. The text prompts are implemented very accurately."
+        },
+        "item-5": {
+          "name": "Julia W.",
+          "role": "Social Media Manager",
+          "image": "/testimonials/user-5.jpg",
+          "quote": "Saves me so much time. The videos look professional and are ready to use immediately."
+        },
+        "item-6": {
+          "name": "David H.",
+          "role": "Artist",
+          "image": "/testimonials/user-6.jpg",
+          "quote": "Video-to-Video is my absolute favorite feature. The creative possibilities are endless."
+        }
+      }
+    },
+    "calltoaction": {
+      "title": "Ready for your first AI Video?",
+      "description": "Start now and discover the possibilities of AI video generation.",
+      "primaryButton": "Create Video",
+      "secondaryButton": "Pricing"
+    },
+    "useCases": {
+      "title": "Use Cases",
+      "subtitle": "Versatile applications",
+      "description": "Our UrlToVideo is suitable for many purposes.",
+      "ecommerce": {
+        "title": "E-Commerce",
+        "description": "Create engaging product videos for your shop."
+      },
+      "marketing": {
+        "title": "Marketing",
+        "description": "Generate promotional videos for social media campaigns."
+      },
+      "photography": {
+        "title": "Creatives",
+        "description": "Use AI as a tool for your artistic vision."
+      },
+      "developers": {
+        "title": "Developers",
+        "description": "Integrate video generation into your apps."
+      },
+      "realEstate": {
+        "title": "Real Estate",
+        "description": "Create virtual tours and presentations."
+      },
+      "carDealers": {
+        "title": "Automotive",
+        "description": "Showcase vehicles dynamically."
+      }
+    },
+    "seoText": {
+      "title": "All about AI Video Generation",
+      "section1": {
+        "title": "What is UrlToVideo?",
+        "content": "UrlToVideo is an advanced tool that uses artificial intelligence to create high-quality videos from simple text inputs, URLs, or images. This technology revolutionizes content production."
+      },
+      "section2": {
+        "title": "Advantages of AI Video Technology",
+        "content": "Using AI video technology offers numerous advantages over traditional video production. First, you save massive amounts of time. Second, costs are significantly lower."
+      },
+      "section3": {
+        "title": "Text to Video: The Magic of Words",
+        "content": "The 'Text to Video' function is the heart of many AI video creation tools. Simply enter a description and the engine converts these words into moving images."
+      },
+      "section4": {
+        "title": "Image to Video: Bringing Static Moments to Life",
+        "content": "Besides Text to Video, 'Image to Video' is another powerful feature. Have a product photo you want to present dynamically? Image-to-Video analyzes the static image and extrapolates logical movements."
+      },
+      "section5": {
+        "title": "The Future of AI Video",
+        "content": "We are just at the beginning of the AI Video era. Development speed is breathtaking. Soon we will see tools that can create entire movies."
+      },
+      "section6": {
+        "title": "Who is UrlToVideo for?",
+        "content": "Practically everyone can benefit from UrlToVideo. Marketing agencies, content creators, teachers, and real estate agents."
+      },
+      "section7": {
+        "title": "Tips for Perfect AI Video Prompts",
+        "content": "To get the best out of UrlToVideo, 'Prompt Engineering' is key. A good prompt is detailed."
+      },
+      "section8": {
+        "title": "AI Video Quality and Resolution",
+        "content": "An important criterion is output quality. Modern AI video models can already generate HD and partly 4K resolution."
+      },
+      "section9": {
+        "title": "AI Video and Copyright",
+        "content": "Who owns the video? In most cases, as a creator with a paid plan, you have full commercial usage rights."
+      },
+      "section10": {
+        "title": "Conclusion: Start your AI Video Journey",
+        "content": "AI Video is one of the most exciting technologies of our time. It democratizes creativity."
+      }
+    },
+    "features2": {
+      "title": "More Features",
+      "subtitle": "More than just generation",
+      "description": "Discover more tools in our suite.",
+      "feature-1": "Fast Rendering",
+      "feature-2": "HD Downloads",
+      "feature-3": "No Watermarks (Pro)",
+      "feature-4": "Priority Support"
+    },
+    "integration": {
+      "title": "Integrations",
+      "subtitle": "Fits your workflow",
+      "description": "Use our API or plugins.",
+      "learnMore": "Learn More",
+      "items": {
+        "item-1": {
+          "title": "API",
+          "description": "Full access via API."
+        },
+        "item-2": {
+          "title": "Plugins",
+          "description": "Plugins for common tools."
+        },
+        "item-3": {
+          "title": "Cloud",
+          "description": "Direct cloud export."
+        },
+        "item-4": {
+          "title": "Social",
+          "description": "Share directly to social media."
+        },
+        "item-5": {
+          "title": "Workflow",
+          "description": "Automate your video production."
+        },
+        "item-6": {
+          "title": "Support",
+          "description": "Help with integration."
+        }
+      }
+    },
+    "integration2": {
+      "title": "Developer Friendly",
+      "description": "Start with our API in minutes.",
+      "primaryButton": "API Docs",
+      "secondaryButton": "API Key"
+    },
+    "logocloud": {
+      "title": "Known from"
+    },
+    "stats": {
+      "title": "Statistics",
+      "subtitle": "Growing Platform",
+      "description": "Thousands of videos generated daily.",
+      "items": {
+        "item-1": {
+          "title": "Videos Generated"
+        },
+        "item-2": {
+          "title": "Users"
+        },
+        "item-3": {
+          "title": "Satisfaction"
+        }
+      }
+    },
+    "urlToVideoSeo": {
+      "title": "Complete Guide to URL to Video",
+      "subtitle": "Everything you need to know about URL to Video technology",
+      "what": {
+        "title": "What is URL to Video?",
+        "content": "URL to Video is a revolutionary AI-powered technology that automatically transforms any web page into a professional, engaging video. With URL to Video, you simply paste a link to any website, product page, blog article, or landing page, and our advanced AI analyzes the content, extracts key information, generates a compelling storyboard, and produces a polished video. URL to Video eliminates the traditional barriers of video production - no editing skills, no expensive software, and no hours of manual work required. The URL to Video process leverages cutting-edge artificial intelligence to understand context, identify the most important elements of your webpage, and create visually stunning video content that captures audience attention. Whether you're a marketer looking to repurpose blog content, an e-commerce seller wanting to showcase products, or a business owner needing quick promotional videos, URL to Video provides an instant solution."
+      },
+      "why": {
+        "title": "Why Choose URL to Video?",
+        "content": "URL to Video offers tremendous advantages over traditional video production methods. First, URL to Video saves you countless hours - what normally takes days of scripting, filming, and editing can be accomplished in minutes with URL to Video. Second, URL to Video is incredibly cost-effective, eliminating the need for expensive videographers, equipment, and editing software. Third, URL to Video ensures consistency in your video branding because the AI maintains a professional standard across all generated content. Fourth, URL to Video enables rapid content scaling - you can convert hundreds of web pages into videos without additional effort. Fifth, URL to Video provides multilingual capabilities, allowing you to create videos from content in various languages. With URL to Video, businesses can dramatically increase their video marketing output while reducing costs. URL to Video democratizes video creation, making professional-quality video content accessible to everyone regardless of technical skill level."
+      },
+      "how": {
+        "title": "How URL to Video Works",
+        "content": "The URL to Video process is designed to be effortless. Here's how URL to Video transforms your web content into video: Step 1 - Submit your URL: Simply paste any webpage URL into the URL to Video interface. Step 2 - AI Analysis: URL to Video's intelligent crawler reads and analyzes your page content, identifying headlines, descriptions, images, and key selling points. Step 3 - Storyboard Generation: URL to Video creates a professional storyboard with scenes, narration scripts, and visual prompts optimized for engagement. Step 4 - Asset Creation: URL to Video generates or optimizes visual assets for each scene, including AI-generated images when needed. Step 5 - Video Composition: URL to Video combines all elements with smooth transitions, background music, and professional pacing. Step 6 - Download: Your completed URL to Video is ready to download and share across social media, websites, or advertising platforms. The entire URL to Video process typically completes within minutes."
+      },
+      "features": {
+        "title": "URL to Video Features",
+        "content": "URL to Video comes packed with powerful features designed for maximum flexibility and quality. Our URL to Video platform supports multiple aspect ratios including 16:9 for YouTube, 9:16 for TikTok and Instagram Reels, and 1:1 for social media posts. URL to Video offers multiple resolution options from 480p to 1080p HD. URL to Video automatically generates engaging narration scripts based on your page content. URL to Video supports various content types including product pages, blog articles, landing pages, portfolio sites, and more. URL to Video includes intelligent scene detection that knows how to divide content into compelling video segments. URL to Video provides customizable duration settings to match your platform requirements. With URL to Video, you get consistent branding, professional transitions, and optimized pacing for maximum viewer retention."
+      },
+      "useCases": {
+        "title": "URL to Video Use Cases",
+        "content": "URL to Video serves a wide range of applications across industries. E-commerce businesses use URL to Video to automatically create product demonstration videos from their catalog pages. Content marketers leverage URL to Video to repurpose blog posts into engaging video content for social media. Real estate agents use URL to Video to generate property tour videos from listing pages. SaaS companies employ URL to Video to create feature explainer videos from their documentation. Affiliate marketers use URL to Video to produce review videos from product pages. News outlets and bloggers use URL to Video to transform articles into video news segments. Educational institutions use URL to Video to convert course descriptions into promotional videos. No matter your industry, URL to Video can streamline your video content production."
+      },
+      "conclusion": {
+        "title": "Start Creating with URL to Video Today",
+        "content": "URL to Video represents the future of automated video content creation. By harnessing the power of AI, URL to Video makes it possible for anyone to produce professional-quality videos in minutes instead of hours or days. Whether you need URL to Video for marketing campaigns, social media content, product showcases, or content repurposing, our platform delivers exceptional results every time. The URL to Video technology continues to evolve, with regular updates improving quality, speed, and capabilities. Join thousands of businesses and creators who have already discovered the power of URL to Video. Start your URL to Video journey today and transform how you create video content. With URL to Video, the only limit is your imagination - and you have unlimited web pages to convert into stunning videos."
+      }
+    }
+  },
+  "PricingPage": {
+    "title": "Pricing",
+    "description": "Choose the right plan for you",
+    "subtitle": "Choose the right plan for you",
+    "monthly": "Monthly",
+    "yearly": "Yearly",
+    "PricingCard": {
+      "freePrice": "$0",
+      "perMonth": "/month",
+      "perYear": "/year",
+      "popular": "Popular",
+      "currentPlan": "Current Plan",
+      "yourCurrentPlan": "Your Current Plan",
+      "getStartedForFree": "Start for Free",
+      "getLifetimeAccess": "One-time Payment",
+      "getStarted": "Get Started",
+      "notAvailable": "Not Available",
+      "daysTrial": "Free Trial: {days} days",
+      "discount50": "30% Discount"
+    },
+    "CheckoutButton": {
+      "loading": "Loading...",
+      "checkoutFailed": "Could not open payment page"
+    }
+  },
+  "Marketing": {
+    "avatar": {
+      "dashboard": "Dashboard",
+      "billing": "Billing",
+      "settings": "Settings",
+      "credits": "Credits"
+    },
+    "navbar": {
+      "bildZuVideo": {
+        "title": "Image to Video"
+      },
+      "textZuVideo": {
+        "title": "Text to Video"
+      },
+      "videoZuVideo": {
+        "title": "Video to Video"
+      },
+      "kiEffekt": {
+        "title": "AI Effect"
+      },
+      "features": {
+        "title": "Features"
+      },
+      "pricing": {
+        "title": "Pricing"
+      },
+      "tutorial": {
+        "title": "Tutorial"
+      },
+      "blog": {
+        "title": "Blog"
+      },
+      "docs": {
+        "title": "Docs"
+      },
+      "pages": {
+        "title": "Pages",
+        "items": {
+          "about": {
+            "title": "About Us",
+            "description": "Learn more"
+          },
+          "contact": {
+            "title": "Contact",
+            "description": "Get in touch"
+          },
+          "waitlist": {
+            "title": "Waitlist",
+            "description": "Join waitlist"
+          },
+          "changelog": {
+            "title": "Changelog",
+            "description": "Product Updates"
+          },
+          "pro_monthly": {
+            "description": "For professional users",
+            "features": [
+              "260 Credits monthly",
+              "Everything in Starter",
+              "Priority Support"
+            ]
+          },
+          "pro_yearly": {
+            "title": "Pro (Yearly)",
+            "description": "Save 50% with yearly payment",
+            "features": [
+              "3120 Credits yearly",
+              "Everything in Starter",
+              "Priority Support"
+            ]
+          },
+          "cookiePolicy": {
+            "title": "Cookie Policy",
+            "description": "Cookies and Usage"
+          },
+          "privacyPolicy": {
+            "title": "Privacy",
+            "description": "Data & Privacy"
+          },
+          "termsOfService": {
+            "title": "Terms of Service",
+            "description": "TOS"
+          }
+        }
+      }
+    },
+    "footer": {
+      "tagline": "URL to Video – Turn any URL into stunning videos automatically with AI.",
+      "product": {
+        "title": "Product",
+        "items": {
+          "features": "Features",
+          "pricing": "Pricing",
+          "faq": "FAQ"
+        }
+      },
+      "resources": {
+        "title": "Resources",
+        "items": {
+          "blog": "Blog",
+          "docs": "Docs",
+          "changelog": "Changelog"
+        }
+      },
+      "company": {
+        "title": "Company",
+        "items": {
+          "about": "About Us",
+          "contact": "Contact",
+          "waitlist": "Waitlist"
+        }
+      },
+      "legal": {
+        "title": "Legal",
+        "items": {
+          "cookiePolicy": "Cookie Policy",
+          "privacyPolicy": "Privacy Policy",
+          "termsOfService": "Terms of Service"
+        }
+      }
+    }
+  },
+  "Common": {
+    "login": "Login",
+    "signUp": "Sign Up",
+    "logout": "Logout",
+    "logoutFailed": "Logout failed",
+    "language": "Language",
+    "premium": "Premium",
+    "mode": {
+      "label": "Toggle Mode",
+      "light": "Light",
+      "dark": "Dark",
+      "system": "System"
+    },
+    "theme": {
+      "label": "Select Theme",
+      "default": "Default",
+      "neutral": "Neutral",
+      "blue": "Blue",
+      "green": "Green",
+      "amber": "Amber"
+    },
+    "table": {
+      "ascending": "Ascending",
+      "descending": "Descending",
+      "noResults": "No Results",
+      "totalRecords": "{count} records",
+      "rowsPerPage": "Rows per page",
+      "page": "Page",
+      "firstPage": "First Page",
+      "previousPage": "Previous Page",
+      "nextPage": "Next Page",
+      "lastPage": "Last Page"
+    }
+  },
+  "Newsletter": {
+    "title": "UrlToVideo Newsletter",
+    "subtitle": "Tips, updates and offers directly in your inbox",
+    "description": "Get regular news about our AI video generation tool, product updates and exclusive offers.",
+    "form": {
+      "title": "Subscribe to Newsletter",
+      "description": "Enter your email and get regular tips on professional video production with AI.",
+      "email": "Email Address",
+      "emailValidation": "Please enter a valid email address",
+      "success": "Thanks! You are now subscribed to the newsletter.",
+      "fail": "An error occurred while subscribing. Please try again later.",
+      "subscribe": "Subscribe"
+    }
+  },
+  "NotFoundPage": {
+    "title": "404 - Page not found",
+    "message": "The page you are looking for does not exist or has been moved.",
+    "backToHome": "Back to Home"
+  },
+  "ErrorPage": {
+    "title": "An error occurred",
+    "tryAgain": "Try Again",
+    "backToHome": "Back to Home"
+  },
+  "AboutPage": {
+    "title": "About Us",
+    "description": "Learn more about UrlToVideo and our team",
+    "authorName": "UrlToVideo Team",
+    "authorBio": "We develop innovative AI tools for video production",
+    "introduction": "Welcome to UrlToVideo. We offer professional AI-based solutions for video creation. Our tools help you turn ideas into motion – perfect for marketing, social media and creative projects.",
+    "talkWithMe": "Get in touch"
+  },
+  "ChangelogPage": {
+    "title": "Changelog",
+    "description": "All updates and improvements to our AI Video Tool",
+    "subtitle": "Track all updates and improvements of GenProduct Video"
+  },
+  "ContactPage": {
+    "title": "Contact",
+    "description": "Contact us for questions about GenProduct Video",
+    "subtitle": "Have questions? We are happy to help",
+    "form": {
+      "title": "Contact Form",
+      "description": "Write us a message if you have questions about video generation or your account.",
+      "name": "Name",
+      "email": "Email",
+      "message": "Message",
+      "nameMinLength": "Name must be at least 3 characters long",
+      "nameMaxLength": "Name must be at most 30 characters long",
+      "emailValidation": "Please enter a valid email address",
+      "messageMinLength": "Message must be at least 10 characters long",
+      "messageMaxLength": "Message must be at most 500 characters long",
+      "success": "Thanks! Your message has been sent successfully.",
+      "fail": "An error occurred while sending the message. Please try again later.",
+      "submitting": "Sending...",
+      "submit": "Send Message"
+    }
+  },
+  "WaitlistPage": {
+    "title": "Waitlist",
+    "description": "Join the waitlist for exclusive AI Video Features",
+    "subtitle": "Be one of the first to get new video features",
+    "form": {
+      "title": "Join Waitlist",
+      "description": "Enter your email and be the first to know about new video features.",
+      "email": "Email Address",
+      "emailValidation": "Please enter a valid email address",
+      "success": "Thanks! You have been successfully added to the waitlist.",
+      "fail": "An error occurred while joining the waitlist. Please try again later.",
+      "subscribing": "Sending...",
+      "subscribe": "Join Waitlist"
+    }
+  },
+  "AIImagePage": {
+    "title": "AI Image Gen",
+    "description": "Create Images with AI – Text to Image and more"
+  },
+  "AITextPage": {
+    "title": "AI Text Analysis",
+    "description": "Analyze Web Content with AI",
+    "subtitle": "Analyze Web Content with Artificial Intelligence",
+    "analyzer": {
+      "title": "Web Content Analyzer"
+    },
+    "features": {
+      "scraping": {
+        "title": "Web Scraping",
+        "description": "Automatic extraction of web content"
+      },
+      "analysis": {
+        "title": "AI Analysis",
+        "description": "Intelligent analysis with AI technology"
+      },
+      "results": {
+        "title": "Detailed Results",
+        "description": "Comprehensive analysis results"
+      }
+    }
+  },
+  "AIChatPage": {
+    "title": "AI Chat",
+    "description": "Chat with AI Assistants"
+  },
+  "AIVideoPage": {
+    "title": "AI Video",
+    "description": "Create Videos with AI"
+  },
+  "AIAudioPage": {
+    "title": "AI Audio",
+    "description": "Create Audio with AI"
+  },
+  "Mail": {
+    "forgotPassword": {
+      "subject": "Reset Password – UrlToVideo",
+      "title": "Reset Password",
+      "body": "We received a request to reset your password. Please click the button below to change your password.",
+      "resetPassword": "Reset Password"
+    },
+    "verifyEmail": {
+      "subject": "Confirm Email Address – UrlToVideo",
+      "title": "Confirm Email Address",
+      "body": "Please confirm your email address to complete your registration.",
+      "confirmEmail": "Confirm Email"
+    },
+    "common": {
+      "team": "Your {name} Team",
+      "copyright": "© {year} UrlToVideo. All rights reserved."
+    },
+    "subscribeNewsletter": {
+      "subject": "Newsletter Subscription Confirmed – UrlToVideo",
+      "body": "Thanks for subscribing! You will now receive exciting news and updates."
+    },
+    "contactMessage": {
+      "subject": "New Contact Request – UrlToVideo",
+      "name": "Name: {name}",
+      "email": "Email: {email}",
+      "message": "Message: {message}"
+    }
+  },
+  "BlogPage": {
+    "title": "Blog",
+    "description": "Blog articles and news about AI video generation",
+    "subtitle": "Learn more about video production, AI tools and trends",
+    "author": "Author",
+    "categories": "Categories",
+    "morePosts": "More Posts",
+    "allPosts": "All Posts",
+    "all": "All Categories",
+    "noPostsFound": "No posts found"
+  },
+  "DocsPage": {
+    "title": "Documentation",
+    "homepage": "Home",
+    "toc": "Table of Contents",
+    "search": "Search",
+    "lastUpdate": "Last Updated",
+    "searchNoResult": "No Results",
+    "previousPage": "Previous Page",
+    "nextPage": "Next Page",
+    "chooseLanguage": "Choose Language"
+  },
+  "Dashboard": {
+    "dashboard": {
+      "title": "Dashboard",
+      "welcomeMessage": "Welcome to the Dashboard",
+      "getStarted": "Start Creating Video"
+    },
+    "admin": {
+      "title": "Administration",
+      "users": {
+        "title": "Users",
+        "admin": "Administrator",
+        "user": "User",
+        "banned": "Banned",
+        "active": "Active",
+        "email": {
+          "verified": "Verified",
+          "unverified": "Unverified"
+        },
+        "columns": {
+          "name": "Name",
+          "email": "Email",
+          "role": "Role",
+          "createdAt": "Created At",
+          "customerId": "Customer ID",
+          "status": "Status",
+          "banReason": "Ban Reason",
+          "banExpires": "Expires",
+          "columns": "Columns"
+        },
+        "search": "Search",
+        "emailCopied": "Email copied",
+        "joined": "Joined",
+        "updated": "Updated",
+        "close": "Close",
+        "ban": {
+          "defaultReason": "Violation of TOS",
+          "error": "Error banning user",
+          "success": "User banned successfully",
+          "reason": "Reason",
+          "expires": "Expires",
+          "never": "Never",
+          "reasonPlaceholder": "Enter reason for ban",
+          "selectDate": "Select Date",
+          "button": "Ban User"
+        },
+        "unban": {
+          "success": "User unbanned successfully",
+          "error": "Error unbanning user",
+          "button": "Unban User"
+        }
+      }
+    },
+    "settings": {
+      "title": "Settings",
+      "profile": {
+        "title": "Profile",
+        "description": "Manage your profile information and personal settings",
+        "avatar": {
+          "title": "Update Avatar",
+          "description": "Upload a new avatar to make your account more personal.",
+          "uploadAvatar": "Upload Avatar",
+          "uploading": "Uploading avatar...",
+          "recommendation": "Recommended size: 512 x 512 px. Supported formats: JPG, PNG, WebP.",
+          "success": "Avatar updated successfully.",
+          "fail": "Error updating avatar."
+        },
+        "name": {
+          "title": "Update Name",
+          "description": "Change the name displayed in your account and emails.",
+          "placeholder": "Your Name",
+          "minLength": "Name must be at least 3 characters long.",
+          "maxLength": "Name must be at most 30 characters long.",
+          "success": "Name updated successfully.",
+          "fail": "Error updating name.",
+          "hint": "Use your real name so we can address you correctly.",
+          "saving": "Saving...",
+          "save": "Save"
+        }
+      },
+      "billing": {
+        "title": "Billing",
+        "description": "Manage your subscriptions and payment information",
+        "retry": "Try Again",
+        "currentPlan": {
+          "title": "Current Plan",
+          "description": "View your current plan and subscription status.",
+          "noPlan": "You currently have no active plan.",
+          "upgradePlan": "Upgrade Plan"
+        },
+        "status": {
+          "trial": "Trial Active",
+          "active": "Active Subscription"
+        },
+        "freePlanMessage": "You are currently using the free plan. Upgrade to Pro or Premium for more features.",
+        "lifetimeMessage": "You have lifetime access to all premium features.",
+        "periodStartDate": "Start Date:",
+        "periodEndDate": "End Date:",
+        "trialEnds": "Trial ends on",
+        "manageBilling": "Manage Billing",
+        "manageSubscription": "Manage Subscription",
+        "CustomerPortalButton": {
+          "loading": "Loading Customer Portal...",
+          "createCustomerPortalFailed": "Could not open customer portal"
+        }
+      },
+      "credits": {
+        "title": "Credits",
+        "description": "Manage your credits and track usage",
+        "tabs": {
+          "balance": "Balance",
+          "transactions": "History"
+        },
+        "balance": {
+          "title": "Credit Balance",
+          "description": "Keep track of your current balance and expiring credits.",
+          "retry": "Reload",
+          "expiringCredits": "{credits} credits expire in {days} days."
+        },
+        "packages": {
+          "title": "Credit Packages",
+          "description": "Buy additional credits for your video generation quota.",
+          "popular": "Popular",
+          "purchase": "Start",
+          "loading": "Loading...",
+          "videoCapacity": "approx. {seconds} seconds video",
+          "imageCapacity": "approx. {count} images",
+          "checkoutFailed": "Payment page could not be opened",
+          "basic": {
+            "name": "Credits Basic",
+            "description": "Small starter package, ideal for trying out or light users."
+          },
+          "standard": {
+            "name": "Credits Standard",
+            "description": "Medium package, suitable for normal users with higher production output."
+          },
+          "premium": {
+            "name": "Credits Premium",
+            "description": "Package for high-end users, more videos/images, access to premium models."
+          },
+          "enterprise": {
+            "name": "Credits Enterprise",
+            "description": "Large package for companies or teams, maximum performance, full support for high-end models."
+          },
+          "rules": {
+            "title": "Usage Rules",
+            "description": "Information on credit usage",
+            "video": "Video: 1 second = 10 Credits",
+            "image": "Image: 1 image = 40 Credits",
+            "multipliers": "Model Multipliers:",
+            "multipliersList": {
+              "fast": "Seedance Fast = ×1",
+              "hq": "Seedance Pro = ×2",
+              "sora": "Sora = ×4",
+              "veo3": "Veo3 = ×5"
+            },
+            "features": "Available Features: Script generation, Text-to-Image, Image-to-Image, Video Generation",
+            "policy": "Note: No charge for failed generations or cancellations. Retries are charged only once."
+          }
+        },
+        "transactions": {
+          "title": "Credit History",
+          "description": "Overview of all charges, usage and settlements.",
+          "search": "Search transactions...",
+          "paymentIdCopied": "Payment ID copied",
+          "types": {
+            "MONTHLY_REFRESH": "Monthly Refresh",
+            "REGISTER_GIFT": "Sign-up Bonus",
+            "PURCHASE": "Purchase",
+            "USAGE": "Usage",
+            "EXPIRE": "Expired",
+            "SUBSCRIPTION_RENEWAL": "Subscription Renewal",
+            "LIFETIME_MONTHLY": "Lifetime Monthly Refresh"
+          },
+          "columns": {
+            "type": "Type",
+            "amount": "Amount",
+            "remainingAmount": "Remaining",
+            "description": "Description",
+            "paymentId": "Payment ID",
+            "expirationDate": "Expiration Date",
+            "expirationDateProcessedAt": "Expiration processed at",
+            "createdAt": "Created At",
+            "updatedAt": "Updated At",
+            "columns": "Columns"
+          },
+          "detailViewer": {
+            "title": "Transaction Details",
+            "close": "Close"
+          }
+        }
+      },
+      "security": {
+        "title": "Security",
+        "description": "Manage your account security and authentication settings",
+        "updatePassword": {
+          "title": "Update Password",
+          "description": "Change your password regularly to protect your account.",
+          "currentPassword": "Current Password",
+          "newPassword": "New Password",
+          "currentRequired": "Please enter your current password",
+          "newMinLength": "New password must be at least 8 characters long",
+          "showPassword": "Show Password",
+          "hidePassword": "Hide Password",
+          "success": "Password updated successfully.",
+          "fail": "Error updating password.",
+          "hint": "Use a secure password that you don't use elsewhere.",
+          "saving": "Saving...",
+          "save": "Save"
+        },
+        "resetPassword": {
+          "title": "Set Password",
+          "description": "Signed in with social login? Set a password here to login with email in the future.",
+          "info": "We will redirect you to the 'Forgot Password' page. There you can set a new password via email.",
+          "button": "Set Password"
+        },
+        "deleteAccount": {
+          "title": "Delete Account",
+          "description": "Delete your account permanently. This cannot be undone.",
+          "warning": "All data, credits and images will be permanently removed.",
+          "button": "Delete Account",
+          "confirmTitle": "Really delete account?",
+          "confirmDescription": "Are you sure you want to permanently delete your account? This action cannot be undone.",
+          "success": "Account deleted successfully.",
+          "fail": "Error deleting account.",
+          "deleting": "Deleting account...",
+          "cancel": "Cancel",
+          "confirm": "Yes, delete account"
+        }
+      },
+      "notification": {
+        "title": "Notifications",
+        "description": "Manage your notification settings",
+        "newsletter": {
+          "title": "Newsletter Subscription",
+          "description": "Get regular tips, updates and offers for our AI Video Tool.",
+          "label": "Subscribe to Newsletter",
+          "emailRequired": "Email address is required for newsletter subscription.",
+          "subscribeSuccess": "You have successfully subscribed to the newsletter.",
+          "unsubscribeSuccess": "You have successfully unsubscribed from the newsletter.",
+          "error": "Error updating newsletter subscription.",
+          "hint": "You can change your newsletter subscription anytime in the dashboard."
+        }
+      },
+      "payment": {
+        "processing": {
+          "title": "Processing Payment",
+          "description": "Please wait while we process your payment."
+        },
+        "success": {
+          "title": "Payment Successful",
+          "description": "Your payment has been processed successfully."
+        },
+        "failed": {
+          "title": "Payment Failed",
+          "description": "Your payment could not be processed. Please try again."
+        },
+        "timeout": {
+          "title": "Timeout",
+          "description": "Payment processing took too long. Please check your status."
+        }
+      }
+    },
+    "upgrade": {
+      "title": "Upgrade to Premium",
+      "description": "Unlock unlimited generations, higher resolutions and more Pro features.",
+      "button": "View Plans"
+    }
+  },
+  "PremiumContent": {
+    "loginRequired": "Login Required",
+    "loginDescription": "Log in to access all premium content and advanced video generation features.",
+    "signIn": "Sign In Now",
+    "checkingAccess": "Checking access rights...",
+    "title": "Unlock Premium Content",
+    "description": "With premium access you get access to deep guides, best practices and exclusive content about AI Video.",
+    "upgradeCta": "Upgrade to Premium Now",
+    "benefit1": "Unlimited Access to Premium Articles",
+    "benefit2": "Detailed Workflows and Best Practices",
+    "benefit3": "Priority Support"
+  },
+  "CreditPackages": {
+    "starter": {
+      "name": "Starter",
+      "description": "60 Credits per month – ideal for trying out and occasional use."
+    },
+    "pro": {
+      "name": "Pro",
+      "description": "300 Credits per month – perfect for regular users and professional applications."
+    }
+  },
+  "AuthPage": {
+    "login": {
+      "title": "Login",
+      "welcomeBack": "Welcome Back",
+      "signUpHint": "No account? Sign Up",
+      "email": "Email",
+      "password": "Password",
+      "emailRequired": "Email is required",
+      "passwordRequired": "Password is required",
+      "forgotPassword": "Forgot Password?",
+      "showPassword": "Show Password",
+      "hidePassword": "Hide Password",
+      "signIn": "Sign In",
+      "captchaInvalid": "Captcha validation failed",
+      "or": "or",
+      "signInWithGoogle": "Sign in with Google",
+      "signInWithGitHub": "Sign in with GitHub"
+    },
+    "common": {
+      "byClickingContinue": "By clicking continue, you agree to our ",
+      "termsOfService": "Terms of Service",
+      "and": " and ",
+      "privacyPolicy": "Privacy Policy"
+    },
+    "error": {
+      "title": "Authentication Error",
+      "backToLogin": "Back to Login",
+      "tryAgain": "Please try again"
+    },
+    "forgotPassword": {
+      "title": "Forgot Password",
+      "email": "Email",
+      "emailRequired": "Email is required",
+      "checkEmail": "Please check your email for further instructions",
+      "send": "Send Email",
+      "backToLogin": "Back to Login"
+    },
+    "resetPassword": {
+      "title": "Reset Password",
+      "password": "New Password",
+      "minLength": "Password must be at least 8 characters long",
+      "showPassword": "Show Password",
+      "hidePassword": "Hide Password",
+      "backToLogin": "Back to Login",
+      "reset": "Reset Password"
+    },
+    "register": {
+      "title": "Sign Up",
+      "createAccount": "Create Account",
+      "signInHint": "Already have an account? Login",
+      "name": "Name",
+      "nameRequired": "Name is required",
+      "email": "Email",
+      "emailRequired": "Email is required",
+      "password": "Password",
+      "passwordRequired": "Password is required",
+      "showPassword": "Show Password",
+      "hidePassword": "Hide Password",
+      "signUp": "Sign Up",
+      "checkEmail": "Please check your email for further instructions",
+      "captchaInvalid": "Captcha validation failed"
+    }
+  },
+  "ImageEditor": {
+    "backgroundTools": {
+      "backgroundColor": "Background Color",
+      "customColor": "Custom Color",
+      "backgroundImage": "Background Image",
+      "uploadBackgroundImage": "Upload Background Image",
+      "gridBackground": "Grid Background",
+      "showGrid": "Show Grid",
+      "hideGrid": "Hide Grid",
+      "eraser": "Eraser",
+      "enableEraser": "Enable Eraser",
+      "disableEraser": "Disable Eraser",
+      "size": "Size",
+      "download": "Download",
+      "downloadStandard": "Download Preview",
+      "downloadHD": "Download HD",
+      "downloadHDLogin": "Download HD (Login)",
+      "downloadHDUpgrade": "Download HD (Upgrade)",
+      "colors": {
+        "white": "White",
+        "black": "Black",
+        "gray": "Gray",
+        "blue": "Blue",
+        "green": "Green"
+      },
+      "invalidImageFile": "Please select an image file"
+    },
+    "loading": "Loading image...",
+    "error": "Error loading image",
+    "messages": {
+      "canvasNotReady": "Canvas not ready",
+      "hdImageDownloaded": "HD Image downloaded successfully (Original Quality)",
+      "imageDownloaded": "Image downloaded successfully (~300KB)",
+      "downloadFailed": "Error downloading image",
+      "pleaseSelectImageFile": "Please select an image file",
+      "pleaseLoginUpload": "Please log in to generate videos",
+      "pleaseLoginHD": "Please log in to use HD quality",
+      "pleaseLoginGenerate": "Please log in to generate images",
+      "modelRequiresImage": "This model requires an uploaded image"
+    }
+  },
+  "PricePlans": {
+    "free": {
+      "name": "Free",
+      "description": "Try it out",
+      "features": {
+        "feature-1": "3 Test Credits",
+        "feature-2": "Preview Resolution"
+      }
+    },
+    "lifetime": {
+      "name": "Lifetime",
+      "description": "Pay once, use forever",
+      "features": {
+        "feature-1": "One-time Payment",
+        "feature-2": "Lifetime Access"
+      }
+    },
+    "pro_monthly": {
+      "name": "Pro (Monthly)",
+      "description": "For professionals",
+      "features": {
+        "feature-1": "700 Credits monthly",
+        "feature-2": "approx. 7 videos",
+        "feature-3": "Access to all models",
+        "feature-4": "Commercial License",
+        "feature-5": "Priority Support",
+        "feature-6": "Credits valid for 1 month"
+      }
+    },
+    "pro_yearly": {
+      "name": "Pro (Yearly)",
+      "description": "Save 30% with yearly payment",
+      "features": {
+        "feature-1": "8,400 Credits yearly",
+        "feature-2": "approx. 84 videos",
+        "feature-3": "Access to all models",
+        "feature-4": "Commercial License",
+        "feature-5": "Priority Support",
+        "feature-6": "Credits valid for 1 year"
+      }
+    },
+    "premium_monthly": {
+      "name": "Premium (Monthly)",
+      "description": "For power users and teams",
+      "features": {
+        "feature-1": "2,400 Credits monthly",
+        "feature-2": "approx. 24 videos",
+        "feature-3": "Access to all models",
+        "feature-4": "Commercial License+ (Teams)",
+        "feature-5": "VIP Support 24/7",
+        "feature-6": "Credits valid for 1 month"
+      }
+    },
+    "premium_yearly": {
+      "name": "Premium (Yearly)",
+      "description": "Save 30% with yearly payment",
+      "features": {
+        "feature-1": "28,800 Credits yearly",
+        "feature-2": "approx. 288 videos",
+        "feature-3": "Access to all models",
+        "feature-4": "Commercial License+ (Teams)",
+        "feature-5": "VIP Support 24/7",
+        "feature-6": "Credits valid for 1 year"
+      }
+    }
+  },
+  "TextToVideoPage": {
+    "title": "Text to Video Creation",
+    "description": "Create professional videos simply by typing text.",
+    "tutorial": {
+      "title": "How Text to Video Works",
+      "subtitle": "To Video in a few steps",
+      "description": "Turn your ideas into moving images.",
+      "steps": {
+        "step1": {
+          "title": "1. Enter Text",
+          "description": "Describe your scene as detailed as possible. Use adjectives for mood and lighting."
+        },
+        "step2": {
+          "title": "2. Choose Settings",
+          "description": "Choose aspect ratio (e.g. 16:9) and style (e.g. Realistic or Cartoon)."
+        },
+        "step3": {
+          "title": "3. Generate Video",
+          "description": "Click Generate and download your finished video."
+        }
+      }
+    },
+    "faqs": {
+      "title": "Common Questions about Text-to-Video",
+      "subtitle": "Everything you need to know",
+      "items": {
+        "item-1": {
+          "question": "How detailed must my prompt be?",
+          "answer": "The more detailed, the better. Describe not only the main subject, but also background, lighting, camera movement and style."
+        },
+        "item-2": {
+          "question": "Which languages are supported?",
+          "answer": "Our model understands English best, but German is also supported."
+        },
+        "item-3": {
+          "question": "How long does generation take?",
+          "answer": "Usually it takes about 30-60 seconds for a 5-second video."
+        },
+        "item-4": {
+          "question": "Can I use videos commercially?",
+          "answer": "Yes, with a Pro plan the rights belong to you."
+        },
+        "item-5": {
+          "question": "Can I influence the style?",
+          "answer": "Yes, you can use keywords like 'Cinematic', 'Anime', '3D Render' or 'Oil Painting'."
+        }
+      }
+    },
+    "seoText": {
+      "title": "Text to Video: The Content Creation Revolution",
+      "section1": {
+        "title": "What is Text to Video?",
+        "content": "Text to Video is a groundbreaking technology..."
+      }
+    }
+  },
+  "BildZuVideoPage": {
+    "title": "Free Creation: Animate Images",
+    "description": "Image to Video made easy: Bring your static images to life with our revolutionary Image to Video AI.",
+    "tutorial": {
+      "title": "How Image to Video Works: Simply Explained",
+      "subtitle": "In three steps: From Photo to Image to Video Animation",
+      "description": "Create impressive Image to Video animations in seconds.",
+      "steps": {
+        "step1": {
+          "title": "1. Upload Image for Image to Video",
+          "description": "Choose an image. For best Image to Video results, high quality is recommended."
+        },
+        "step2": {
+          "title": "2. Prompt for Image to Video",
+          "description": "Describe the desired movement for your Image to Video project."
+        },
+        "step3": {
+          "title": "3. Image to Video Generation",
+          "description": "Start the Image to Video process and download the result."
+        }
+      }
+    },
+    "faqs": {
+      "title": "Common Questions about Image to Video",
+      "subtitle": "All about our Image to Video Technology",
+      "items": {
+        "item-1": {
+          "question": "Which formats does Image to Video support?",
+          "answer": "Our Image to Video tool supports JPG, PNG and WEBP. Image to Video works best with clear subjects."
+        }
+      }
+    },
+    "seoText": {
+      "title": "Image to Video: The Future of Visual Content",
+      "section1": {
+        "title": "What is Image to Video Technology?",
+        "content": "Image to Video is a transformative technology..."
+      }
+    }
+  }
+}
