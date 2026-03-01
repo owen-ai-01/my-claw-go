@@ -1,9 +1,12 @@
 import { NextResponse } from 'next/server';
+import { headers } from 'next/headers';
+import { auth } from '@/lib/auth';
 import { getSession, touchSession } from '@/lib/myclawgo/session-store';
 import {
   runOpenClawChatInContainer,
   runWhitelistedCommandInContainer,
 } from '@/lib/myclawgo/docker-manager';
+import { consumeCredits, getUserCredits } from '@/credits/credits';
 
 type Intent =
   | { kind: 'install-skill'; command: string; skill: string }
@@ -13,13 +16,8 @@ type Intent =
 
 function parseNaturalLanguageIntent(message: string): Intent {
   const text = message.trim();
-
   if (!text) return { kind: 'none' };
 
-  // Examples:
-  // - 安装一下gog这个skill
-  // - install skill gog
-  // - 安装 skill: add-agent
   const installCn = text.match(/安装(?:一下)?\s*([a-zA-Z0-9-_]+)\s*(?:这个)?\s*skill/i);
   const installEn = text.match(/install\s+(?:the\s+)?skill\s+([a-zA-Z0-9-_]+)/i);
   const installAlt = text.match(/skill\s*[:：]\s*([a-zA-Z0-9-_]+)\s*.*安装/i);
@@ -44,6 +42,23 @@ function parseNaturalLanguageIntent(message: string): Intent {
   return { kind: 'none' };
 }
 
+function estimateTokens(message: string, reply: string) {
+  const chars = (message?.length || 0) + (reply?.length || 0);
+  return Math.max(1, Math.ceil(chars / 4));
+}
+
+function estimateUsdCostFromTokens(tokens: number) {
+  // configurable rough estimate for runtime billing, default: $0.00001/token
+  const usdPerToken = Number(process.env.MYCLAWGO_USD_PER_TOKEN || '0.00001');
+  return tokens * usdPerToken;
+}
+
+function creditsFromUsd(usdCost: number) {
+  // 1 credit = $0.001 cost
+  const usdPerCredit = Number(process.env.MYCLAWGO_USD_PER_CREDIT || '0.001');
+  return Math.max(1, Math.ceil(usdCost / usdPerCredit));
+}
+
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ sessionId: string }> },
@@ -56,17 +71,19 @@ export async function POST(
     return NextResponse.json({ ok: false, error: 'Message is required' }, { status: 400 });
   }
 
-  const session = await getSession(sessionId);
-  if (!session) {
+  const runtimeSession = await getSession(sessionId);
+  if (!runtimeSession) {
     return NextResponse.json({ ok: false, error: 'Session not found' }, { status: 404 });
   }
 
   await touchSession(sessionId);
 
-  // Natural-language-to-container-action bridge
+  const authSession = await auth.api.getSession({ headers: await headers() });
+  const currentUserId = authSession?.user?.id;
+
   const intent = parseNaturalLanguageIntent(message);
   if (intent.kind !== 'none') {
-    const result = await runWhitelistedCommandInContainer(session, intent.command);
+    const result = await runWhitelistedCommandInContainer(runtimeSession, intent.command);
     if (!result.ok) {
       return NextResponse.json({ ok: false, error: result.error }, { status: 500 });
     }
@@ -81,22 +98,54 @@ export async function POST(
     return NextResponse.json({
       ok: true,
       reply: `${header}\n\n${result.output}`,
-      credits: session.credits,
-      container: session.containerName,
+      container: runtimeSession.containerName,
       mode: 'container-intent',
     });
   }
 
-  const result = await runOpenClawChatInContainer(session, message);
+  const result = await runOpenClawChatInContainer(runtimeSession, message);
   if (!result.ok) {
     return NextResponse.json({ ok: false, error: result.error }, { status: 500 });
+  }
+
+  // Credit deduction only when session owner is authenticated and calling their own bot route
+  let creditsLeft: number | null = null;
+  let creditsUsed: number | null = null;
+  if (currentUserId && currentUserId === sessionId) {
+    try {
+      const tokens = estimateTokens(message, result.reply);
+      const usdCost = estimateUsdCostFromTokens(tokens);
+      const used = creditsFromUsd(usdCost);
+      await consumeCredits({
+        userId: currentUserId,
+        amount: used,
+        description: `MyClawGo runtime usage: estimated ${tokens} tokens (~$${usdCost.toFixed(4)})`,
+      });
+      creditsUsed = used;
+      creditsLeft = await getUserCredits(currentUserId);
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : 'credit consume failed';
+      if (msg.toLowerCase().includes('insufficient')) {
+        return NextResponse.json(
+          {
+            ok: false,
+            error: 'Credits are insufficient. Please recharge credits to continue running tasks.',
+            code: 'INSUFFICIENT_CREDITS',
+          },
+          { status: 402 },
+        );
+      }
+      // non-blocking for temporary issues
+      console.error('credit deduction warning:', msg);
+    }
   }
 
   return NextResponse.json({
     ok: true,
     reply: result.reply,
-    credits: session.credits,
-    container: session.containerName,
+    credits: creditsLeft,
+    creditsUsed,
+    container: runtimeSession.containerName,
     mode: 'openclaw-chat',
   });
 }
