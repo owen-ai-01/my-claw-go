@@ -480,7 +480,7 @@
       "getStarted": "Get Started",
       "notAvailable": "Not Available",
       "daysTrial": "Free Trial: {days} days",
-      "discount50": "30% Discount"
+      "discount50": "20% Discount"
     },
     "CheckoutButton": {
       "loading": "Loading...",
@@ -551,7 +551,7 @@
           },
           "pro_yearly": {
             "title": "Pro (Yearly)",
-            "description": "Save 50% with yearly payment",
+            "description": "Save 20% with yearly payment",
             "features": [
               "3120 Credits yearly",
               "Everything in Starter",
@@ -1229,10 +1229,10 @@
     },
     "pro_yearly": {
       "name": "Pro (Yearly)",
-      "description": "Save 30% with yearly payment",
+      "description": "Save 20% with yearly payment",
       "features": {
-        "feature-1": "8,400 Credits yearly",
-        "feature-2": "approx. 84 videos",
+        "feature-1": "24,000 Credits yearly",
+        "feature-2": "approx. 240 videos",
         "feature-3": "Access to all models",
         "feature-4": "Commercial License",
         "feature-5": "Priority Support",
@@ -1253,10 +1253,10 @@
     },
     "premium_yearly": {
       "name": "Premium (Yearly)",
-      "description": "Save 30% with yearly payment",
+      "description": "Save 20% with yearly payment",
       "features": {
-        "feature-1": "28,800 Credits yearly",
-        "feature-2": "approx. 288 videos",
+        "feature-1": "96,000 Credits yearly",
+        "feature-2": "approx. 960 videos",
         "feature-3": "Access to all models",
         "feature-4": "Commercial License+ (Teams)",
         "feature-5": "VIP Support 24/7",
@@ -1277,7 +1277,7 @@
     },
     "ultra_yearly": {
       "name": "Ultra",
-      "description": "Annual Ultra plan with 20% savings and highest monthly credits.",
+      "description": "Save 20% with yearly payment",
       "features": {
         "feature-1": "480,000 credits / year",
         "feature-2": "Your own private OpenClaw workspace",
