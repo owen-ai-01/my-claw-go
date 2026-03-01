@@ -1219,11 +1219,11 @@
       "name": "Pro (Monthly)",
       "description": "For professionals",
       "features": {
-        "feature-1": "700 Credits monthly",
-        "feature-2": "approx. 7 videos",
-        "feature-3": "Access to all models",
-        "feature-4": "Commercial License",
-        "feature-5": "Priority Support",
+        "feature-1": "4,000 Credits monthly",
+        "feature-2": "Access to all models",
+        "feature-3": "Commercial License",
+        "feature-4": "Priority Support",
+        "feature-5": "Credits management dashboard",
         "feature-6": "Credits valid for 1 month"
       }
     },
@@ -1231,11 +1231,11 @@
       "name": "Pro (Yearly)",
       "description": "Save 20% with yearly payment",
       "features": {
-        "feature-1": "24,000 Credits yearly",
-        "feature-2": "approx. 240 videos",
-        "feature-3": "Access to all models",
-        "feature-4": "Commercial License",
-        "feature-5": "Priority Support",
+        "feature-1": "48,000 Credits yearly",
+        "feature-2": "Access to all models",
+        "feature-3": "Commercial License",
+        "feature-4": "Priority Support",
+        "feature-5": "Credits management dashboard",
         "feature-6": "Credits valid for 1 year"
       }
     },
@@ -1243,11 +1243,11 @@
       "name": "Premium (Monthly)",
       "description": "For power users and teams",
       "features": {
-        "feature-1": "2,400 Credits monthly",
-        "feature-2": "approx. 24 videos",
-        "feature-3": "Access to all models",
-        "feature-4": "Commercial License+ (Teams)",
-        "feature-5": "VIP Support 24/7",
+        "feature-1": "8,000 Credits monthly",
+        "feature-2": "Access to all models",
+        "feature-3": "Commercial License+ (Teams)",
+        "feature-4": "VIP Support 24/7",
+        "feature-5": "Priority runtime performance",
         "feature-6": "Credits valid for 1 month"
       }
     },
@@ -1256,10 +1256,10 @@
       "description": "Save 20% with yearly payment",
       "features": {
         "feature-1": "96,000 Credits yearly",
-        "feature-2": "approx. 960 videos",
-        "feature-3": "Access to all models",
-        "feature-4": "Commercial License+ (Teams)",
-        "feature-5": "VIP Support 24/7",
+        "feature-2": "Access to all models",
+        "feature-3": "Commercial License+ (Teams)",
+        "feature-4": "VIP Support 24/7",
+        "feature-5": "Priority runtime performance",
         "feature-6": "Credits valid for 1 year"
       }
     },
@@ -1267,7 +1267,7 @@
       "name": "Ultra",
       "description": "For power users and teams that need high monthly credits and priority performance.",
       "features": {
-        "feature-1": "40,000 credits / month",
+        "feature-1": "40,000 Credits monthly",
         "feature-2": "Your own private OpenClaw workspace",
         "feature-3": "No VPS or key setup needed",
         "feature-4": "Faster queue priority",
@@ -1279,7 +1279,7 @@
       "name": "Ultra",
       "description": "Save 20% with yearly payment",
       "features": {
-        "feature-1": "480,000 credits / year",
+        "feature-1": "480,000 Credits yearly",
         "feature-2": "Your own private OpenClaw workspace",
         "feature-3": "No VPS or key setup needed",
         "feature-4": "Faster queue priority",
