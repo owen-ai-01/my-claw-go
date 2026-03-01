@@ -18,7 +18,7 @@ export async function generateMetadata({
   const t = await getTranslations({ locale, namespace: 'Metadata' });
 
   return constructMetadata({
-    title: 'My Claw Go: Hosted OpenClaw Without VPS or Setup | OpenClaw Start',
+    title: 'My Claw Go: Hosted OpenClaw Without Setup | OpenClaw Start',
     description:
       'My Claw Go helps you launch your own private OpenClaw workspace without VPS, local setup, or API key hassle. Sign up, pay, and start fast.My openclaw start.',
     locale,
