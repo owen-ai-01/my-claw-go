@@ -15,8 +15,8 @@
     }
   },
   "HomePage": {
-    "title": "UrlToVideo: Turn any URL into Video",
-    "description": "Transform web content into engaging videos. UrlToVideo offers Web-to-Video, Text-to-Video, and Image-to-Video creation.",
+    "title": "My Claw Go: Turn any URL into Video",
+    "description": "Transform web content into engaging videos. My Claw Go offers Web-to-Video, Text-to-Video, and Image-to-Video creation.",
     "hero": {
       "title": "Turn any URL into Video",
       "description": "Enter a website, article, or product URL and our AI will automatically generate a stunning promotional video for you.",
@@ -132,7 +132,7 @@
     "features": {
       "title": "Powerful AI Features",
       "subtitle": "Everything you need for professional videos",
-      "description": "Discover the diverse possibilities of UrlToVideo.",
+      "description": "Discover the diverse possibilities of My Claw Go.",
       "items": {
         "item-1": {
           "title": "Text to Video",
@@ -161,33 +161,33 @@
       }
     },
     "urlToVideoFeatures": {
-      "title": "URL to Video Features",
-      "description": "Powerful capabilities that make URL to Video the best choice for automated video creation.",
+      "title": "My Claw Go Features",
+      "description": "Powerful capabilities that make My Claw Go the best choice for automated video creation.",
       "item-1": {
         "title": "Any URL Works",
-        "description": "URL to Video supports product pages, blog articles, landing pages, portfolios, and any public webpage."
+        "description": "My Claw Go supports product pages, blog articles, landing pages, portfolios, and any public webpage."
       },
       "item-2": {
         "title": "Lightning Fast",
-        "description": "URL to Video generates complete videos in just minutes, not hours. Rapid AI processing at scale."
+        "description": "My Claw Go generates complete videos in just minutes, not hours. Rapid AI processing at scale."
       },
       "item-3": {
         "title": "Multi-Platform",
-        "description": "URL to Video outputs videos in any format: YouTube 16:9, TikTok 9:16, Instagram 1:1, and more."
+        "description": "My Claw Go outputs videos in any format: YouTube 16:9, TikTok 9:16, Instagram 1:1, and more."
       },
       "item-4": {
         "title": "AI Narration",
-        "description": "URL to Video automatically creates professional voiceover from your webpage content."
+        "description": "My Claw Go automatically creates professional voiceover from your webpage content."
       }
     },
     "examples": {
       "title": "Inspiring Examples",
-      "description": "See what's possible with UrlToVideo."
+      "description": "See what's possible with My Claw Go."
     },
     "tutorial": {
-      "title": "How URL to Video Works",
+      "title": "How My Claw Go Works",
       "subtitle": "3 Simple Steps",
-      "description": "Transform any webpage into a professional URL to Video in minutes.",
+      "description": "Transform any webpage into a professional My Claw Go in minutes.",
       "steps": {
         "step1": {
           "title": "1. Paste Your URL",
@@ -195,14 +195,14 @@
         },
         "step2": {
           "title": "2. AI Creates Video",
-          "description": "URL to Video analyzes your page, generates a storyboard, creates assets, and composes the video."
+          "description": "My Claw Go analyzes your page, generates a storyboard, creates assets, and composes the video."
         },
         "step3": {
           "title": "3. Download & Share",
-          "description": "Download your professional URL to Video and share across social media or your website."
+          "description": "Download your professional My Claw Go and share across social media or your website."
         }
       },
-      "footer": "Start now and create your first URL to Video!"
+      "footer": "Start now and create your first My Claw Go!"
     },
     "pricing": {
       "title": "Flexible Pricing",
@@ -211,39 +211,39 @@
     },
     "faqs": {
       "title": "Frequently Asked Questions",
-      "subtitle": "Answers to your questions about URL to Video",
+      "subtitle": "Answers to your questions about My Claw Go",
       "items": {
         "item-1": {
-          "question": "What is URL to Video and how does it work?",
-          "answer": "URL to Video is an AI-powered tool that automatically converts any webpage into a professional video. Simply paste a URL, and our AI analyzes the content, creates a storyboard, generates assets, and produces a complete video in minutes."
+          "question": "What is My Claw Go and how does it work?",
+          "answer": "My Claw Go is an AI-powered tool that automatically converts any webpage into a professional video. Simply paste a URL, and our AI analyzes the content, creates a storyboard, generates assets, and produces a complete video in minutes."
         },
         "item-2": {
-          "question": "Is URL to Video free to use?",
-          "answer": "URL to Video requires credits to generate videos. Due to the high computing costs of AI video generation, payment is required. We offer flexible pricing plans to suit different needs."
+          "question": "Is My Claw Go free to use?",
+          "answer": "My Claw Go requires credits to generate videos. Due to the high computing costs of AI video generation, payment is required. We offer flexible pricing plans to suit different needs."
         },
         "item-3": {
-          "question": "How long does URL to Video take to generate?",
-          "answer": "The URL to Video process typically takes 2-5 minutes depending on the complexity of the webpage and selected video settings. Our AI works as fast as possible while maintaining high quality."
+          "question": "How long does My Claw Go take to generate?",
+          "answer": "The My Claw Go process typically takes 2-5 minutes depending on the complexity of the webpage and selected video settings. Our AI works as fast as possible while maintaining high quality."
         },
         "item-4": {
-          "question": "What types of URLs work with URL to Video?",
-          "answer": "URL to Video works with most public web pages including product pages, blog articles, landing pages, portfolio sites, news articles, and documentation pages. The AI adapts to different content types automatically."
+          "question": "What types of URLs work with My Claw Go?",
+          "answer": "My Claw Go works with most public web pages including product pages, blog articles, landing pages, portfolio sites, news articles, and documentation pages. The AI adapts to different content types automatically."
         },
         "item-5": {
-          "question": "Can I use URL to Video for commercial purposes?",
-          "answer": "Yes, videos generated with URL to Video on paid plans come with full commercial usage rights. You can use them for marketing, advertising, social media, and business presentations."
+          "question": "Can I use My Claw Go for commercial purposes?",
+          "answer": "Yes, videos generated with My Claw Go on paid plans come with full commercial usage rights. You can use them for marketing, advertising, social media, and business presentations."
         },
         "item-6": {
-          "question": "What video formats and resolutions does URL to Video support?",
-          "answer": "URL to Video generates MP4 videos in multiple resolutions (480p, 720p, 1080p) and aspect ratios (16:9, 9:16, 1:1, 4:3) to suit different platforms like YouTube, TikTok, and Instagram."
+          "question": "What video formats and resolutions does My Claw Go support?",
+          "answer": "My Claw Go generates MP4 videos in multiple resolutions (480p, 720p, 1080p) and aspect ratios (16:9, 9:16, 1:1, 4:3) to suit different platforms like YouTube, TikTok, and Instagram."
         },
         "item-7": {
-          "question": "Does URL to Video include narration or voiceover?",
-          "answer": "Yes, URL to Video automatically generates AI narration based on the webpage content. The voiceover is synced with the visual scenes for a professional presentation."
+          "question": "Does My Claw Go include narration or voiceover?",
+          "answer": "Yes, My Claw Go automatically generates AI narration based on the webpage content. The voiceover is synced with the visual scenes for a professional presentation."
         },
         "item-8": {
-          "question": "How is my data handled with URL to Video?",
-          "answer": "URL to Video only accesses public webpage content. Your generated videos are stored temporarily for download and are automatically deleted after 24 hours for security."
+          "question": "How is my data handled with My Claw Go?",
+          "answer": "My Claw Go only accesses public webpage content. Your generated videos are stored temporarily for download and are automatically deleted after 24 hours for security."
         }
       }
     },
@@ -255,7 +255,7 @@
           "name": "Lisa M.",
           "role": "Content Creator",
           "image": "/testimonials/user-1.jpg",
-          "quote": "UrlToVideo revolutionized my workflow. I create Tiktoks in minutes now."
+          "quote": "My Claw Go revolutionized my workflow. I create Tiktoks in minutes now."
         },
         "item-2": {
           "name": "Tom B.",
@@ -298,7 +298,7 @@
     "useCases": {
       "title": "Use Cases",
       "subtitle": "Versatile applications",
-      "description": "Our UrlToVideo is suitable for many purposes.",
+      "description": "Our My Claw Go is suitable for many purposes.",
       "ecommerce": {
         "title": "E-Commerce",
         "description": "Create engaging product videos for your shop."
@@ -327,8 +327,8 @@
     "seoText": {
       "title": "All about AI Video Generation",
       "section1": {
-        "title": "What is UrlToVideo?",
-        "content": "UrlToVideo is an advanced tool that uses artificial intelligence to create high-quality videos from simple text inputs, URLs, or images. This technology revolutionizes content production."
+        "title": "What is My Claw Go?",
+        "content": "My Claw Go is an advanced tool that uses artificial intelligence to create high-quality videos from simple text inputs, URLs, or images. This technology revolutionizes content production."
       },
       "section2": {
         "title": "Advantages of AI Video Technology",
@@ -347,12 +347,12 @@
         "content": "We are just at the beginning of the AI Video era. Development speed is breathtaking. Soon we will see tools that can create entire movies."
       },
       "section6": {
-        "title": "Who is UrlToVideo for?",
-        "content": "Practically everyone can benefit from UrlToVideo. Marketing agencies, content creators, teachers, and real estate agents."
+        "title": "Who is My Claw Go for?",
+        "content": "Practically everyone can benefit from My Claw Go. Marketing agencies, content creators, teachers, and real estate agents."
       },
       "section7": {
         "title": "Tips for Perfect AI Video Prompts",
-        "content": "To get the best out of UrlToVideo, 'Prompt Engineering' is key. A good prompt is detailed."
+        "content": "To get the best out of My Claw Go, 'Prompt Engineering' is key. A good prompt is detailed."
       },
       "section8": {
         "title": "AI Video Quality and Resolution",
@@ -434,31 +434,31 @@
       }
     },
     "urlToVideoSeo": {
-      "title": "Complete Guide to URL to Video",
-      "subtitle": "Everything you need to know about URL to Video technology",
+      "title": "Complete Guide to My Claw Go",
+      "subtitle": "Everything you need to know about My Claw Go technology",
       "what": {
-        "title": "What is URL to Video?",
-        "content": "URL to Video is a revolutionary AI-powered technology that automatically transforms any web page into a professional, engaging video. With URL to Video, you simply paste a link to any website, product page, blog article, or landing page, and our advanced AI analyzes the content, extracts key information, generates a compelling storyboard, and produces a polished video. URL to Video eliminates the traditional barriers of video production - no editing skills, no expensive software, and no hours of manual work required. The URL to Video process leverages cutting-edge artificial intelligence to understand context, identify the most important elements of your webpage, and create visually stunning video content that captures audience attention. Whether you're a marketer looking to repurpose blog content, an e-commerce seller wanting to showcase products, or a business owner needing quick promotional videos, URL to Video provides an instant solution."
+        "title": "What is My Claw Go?",
+        "content": "My Claw Go is a revolutionary AI-powered technology that automatically transforms any web page into a professional, engaging video. With My Claw Go, you simply paste a link to any website, product page, blog article, or landing page, and our advanced AI analyzes the content, extracts key information, generates a compelling storyboard, and produces a polished video. My Claw Go eliminates the traditional barriers of video production - no editing skills, no expensive software, and no hours of manual work required. The My Claw Go process leverages cutting-edge artificial intelligence to understand context, identify the most important elements of your webpage, and create visually stunning video content that captures audience attention. Whether you're a marketer looking to repurpose blog content, an e-commerce seller wanting to showcase products, or a business owner needing quick promotional videos, My Claw Go provides an instant solution."
       },
       "why": {
-        "title": "Why Choose URL to Video?",
-        "content": "URL to Video offers tremendous advantages over traditional video production methods. First, URL to Video saves you countless hours - what normally takes days of scripting, filming, and editing can be accomplished in minutes with URL to Video. Second, URL to Video is incredibly cost-effective, eliminating the need for expensive videographers, equipment, and editing software. Third, URL to Video ensures consistency in your video branding because the AI maintains a professional standard across all generated content. Fourth, URL to Video enables rapid content scaling - you can convert hundreds of web pages into videos without additional effort. Fifth, URL to Video provides multilingual capabilities, allowing you to create videos from content in various languages. With URL to Video, businesses can dramatically increase their video marketing output while reducing costs. URL to Video democratizes video creation, making professional-quality video content accessible to everyone regardless of technical skill level."
+        "title": "Why Choose My Claw Go?",
+        "content": "My Claw Go offers tremendous advantages over traditional video production methods. First, My Claw Go saves you countless hours - what normally takes days of scripting, filming, and editing can be accomplished in minutes with My Claw Go. Second, My Claw Go is incredibly cost-effective, eliminating the need for expensive videographers, equipment, and editing software. Third, My Claw Go ensures consistency in your video branding because the AI maintains a professional standard across all generated content. Fourth, My Claw Go enables rapid content scaling - you can convert hundreds of web pages into videos without additional effort. Fifth, My Claw Go provides multilingual capabilities, allowing you to create videos from content in various languages. With My Claw Go, businesses can dramatically increase their video marketing output while reducing costs. My Claw Go democratizes video creation, making professional-quality video content accessible to everyone regardless of technical skill level."
       },
       "how": {
-        "title": "How URL to Video Works",
-        "content": "The URL to Video process is designed to be effortless. Here's how URL to Video transforms your web content into video: Step 1 - Submit your URL: Simply paste any webpage URL into the URL to Video interface. Step 2 - AI Analysis: URL to Video's intelligent crawler reads and analyzes your page content, identifying headlines, descriptions, images, and key selling points. Step 3 - Storyboard Generation: URL to Video creates a professional storyboard with scenes, narration scripts, and visual prompts optimized for engagement. Step 4 - Asset Creation: URL to Video generates or optimizes visual assets for each scene, including AI-generated images when needed. Step 5 - Video Composition: URL to Video combines all elements with smooth transitions, background music, and professional pacing. Step 6 - Download: Your completed URL to Video is ready to download and share across social media, websites, or advertising platforms. The entire URL to Video process typically completes within minutes."
+        "title": "How My Claw Go Works",
+        "content": "The My Claw Go process is designed to be effortless. Here's how My Claw Go transforms your web content into video: Step 1 - Submit your URL: Simply paste any webpage URL into the My Claw Go interface. Step 2 - AI Analysis: My Claw Go's intelligent crawler reads and analyzes your page content, identifying headlines, descriptions, images, and key selling points. Step 3 - Storyboard Generation: My Claw Go creates a professional storyboard with scenes, narration scripts, and visual prompts optimized for engagement. Step 4 - Asset Creation: My Claw Go generates or optimizes visual assets for each scene, including AI-generated images when needed. Step 5 - Video Composition: My Claw Go combines all elements with smooth transitions, background music, and professional pacing. Step 6 - Download: Your completed My Claw Go is ready to download and share across social media, websites, or advertising platforms. The entire My Claw Go process typically completes within minutes."
       },
       "features": {
-        "title": "URL to Video Features",
-        "content": "URL to Video comes packed with powerful features designed for maximum flexibility and quality. Our URL to Video platform supports multiple aspect ratios including 16:9 for YouTube, 9:16 for TikTok and Instagram Reels, and 1:1 for social media posts. URL to Video offers multiple resolution options from 480p to 1080p HD. URL to Video automatically generates engaging narration scripts based on your page content. URL to Video supports various content types including product pages, blog articles, landing pages, portfolio sites, and more. URL to Video includes intelligent scene detection that knows how to divide content into compelling video segments. URL to Video provides customizable duration settings to match your platform requirements. With URL to Video, you get consistent branding, professional transitions, and optimized pacing for maximum viewer retention."
+        "title": "My Claw Go Features",
+        "content": "My Claw Go comes packed with powerful features designed for maximum flexibility and quality. Our My Claw Go platform supports multiple aspect ratios including 16:9 for YouTube, 9:16 for TikTok and Instagram Reels, and 1:1 for social media posts. My Claw Go offers multiple resolution options from 480p to 1080p HD. My Claw Go automatically generates engaging narration scripts based on your page content. My Claw Go supports various content types including product pages, blog articles, landing pages, portfolio sites, and more. My Claw Go includes intelligent scene detection that knows how to divide content into compelling video segments. My Claw Go provides customizable duration settings to match your platform requirements. With My Claw Go, you get consistent branding, professional transitions, and optimized pacing for maximum viewer retention."
       },
       "useCases": {
-        "title": "URL to Video Use Cases",
-        "content": "URL to Video serves a wide range of applications across industries. E-commerce businesses use URL to Video to automatically create product demonstration videos from their catalog pages. Content marketers leverage URL to Video to repurpose blog posts into engaging video content for social media. Real estate agents use URL to Video to generate property tour videos from listing pages. SaaS companies employ URL to Video to create feature explainer videos from their documentation. Affiliate marketers use URL to Video to produce review videos from product pages. News outlets and bloggers use URL to Video to transform articles into video news segments. Educational institutions use URL to Video to convert course descriptions into promotional videos. No matter your industry, URL to Video can streamline your video content production."
+        "title": "My Claw Go Use Cases",
+        "content": "My Claw Go serves a wide range of applications across industries. E-commerce businesses use My Claw Go to automatically create product demonstration videos from their catalog pages. Content marketers leverage My Claw Go to repurpose blog posts into engaging video content for social media. Real estate agents use My Claw Go to generate property tour videos from listing pages. SaaS companies employ My Claw Go to create feature explainer videos from their documentation. Affiliate marketers use My Claw Go to produce review videos from product pages. News outlets and bloggers use My Claw Go to transform articles into video news segments. Educational institutions use My Claw Go to convert course descriptions into promotional videos. No matter your industry, My Claw Go can streamline your video content production."
       },
       "conclusion": {
-        "title": "Start Creating with URL to Video Today",
-        "content": "URL to Video represents the future of automated video content creation. By harnessing the power of AI, URL to Video makes it possible for anyone to produce professional-quality videos in minutes instead of hours or days. Whether you need URL to Video for marketing campaigns, social media content, product showcases, or content repurposing, our platform delivers exceptional results every time. The URL to Video technology continues to evolve, with regular updates improving quality, speed, and capabilities. Join thousands of businesses and creators who have already discovered the power of URL to Video. Start your URL to Video journey today and transform how you create video content. With URL to Video, the only limit is your imagination - and you have unlimited web pages to convert into stunning videos."
+        "title": "Start Creating with My Claw Go Today",
+        "content": "My Claw Go represents the future of automated video content creation. By harnessing the power of AI, My Claw Go makes it possible for anyone to produce professional-quality videos in minutes instead of hours or days. Whether you need My Claw Go for marketing campaigns, social media content, product showcases, or content repurposing, our platform delivers exceptional results every time. The My Claw Go technology continues to evolve, with regular updates improving quality, speed, and capabilities. Join thousands of businesses and creators who have already discovered the power of My Claw Go. Start your My Claw Go journey today and transform how you create video content. With My Claw Go, the only limit is your imagination - and you have unlimited web pages to convert into stunning videos."
       }
     }
   },
