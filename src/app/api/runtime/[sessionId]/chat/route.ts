@@ -5,6 +5,7 @@ import { getSession, touchSession } from '@/lib/myclawgo/session-store';
 import {
   runOpenClawChatInContainer,
   runWhitelistedCommandInContainer,
+  ensureUserContainer,
 } from '@/lib/myclawgo/docker-manager';
 import { consumeCredits, getUserCredits } from '@/credits/credits';
 
@@ -80,6 +81,13 @@ export async function POST(
 
   const authSession = await auth.api.getSession({ headers: await headers() });
   const currentUserId = authSession?.user?.id;
+
+  // Ensure container exists for this user session (covers old users without pre-created runtime)
+  const ensured = await ensureUserContainer(runtimeSession);
+  if (!ensured.ok) {
+    return NextResponse.json({ ok: false, error: ensured.error || 'Failed to prepare user runtime' }, { status: 500 });
+  }
+
 
   const intent = parseNaturalLanguageIntent(message);
   if (intent.kind !== 'none') {
