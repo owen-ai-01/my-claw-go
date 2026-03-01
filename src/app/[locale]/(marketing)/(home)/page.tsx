@@ -5,6 +5,7 @@ import { getBaseUrl } from '@/lib/urls/urls';
 import type { Metadata } from 'next';
 import type { Locale } from 'next-intl';
 import { getTranslations } from 'next-intl/server';
+import { StartBox } from '@/components/myclawgo/start-box';
 
 export async function generateMetadata({
   params,
@@ -103,16 +104,7 @@ export default async function HomePage(props: HomePageProps) {
             <h1 className="max-w-4xl text-4xl font-semibold leading-tight md:text-6xl">{content.title}</h1>
             <p className="mt-5 max-w-3xl text-base text-slate-300 md:text-lg">{content.subtitle}</p>
 
-            <div className="mt-8 flex flex-col gap-3 md:flex-row">
-              <input
-                className="h-12 flex-1 rounded-xl border border-white/10 bg-slate-900/80 px-4 text-sm outline-none placeholder:text-slate-500 focus:border-slate-400"
-                placeholder={content.inputPlaceholder}
-                readOnly
-              />
-              <button className="h-12 rounded-xl bg-white px-6 text-sm font-semibold text-slate-900 transition hover:bg-slate-200">
-                {content.cta}
-              </button>
-            </div>
+            <StartBox placeholder={content.inputPlaceholder} button={content.cta} />
 
             <div className="mt-6 flex flex-wrap gap-2">
               {content.trust.map((item) => (
