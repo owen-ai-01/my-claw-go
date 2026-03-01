@@ -254,21 +254,45 @@ export default async function HomePage(props: HomePageProps) {
           </section>
 
 
-          <section className="mt-10 space-y-5 rounded-2xl border border-border bg-card p-8">
-            <h2 className="text-2xl font-semibold">More about My OpenClaw and hosted OpenClaw</h2>
+          <section className="mt-10 space-y-6 rounded-2xl border border-border bg-card p-8">
+            <h2 className="text-2xl font-semibold">OpenClaw highlights in My Claw Go</h2>
             <p className="text-sm leading-7 text-muted-foreground">
-              If you are searching for <strong>my openclaw</strong>, <strong>hosted openclaw</strong>, or <strong>managed openclaw</strong>,
-              My Claw Go is built for that exact need. You get a private OpenClaw experience without the operational complexity that usually
-              blocks adoption.
+              My Claw Go gives you a <strong>hosted OpenClaw</strong> experience with a clear product flow: sign up, choose a plan, and use your
+              own OpenClaw workspace instantly. This is designed for users who want <strong>OpenClaw without VPS</strong> and
+              <strong> OpenClaw without setup</strong> while still keeping a private, consistent workspace.
             </p>
-            <p className="text-sm leading-7 text-muted-foreground">
-              My Claw Go is ideal for people who want <strong>openclaw without vps</strong> and <strong>openclaw without setup</strong>.
-              You do not need to prepare infrastructure, manage server updates, or run your own machine all day.
-            </p>
-            <p className="text-sm leading-7 text-muted-foreground">
-              For users looking for <strong>openclaw for non-technical users</strong> and <strong>openclaw as a service</strong>,
-              this platform provides a practical path: sign up, choose a plan, and start using your own OpenClaw workspace immediately.
-            </p>
+
+            <div className="grid gap-4 md:grid-cols-3">
+              <article className="overflow-hidden rounded-xl border border-border bg-muted/40">
+                <img src="/blocks/charts-light.png" alt="Hosted OpenClaw dashboard" className="h-40 w-full object-cover" />
+                <div className="p-4">
+                  <h3 className="text-sm font-semibold">Hosted OpenClaw, ready after payment</h3>
+                  <p className="mt-2 text-xs leading-6 text-muted-foreground">
+                    Start with a managed OpenClaw runtime instead of provisioning servers and dependencies yourself.
+                  </p>
+                </div>
+              </article>
+
+              <article className="overflow-hidden rounded-xl border border-border bg-muted/40">
+                <img src="/blocks/mail2-light.png" alt="OpenClaw without setup" className="h-40 w-full object-cover" />
+                <div className="p-4">
+                  <h3 className="text-sm font-semibold">OpenClaw without setup complexity</h3>
+                  <p className="mt-2 text-xs leading-6 text-muted-foreground">
+                    No VPS procurement, no environment troubleshooting, and no long setup checklist before you can use OpenClaw.
+                  </p>
+                </div>
+              </article>
+
+              <article className="overflow-hidden rounded-xl border border-border bg-muted/40">
+                <img src="/blocks/payments-light.png" alt="Managed OpenClaw plans" className="h-40 w-full object-cover" />
+                <div className="p-4">
+                  <h3 className="text-sm font-semibold">OpenClaw as a service for non-technical users</h3>
+                  <p className="mt-2 text-xs leading-6 text-muted-foreground">
+                    My Claw Go is built for users who want OpenClaw outcomes, not infrastructure burden.
+                  </p>
+                </div>
+              </article>
+            </div>
           </section>
         </main>
         <CrispChat />
