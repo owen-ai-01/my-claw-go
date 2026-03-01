@@ -67,3 +67,6 @@ next-env.d.ts
 !.dev.vars.example
 
 .vercel
+
+# local runtime data
+.runtime-data/
