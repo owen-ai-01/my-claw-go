@@ -17,8 +17,9 @@ export async function generateMetadata({
   const t = await getTranslations({ locale, namespace: 'Metadata' });
 
   return constructMetadata({
-    title: t('title'),
-    description: 'My OpenClaw: get your own private OpenClaw workspace without VPS, without local setup, and without API key hassle.',
+    title: `${t('title')} | OpenClaw Start`,
+    description:
+      'My OpenClaw Start helps you launch your own private OpenClaw workspace without VPS, local setup, or API key hassle. Sign up, pay, and start fast.',
     locale,
     pathname: '/',
   });
