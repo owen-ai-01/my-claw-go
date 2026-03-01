@@ -117,15 +117,15 @@ export default async function HomePage(props: HomePageProps) {
             <p className="mb-5 inline-flex rounded-full border border-border bg-muted px-3 py-1 text-xs text-muted-foreground">
               My OpenClaw for non-technical users
             </p>
-            <h1 className="max-w-5xl text-4xl font-semibold leading-tight md:text-6xl">
+            <h1 className="mx-auto max-w-5xl text-center text-4xl font-semibold leading-tight md:text-6xl">
               Get your own My OpenClaw after signup and payment. No VPS. No always-on PC. No API key headache.
             </h1>
-            <p className="mt-5 max-w-4xl text-base text-muted-foreground md:text-lg">
+            <p className="mx-auto mt-5 max-w-4xl text-center text-base text-muted-foreground md:text-lg">
               My OpenClaw is built for people who want results, not setup friction. You do not need to learn server operations, buy
               infrastructure, or debug credentials before seeing value. You get a private workspace that feels like your own OpenClaw,
               ready to use from day one.
             </p>
-            <div className="mt-8 flex flex-wrap gap-3">
+            <div className="mt-8 flex flex-wrap justify-center gap-3">
               <a
                 href={Routes.Register}
                 className="rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
@@ -139,7 +139,7 @@ export default async function HomePage(props: HomePageProps) {
                 See Plans
               </a>
             </div>
-            <div className="mt-6 flex flex-wrap gap-2">
+            <div className="mt-6 flex flex-wrap justify-center gap-2">
               {['No VPS required', 'No local setup', 'No key management to start', 'Private workspace per user'].map((item) => (
                 <span key={item} className="rounded-full border border-border bg-muted px-3 py-1 text-xs text-muted-foreground">
                   {item}
