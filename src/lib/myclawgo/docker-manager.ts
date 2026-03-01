@@ -1,5 +1,8 @@
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import crypto from 'node:crypto';
 import type { UserSession } from './session-store';
 
 const execFileAsync = promisify(execFile);
@@ -9,6 +12,7 @@ const HOST_OPENCLAW_CONFIG =
   process.env.MYCLAWGO_SEED_CONFIG_PATH || '/home/openclaw/.openclaw/openclaw.json';
 const HOST_AUTH_PROFILES =
   process.env.MYCLAWGO_SEED_AUTH_PATH || '/home/openclaw/.openclaw/agents/main/agent/auth-profiles.json';
+const HOST_PW_DIR = process.env.MYCLAWGO_PW_DIR || '/home/openclaw/docker-openclaw-pw';
 
 function safeName(value: string) {
   return value.replace(/[^a-zA-Z0-9_.-]/g, '');
@@ -25,21 +29,50 @@ async function dockerExec(containerName: string, cmd: string) {
   return { stdout, stderr };
 }
 
+function generateStrongPassword(length = 24) {
+  const raw = crypto.randomBytes(length).toString('base64url');
+  return `${raw}A1!`;
+}
+
+async function ensureSessionPassword(containerName: string) {
+  await fs.mkdir(HOST_PW_DIR, { recursive: true });
+  const pwFile = path.join(HOST_PW_DIR, containerName);
+  try {
+    const existing = (await fs.readFile(pwFile, 'utf-8')).trim();
+    if (existing) return existing;
+  } catch {
+    // create below
+  }
+
+  const password = generateStrongPassword();
+  await fs.writeFile(pwFile, `${password}\n`, { mode: 0o600 });
+  return password;
+}
+
 async function bootstrapOpenClaw(containerName: string) {
-  // Seed default config from host template, then start gateway daemon
+  const sessionPassword = await ensureSessionPassword(containerName);
+
   const script = [
     'set -e',
-    'mkdir -p /root/.openclaw',
-    'if [ -f /seed/openclaw.json ] && [ ! -f /root/.openclaw/openclaw.json ]; then cp /seed/openclaw.json /root/.openclaw/openclaw.json; fi',
-    'mkdir -p /root/.openclaw/agents/main/agent',
-    'if [ -f /seed/auth-profiles.json ] && [ ! -f /root/.openclaw/agents/main/agent/auth-profiles.json ]; then cp /seed/auth-profiles.json /root/.openclaw/agents/main/agent/auth-profiles.json; fi',
     'export DEBIAN_FRONTEND=noninteractive',
-    'if ! command -v openclaw >/dev/null 2>&1; then apt-get update && apt-get install -y curl git ca-certificates procps less vim nano bash; fi',
-    'if ! command -v node >/dev/null 2>&1; then curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && apt-get install -y nodejs; fi',
-    'if ! command -v openclaw >/dev/null 2>&1; then npm install -g openclaw@latest; fi',
-    'openclaw models set openrouter/auto || true',
-    'openclaw gateway start || true',
+    'apt-get update',
+    'apt-get install -y sudo curl git ca-certificates procps less vim nano bash',
+    'id -u openclaw >/dev/null 2>&1 || useradd -m -s /bin/bash openclaw',
+    `echo 'openclaw:${sessionPassword}' | chpasswd`,
+    'usermod -aG sudo openclaw',
+    "echo 'openclaw ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/openclaw",
+    'chmod 0440 /etc/sudoers.d/openclaw',
+    'mkdir -p /home/openclaw/.openclaw /home/openclaw/.openclaw/agents/main/agent',
+    'chown -R openclaw:openclaw /home/openclaw/.openclaw',
+    'if [ -f /seed/openclaw.json ] && [ ! -f /home/openclaw/.openclaw/openclaw.json ]; then cp /seed/openclaw.json /home/openclaw/.openclaw/openclaw.json; fi',
+    'if [ -f /seed/auth-profiles.json ] && [ ! -f /home/openclaw/.openclaw/agents/main/agent/auth-profiles.json ]; then cp /seed/auth-profiles.json /home/openclaw/.openclaw/agents/main/agent/auth-profiles.json; fi',
+    'chown -R openclaw:openclaw /home/openclaw/.openclaw',
+    "su - openclaw -c \"if ! command -v node >/dev/null 2>&1; then curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash - && sudo apt-get install -y nodejs; fi\"",
+    "su - openclaw -c 'if ! command -v openclaw >/dev/null 2>&1; then sudo npm install -g openclaw@latest; fi'",
+    "su - openclaw -c 'openclaw models set openrouter/auto || true'",
+    "su - openclaw -c 'openclaw gateway start || true'",
   ].join('; ');
+
   await dockerExec(containerName, script);
 }
 
@@ -53,12 +86,7 @@ export async function ensureUserContainer(session: UserSession) {
     // continue and create
   }
 
-  const envs = [
-    'OPENROUTER_API_KEY',
-    'OPENAI_API_KEY',
-    'ANTHROPIC_API_KEY',
-    'GOOGLE_API_KEY',
-  ]
+  const envs = ['OPENROUTER_API_KEY', 'OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'GOOGLE_API_KEY']
     .map((k) => ({ key: k, value: process.env[k] }))
     .filter((e) => Boolean(e.value));
 
@@ -68,7 +96,7 @@ export async function ensureUserContainer(session: UserSession) {
     '--name',
     containerName,
     '-v',
-    `${session.userDataDir}:/root/.openclaw`,
+    `${session.userDataDir}:/home/openclaw/.openclaw`,
     '-v',
     `${HOST_OPENCLAW_CONFIG}:/seed/openclaw.json:ro`,
     '-v',
@@ -98,11 +126,11 @@ export async function ensureUserContainer(session: UserSession) {
 export async function runOpenClawChatInContainer(session: UserSession, message: string) {
   const containerName = safeName(session.containerName);
 
-  // Ensure container is up
   await execFileAsync('docker', ['start', containerName]).catch(() => {});
 
-  // Route message to containerized OpenClaw
-  const cmd = `openclaw agent --agent main --message ${JSON.stringify(message)} --thinking low`;
+  const cmd = `su - openclaw -c ${JSON.stringify(
+    `openclaw agent --agent main --message ${JSON.stringify(message)} --thinking low`,
+  )}`;
 
   try {
     const { stdout } = await dockerExec(containerName, cmd);
