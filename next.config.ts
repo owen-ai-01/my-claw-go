@@ -58,7 +58,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'files.urlto.video',
+        hostname: 'files.myclawgo.com',
       },
       {
         protocol: 'https',
@@ -124,8 +124,8 @@ const nextConfig: NextConfig = {
               script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://www.googletagmanager.com https://www.google-analytics.com https://static.cloudflareinsights.com https://plausible.io https://challenges.cloudflare.com https://cloud.umami.is blob:;
               frame-src 'self' https://checkout.stripe.com https://challenges.cloudflare.com;
               connect-src 'self' https://api.stripe.com https://www.google-analytics.com https://analytics.google.com https://cloudflareinsights.com https://plausible.io https://cloud.umami.is https://api-gateway.umami.dev ws:;
-              img-src 'self' data: ${r2Domains} https://replicate.delivery/ https://storage.googleapis.com https://placehold.co https://files.aiavatar.best https://files.hintergrundentfernenki.de https://files.urlto.video https://www.google-analytics.com https://www.googletagmanager.com https://lh3.googleusercontent.com;
-              media-src 'self' https://replicate.delivery/ https://files.urlto.video https://shotstack-api-stage-output.s3-ap-southeast-2.amazonaws.com https://shotstack-api-v1-output.s3-ap-southeast-2.amazonaws.com;
+              img-src 'self' data: ${r2Domains} https://replicate.delivery/ https://storage.googleapis.com https://placehold.co https://files.aiavatar.best https://files.hintergrundentfernenki.de https://files.myclawgo.com https://www.google-analytics.com https://www.googletagmanager.com https://lh3.googleusercontent.com;
+              media-src 'self' https://replicate.delivery/ https://files.myclawgo.com https://shotstack-api-stage-output.s3-ap-southeast-2.amazonaws.com https://shotstack-api-v1-output.s3-ap-southeast-2.amazonaws.com;
               style-src 'self' 'unsafe-inline';
             `.replace(/\s{2,}/g, ' '),
           },

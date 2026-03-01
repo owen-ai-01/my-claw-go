@@ -671,7 +671,7 @@ export default function VideoGenerator({ defaultMode = 'text-to-video', isStudio
                                     <Label className="text-xs text-muted-foreground block pl-1">{t('form.preview.generatedVideo')}</Label>
                                     <div className="aspect-video rounded-xl overflow-hidden border border-white/10 relative bg-black/20 shadow-lg">
                                         <video
-                                            src="https://files.urlto.video/example/url-to-video-02.mp4"
+                                            src="https://files.myclawgo.com/example/url-to-video-02.mp4"
                                             autoPlay
                                             loop
                                             muted
