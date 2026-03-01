@@ -146,7 +146,7 @@ export default async function HomePage(props: HomePageProps) {
           </section>
 
           <section className="mt-14 space-y-5 rounded-2xl border border-border bg-card p-8">
-            <h2 className="text-2xl font-semibold">What is My OpenClaw?</h2>
+            <h2 className="text-2xl font-semibold">🚀 What is My Claw Go?</h2>
             <p className="text-sm leading-7 text-muted-foreground">
               My OpenClaw is a hosted OpenClaw experience for people who want AI execution power without infrastructure complexity. In a
               traditional setup, users must choose a VPS provider, configure system packages, manage model keys, and keep services running.
@@ -163,11 +163,11 @@ export default async function HomePage(props: HomePageProps) {
           </section>
 
           <section id="features" className="mt-14">
-            <h2 className="mb-6 text-2xl font-semibold">Features</h2>
+            <h2 className="mb-6 text-2xl font-semibold">✨ Features</h2>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {features.map((f) => (
                 <article key={f.title} className="rounded-2xl border border-border bg-card p-5">
-                  <h3 className="text-base font-semibold">{f.title}</h3>
+                  <h3 className="text-base font-semibold">🔹 {f.title}</h3>
                   <p className="mt-2 text-sm leading-6 text-muted-foreground">{f.desc}</p>
                 </article>
               ))}
@@ -175,7 +175,7 @@ export default async function HomePage(props: HomePageProps) {
           </section>
 
           <section id="how-to-use" className="mt-14 space-y-6 rounded-2xl border border-border bg-card p-8">
-            <h2 className="text-2xl font-semibold">Tutorial & How It Works</h2>
+            <h2 className="text-2xl font-semibold">🧭 Tutorial & How It Works</h2>
             <p className="text-sm leading-7 text-muted-foreground">
               You can think of My OpenClaw as a practical execution workspace that is ready from the moment you subscribe. Step one is creating
               your account and selecting the right plan. Step two is opening your workspace and entering your first instruction. Step three is
@@ -205,7 +205,7 @@ export default async function HomePage(props: HomePageProps) {
           </section>
 
           <section id="choose-plan" className="mt-14 space-y-6">
-            <h2 className="text-2xl font-semibold">Choose the right plan</h2>
+            <h2 className="text-2xl font-semibold">💳 Choose the right plan</h2>
             <p className="max-w-4xl text-sm leading-7 text-muted-foreground">
               Start with Pro if you are validating your workflow. Choose Premium if you run regular weekly operations and want more headroom.
               Choose Ultra if you depend on high-volume execution and need the highest credit allowance. All plans are built around the same
@@ -215,7 +215,7 @@ export default async function HomePage(props: HomePageProps) {
           </section>
 
           <section className="mt-14 space-y-5 rounded-2xl border border-border bg-card p-8">
-            <h2 className="text-2xl font-semibold">FAQ</h2>
+            <h2 className="text-2xl font-semibold">❓ FAQ</h2>
             <div className="space-y-4">
               {faq.map((item) => (
                 <article key={item.q} className="rounded-xl border border-border bg-muted/40 p-4">
