@@ -114,9 +114,6 @@ export default async function HomePage(props: HomePageProps) {
       <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/20 text-foreground">
         <main className="mx-auto max-w-6xl px-6 py-14 md:py-20">
           <section className="rounded-3xl border border-border bg-card p-8 shadow-xl md:p-12">
-            <p className="mb-5 inline-flex rounded-full border border-border bg-muted px-3 py-1 text-xs text-muted-foreground">
-              My OpenClaw for non-technical users
-            </p>
             <h1 className="mx-auto max-w-5xl text-center text-4xl font-semibold leading-tight md:text-6xl">
               Get your own My OpenClaw after signup and payment. No VPS. No always-on PC. No API key headache.
             </h1>
