@@ -148,7 +148,7 @@ export default async function HomePage(props: HomePageProps) {
           <section className="mt-14 space-y-5 rounded-2xl border border-border bg-card p-8">
             <h2 className="text-2xl font-semibold">🚀 What is My Claw Go?</h2>
             <p className="text-sm leading-7 text-muted-foreground">
-              My OpenClaw is a hosted OpenClaw experience for people who want AI execution power without infrastructure complexity. In a
+              My Claw Go is a hosted OpenClaw experience for people who want AI execution power without infrastructure complexity. In a
               traditional setup, users must choose a VPS provider, configure system packages, manage model keys, and keep services running.
               That path works for technical users but blocks most real operators who just want to ship outcomes. My OpenClaw removes that
               friction. Instead of spending days on setup, users can focus on actual tasks: generating outputs, running workflows, and
@@ -156,7 +156,7 @@ export default async function HomePage(props: HomePageProps) {
             </p>
             <p className="text-sm leading-7 text-muted-foreground">
               The core promise is simple: your own workspace, your own context, your own continuity. When you come back, your state is still
-              there. You are not sharing a generic chatbot session. You are working inside your own My OpenClaw environment. That means your
+              there. You are not sharing a generic chatbot session. You are working inside your own My Claw Go environment. That means your
               prompts, process, and knowledge can evolve over time, and your productivity compounds. This is especially important for founders,
               marketers, and operators who run recurring systems and need consistency, not one-off answers.
             </p>
