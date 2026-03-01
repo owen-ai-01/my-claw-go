@@ -5,20 +5,43 @@ import type { UserSession } from './session-store';
 const execFileAsync = promisify(execFile);
 
 const OPENCLAW_IMAGE = process.env.MYCLAWGO_OPENCLAW_IMAGE || 'openclaw/openclaw:latest';
+const HOST_OPENCLAW_CONFIG =
+  process.env.MYCLAWGO_SEED_CONFIG_PATH || '/home/openclaw/.openclaw/openclaw.json';
 
 function safeName(value: string) {
   return value.replace(/[^a-zA-Z0-9_.-]/g, '');
 }
 
+async function dockerExec(containerName: string, cmd: string) {
+  const { stdout, stderr } = await execFileAsync('docker', [
+    'exec',
+    containerName,
+    'sh',
+    '-lc',
+    cmd,
+  ]);
+  return { stdout, stderr };
+}
+
+async function bootstrapOpenClaw(containerName: string) {
+  // Seed default config from host template, then start gateway daemon
+  const script = [
+    'set -e',
+    'mkdir -p /home/openclaw/.openclaw',
+    'if [ -f /seed/openclaw.json ] && [ ! -f /home/openclaw/.openclaw/openclaw.json ]; then cp /seed/openclaw.json /home/openclaw/.openclaw/openclaw.json; fi',
+    'if command -v openclaw >/dev/null 2>&1; then openclaw gateway start || true; fi',
+  ].join('; ');
+  await dockerExec(containerName, script);
+}
+
 export async function ensureUserContainer(session: UserSession) {
   const containerName = safeName(session.containerName);
 
-  // If already exists, just start it.
   try {
     await execFileAsync('docker', ['start', containerName]);
     return { ok: true as const, mode: 'started-existing' as const };
   } catch {
-    // continue
+    // continue and create
   }
 
   const envs = [
@@ -37,6 +60,8 @@ export async function ensureUserContainer(session: UserSession) {
     containerName,
     '-v',
     `${session.userDataDir}:/home/openclaw/.openclaw`,
+    '-v',
+    `${HOST_OPENCLAW_CONFIG}:/seed/openclaw.json:ro`,
     '-w',
     '/home/openclaw',
   ];
@@ -45,16 +70,37 @@ export async function ensureUserContainer(session: UserSession) {
     args.push('-e', `${env.key}=${env.value}`);
   }
 
-  // keep container alive for now; actual OpenClaw bootstrapping happens after creation
   args.push(OPENCLAW_IMAGE, 'sh', '-c', 'sleep infinity');
 
   try {
     await execFileAsync('docker', args);
+    await bootstrapOpenClaw(containerName);
     return { ok: true as const, mode: 'created' as const };
   } catch (error: unknown) {
     return {
       ok: false as const,
       error: error instanceof Error ? error.message : 'Unknown docker error',
+    };
+  }
+}
+
+export async function runOpenClawChatInContainer(session: UserSession, message: string) {
+  const containerName = safeName(session.containerName);
+
+  // Ensure container is up
+  await execFileAsync('docker', ['start', containerName]).catch(() => {});
+
+  // Route message to containerized OpenClaw
+  const cmd = `openclaw agent --message ${JSON.stringify(message)} --thinking low`;
+
+  try {
+    const { stdout } = await dockerExec(containerName, cmd);
+    const reply = stdout.trim() || 'OpenClaw returned empty output.';
+    return { ok: true as const, reply };
+  } catch (error: unknown) {
+    return {
+      ok: false as const,
+      error: error instanceof Error ? error.message : 'Failed to execute containerized OpenClaw',
     };
   }
 }

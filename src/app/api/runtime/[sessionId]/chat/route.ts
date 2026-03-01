@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getSession, touchSession } from '@/lib/myclawgo/session-store';
+import { runOpenClawChatInContainer } from '@/lib/myclawgo/docker-manager';
 
 export async function POST(
   req: Request,
@@ -20,11 +21,14 @@ export async function POST(
 
   await touchSession(sessionId);
 
-  // Placeholder for real OpenClaw-in-container call
+  const result = await runOpenClawChatInContainer(session, message);
+  if (!result.ok) {
+    return NextResponse.json({ ok: false, error: result.error }, { status: 500 });
+  }
+
   return NextResponse.json({
     ok: true,
-    reply: `✅ Runtime is ready for session ${sessionId}. You said: ${message}`,
+    reply: result.reply,
     credits: session.credits,
-    note: 'Next step: wire this route to per-user containerized OpenClaw agent RPC.',
   });
 }
