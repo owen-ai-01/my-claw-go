@@ -191,15 +191,15 @@ export default async function HomePage(props: HomePageProps) {
             </p>
             <div className="grid gap-4 md:grid-cols-3">
               <figure className="overflow-hidden rounded-xl border border-border bg-muted">
-                <img src="/hero_background_1771074066381.png" alt="My OpenClaw onboarding" className="h-44 w-full object-cover" />
+                <img src="/blocks/mail2-light.png" alt="My Claw Go onboarding" className="h-44 w-full object-cover" />
                 <figcaption className="p-3 text-xs text-muted-foreground">Step 1: Start with a clear task in plain language</figcaption>
               </figure>
               <figure className="overflow-hidden rounded-xl border border-border bg-muted">
-                <img src="/hero_background_1771074066381.png" alt="My OpenClaw execution" className="h-44 w-full object-cover" />
+                <img src="/blocks/charts-light.png" alt="My Claw Go execution" className="h-44 w-full object-cover" />
                 <figcaption className="p-3 text-xs text-muted-foreground">Step 2: Execute inside your private My OpenClaw workspace</figcaption>
               </figure>
               <figure className="overflow-hidden rounded-xl border border-border bg-muted">
-                <img src="/hero_background_1771074066381.png" alt="My OpenClaw scaling" className="h-44 w-full object-cover" />
+                <img src="/blocks/payments-light.png" alt="My Claw Go scaling" className="h-44 w-full object-cover" />
                 <figcaption className="p-3 text-xs text-muted-foreground">Step 3: Scale with plans that match your usage</figcaption>
               </figure>
             </div>
