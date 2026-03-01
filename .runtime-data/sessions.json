@@ -1,0 +1,56 @@
+{
+  "5d25e4b47959": {
+    "id": "5d25e4b47959",
+    "initialPrompt": "hello world",
+    "credits": 100,
+    "containerName": "myclawgo-5d25e4b47959",
+    "userDataDir": "/home/openclaw/project/my-claw-go/.runtime-data/users/5d25e4b47959",
+    "createdAt": "2026-03-01T06:34:38.887Z",
+    "lastActiveAt": "2026-03-01T06:34:38.887Z"
+  },
+  "0b054463a1a4": {
+    "id": "0b054463a1a4",
+    "initialPrompt": "这里帮我分析一下对应的openclaw怎么赚钱",
+    "credits": 100,
+    "containerName": "myclawgo-0b054463a1a4",
+    "userDataDir": "/home/openclaw/project/my-claw-go/.runtime-data/users/0b054463a1a4",
+    "createdAt": "2026-03-01T06:40:37.563Z",
+    "lastActiveAt": "2026-03-01T06:40:37.563Z"
+  },
+  "d5f4b5f01873": {
+    "id": "d5f4b5f01873",
+    "initialPrompt": "test routing",
+    "credits": 100,
+    "containerName": "myclawgo-d5f4b5f01873",
+    "userDataDir": "/home/openclaw/project/my-claw-go/.runtime-data/users/d5f4b5f01873",
+    "createdAt": "2026-03-01T06:41:59.747Z",
+    "lastActiveAt": "2026-03-01T06:41:59.747Z"
+  },
+  "b5d04db398f1": {
+    "id": "b5d04db398f1",
+    "initialPrompt": "test routing",
+    "credits": 100,
+    "containerName": "myclawgo-b5d04db398f1",
+    "userDataDir": "/home/openclaw/project/my-claw-go/.runtime-data/users/b5d04db398f1",
+    "createdAt": "2026-03-01T06:42:06.077Z",
+    "lastActiveAt": "2026-03-01T06:42:06.077Z"
+  },
+  "dade68af98bb": {
+    "id": "dade68af98bb",
+    "initialPrompt": "route test 2",
+    "credits": 100,
+    "containerName": "myclawgo-dade68af98bb",
+    "userDataDir": "/home/openclaw/project/my-claw-go/.runtime-data/users/dade68af98bb",
+    "createdAt": "2026-03-01T06:42:55.715Z",
+    "lastActiveAt": "2026-03-01T06:42:55.715Z"
+  },
+  "96426f8d2e26": {
+    "id": "96426f8d2e26",
+    "initialPrompt": "route final",
+    "credits": 100,
+    "containerName": "myclawgo-96426f8d2e26",
+    "userDataDir": "/home/openclaw/project/my-claw-go/.runtime-data/users/96426f8d2e26",
+    "createdAt": "2026-03-01T06:44:06.459Z",
+    "lastActiveAt": "2026-03-01T06:44:06.459Z"
+  }
+}

@@ -17,7 +17,6 @@ export async function POST(req: Request) {
     return NextResponse.json({
       ok: true,
       sessionId: session.id,
-      redirectTo: `/${session.id}/bot`,
       credits: session.credits,
       runtime: container,
     });

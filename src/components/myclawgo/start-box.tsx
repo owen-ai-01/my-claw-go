@@ -2,6 +2,13 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useLocale } from 'next-intl';
+
+function buildBotPath(locale: string, sessionId: string) {
+  // default locale in this project is usually "de" and may be unprefixed
+  if (!locale || locale === 'de') return `/${sessionId}/bot`;
+  return `/${locale}/${sessionId}/bot`;
+}
 
 export function StartBox({
   placeholder,
@@ -13,6 +20,7 @@ export function StartBox({
   const [prompt, setPrompt] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const locale = useLocale();
 
   const onSubmit = async () => {
     const value = prompt.trim();
@@ -26,8 +34,8 @@ export function StartBox({
         body: JSON.stringify({ prompt: value }),
       });
       const data = await res.json();
-      if (data?.ok && data?.redirectTo) {
-        router.push(data.redirectTo);
+      if (data?.ok && data?.sessionId) {
+        router.push(buildBotPath(locale, data.sessionId));
         return;
       }
       alert(data?.error || 'Failed to create runtime session');
