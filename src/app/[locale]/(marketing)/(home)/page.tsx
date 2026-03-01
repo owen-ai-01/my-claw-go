@@ -218,7 +218,7 @@ export default async function HomePage(props: HomePageProps) {
             <p className="max-w-4xl text-sm leading-7 text-muted-foreground">
               Start with Pro if you are validating your workflow. Choose Premium if you run regular weekly operations and want more headroom.
               Choose Ultra if you depend on high-volume execution and need the highest credit allowance. All plans are built around the same
-              principle: your private My OpenClaw workspace, ready without infrastructure setup.
+              principle: your private My Claw Go workspace, ready without infrastructure setup.
             </p>
             <PricingTable />
           </section>
