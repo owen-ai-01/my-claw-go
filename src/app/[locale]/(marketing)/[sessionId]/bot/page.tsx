@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 
 function normalizeError(raw: string) {
   if (!raw) return 'Request failed. Please retry.';
@@ -14,6 +14,8 @@ function normalizeError(raw: string) {
 export default function BotPage() {
   const params = useParams<{ sessionId: string }>();
   const sessionId = params.sessionId;
+  const searchParams = useSearchParams();
+  const lowCredits = searchParams.get('lowCredits') === '1';
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Array<{ role: 'user' | 'bot'; text: string }>>([]);
   const [loading, setLoading] = useState(false);
@@ -62,6 +64,13 @@ export default function BotPage() {
       <div className="mx-auto max-w-4xl p-6">
         <h1 className="text-2xl font-semibold">MyClawGo Bot Workspace</h1>
         <p className="mt-2 text-sm text-slate-300">Session ID: {sessionId} · isolated docker runtime initialized.</p>
+
+
+        {lowCredits && (
+          <div className="mt-4 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-200">
+            Credits are insufficient. Please recharge credits to continue running tasks.
+          </div>
+        )}
 
         <div className="mt-6 space-y-3 rounded-xl border border-white/10 bg-slate-900/60 p-4">
           {messages.length === 0 ? (

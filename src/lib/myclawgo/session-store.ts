@@ -58,6 +58,31 @@ export async function createSession(initialPrompt: string) {
   return session;
 }
 
+export async function ensureSessionById(id: string, initialPrompt = 'user-start') {
+  const sessions = await readAll();
+  if (sessions[id]) {
+    sessions[id].lastActiveAt = new Date().toISOString();
+    await writeAll(sessions);
+    return sessions[id];
+  }
+
+  const userDataDir = path.join(BASE_DIR, 'users', id);
+  const now = new Date().toISOString();
+  const session: UserSession = {
+    id,
+    initialPrompt,
+    credits: 0,
+    containerName: `myclawgo-${id}`,
+    userDataDir,
+    createdAt: now,
+    lastActiveAt: now,
+  };
+  sessions[id] = session;
+  await fs.mkdir(userDataDir, { recursive: true });
+  await writeAll(sessions);
+  return session;
+}
+
 export async function getSession(id: string) {
   const sessions = await readAll();
   return sessions[id] || null;

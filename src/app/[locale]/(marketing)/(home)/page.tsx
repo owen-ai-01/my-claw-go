@@ -3,7 +3,7 @@ import { JsonLd } from '@/components/seo/json-ld';
 import { PricingTable } from '@/components/pricing/pricing-table';
 import { constructMetadata } from '@/lib/metadata';
 import { getBaseUrl } from '@/lib/urls/urls';
-import { Routes } from '@/routes';
+import { StartMyOpenClawButton } from '@/components/myclawgo/start-my-openclaw-button';
 import type { Metadata } from 'next';
 import type { Locale } from 'next-intl';
 import { getTranslations } from 'next-intl/server';
@@ -129,12 +129,7 @@ export default async function HomePage(props: HomePageProps) {
               ready to use from day one.
             </p>
             <div className="mt-8 flex flex-wrap justify-center gap-3">
-              <a
-                href={Routes.Register}
-                className="rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
-              >
-                Start My OpenClaw
-              </a>
+              <StartMyOpenClawButton />
               <a
                 href="#choose-plan"
                 className="rounded-xl border border-border px-6 py-3 text-sm font-semibold text-foreground transition hover:bg-muted"
