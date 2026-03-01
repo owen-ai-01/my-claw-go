@@ -4,9 +4,11 @@ import type { UserSession } from './session-store';
 
 const execFileAsync = promisify(execFile);
 
-const OPENCLAW_IMAGE = process.env.MYCLAWGO_OPENCLAW_IMAGE || 'openclaw/openclaw:latest';
+const OPENCLAW_IMAGE = process.env.MYCLAWGO_OPENCLAW_IMAGE || 'node:22-bookworm-slim';
 const HOST_OPENCLAW_CONFIG =
   process.env.MYCLAWGO_SEED_CONFIG_PATH || '/home/openclaw/.openclaw/openclaw.json';
+const HOST_AUTH_PROFILES =
+  process.env.MYCLAWGO_SEED_AUTH_PATH || '/home/openclaw/.openclaw/agents/main/agent/auth-profiles.json';
 
 function safeName(value: string) {
   return value.replace(/[^a-zA-Z0-9_.-]/g, '');
@@ -29,7 +31,11 @@ async function bootstrapOpenClaw(containerName: string) {
     'set -e',
     'mkdir -p /home/openclaw/.openclaw',
     'if [ -f /seed/openclaw.json ] && [ ! -f /home/openclaw/.openclaw/openclaw.json ]; then cp /seed/openclaw.json /home/openclaw/.openclaw/openclaw.json; fi',
-    'if command -v openclaw >/dev/null 2>&1; then openclaw gateway start || true; fi',
+    'mkdir -p /home/openclaw/.openclaw/agents/main/agent',
+    'if [ -f /seed/auth-profiles.json ] && [ ! -f /home/openclaw/.openclaw/agents/main/agent/auth-profiles.json ]; then cp /seed/auth-profiles.json /home/openclaw/.openclaw/agents/main/agent/auth-profiles.json; fi',
+    'if ! command -v git >/dev/null 2>&1; then apt-get update && apt-get install -y git ca-certificates; fi',
+    'if ! command -v openclaw >/dev/null 2>&1; then npm install -g openclaw@latest; fi',
+    'openclaw gateway start || true',
   ].join('; ');
   await dockerExec(containerName, script);
 }
@@ -62,6 +68,8 @@ export async function ensureUserContainer(session: UserSession) {
     `${session.userDataDir}:/home/openclaw/.openclaw`,
     '-v',
     `${HOST_OPENCLAW_CONFIG}:/seed/openclaw.json:ro`,
+    '-v',
+    `${HOST_AUTH_PROFILES}:/seed/auth-profiles.json:ro`,
     '-w',
     '/home/openclaw',
   ];
@@ -91,7 +99,7 @@ export async function runOpenClawChatInContainer(session: UserSession, message: 
   await execFileAsync('docker', ['start', containerName]).catch(() => {});
 
   // Route message to containerized OpenClaw
-  const cmd = `openclaw agent --message ${JSON.stringify(message)} --thinking low`;
+  const cmd = `openclaw agent --agent main --message ${JSON.stringify(message)} --thinking low`;
 
   try {
     const { stdout } = await dockerExec(containerName, cmd);
