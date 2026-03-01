@@ -31,26 +31,32 @@ interface HomePageProps {
 
 const features = [
   {
+    icon: '🔐',
     title: 'Your own private My OpenClaw workspace',
     desc: 'Every account gets a private runtime and private memory so your workflows, prompts, and context stay yours.',
   },
   {
+    icon: '🧩',
     title: 'No VPS, no server setup, no terminal stress',
     desc: 'You do not need to rent and configure infrastructure. We run the system for you so you can focus on outcomes.',
   },
   {
+    icon: '⚡',
     title: 'No API key maze for non-technical users',
     desc: 'Start with managed defaults. You can upgrade and customize later, but you can begin immediately.',
   },
   {
+    icon: '💬',
     title: 'Natural language control',
     desc: 'Type in plain language and run real actions inside your own environment, just like operating your own OpenClaw instance.',
   },
   {
+    icon: '🧠',
     title: 'Persistent memory and continuity',
     desc: 'Your workspace remembers progress, context, and files, so sessions become more useful over time.',
   },
   {
+    icon: '📈',
     title: 'Built for creators, operators, and founders',
     desc: 'Use My OpenClaw for growth operations, product execution, marketing systems, and daily decision support.',
   },
@@ -167,7 +173,7 @@ export default async function HomePage(props: HomePageProps) {
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {features.map((f) => (
                 <article key={f.title} className="rounded-2xl border border-border bg-card p-5">
-                  <h3 className="text-base font-semibold">🔹 {f.title}</h3>
+                  <h3 className="text-base font-semibold">{f.icon} {f.title}</h3>
                   <p className="mt-2 text-sm leading-6 text-muted-foreground">{f.desc}</p>
                 </article>
               ))}
