@@ -19,8 +19,8 @@ export const websiteConfig: WebsiteConfig = {
   metadata: {
     images: {
       ogImage: '/og.png',
-      logoLight: '/logo.png',
-      logoDark: '/logo-dark.png',
+      logoLight: '/myclawgo-logo.svg',
+      logoDark: '/myclawgo-logo.svg',
     },
     social: {
       github: '',
