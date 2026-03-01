@@ -102,6 +102,41 @@ export function usePricePlans(): Record<string, PricePlan> {
     };
   }
 
+  if (priceConfig.plans.ultra_monthly) {
+    plans.ultra_monthly = {
+      ...priceConfig.plans.ultra_monthly,
+      name: t('ultra_monthly.name'),
+      description: t('ultra_monthly.description'),
+      features: [
+        t('ultra_monthly.features.feature-1'),
+        t('ultra_monthly.features.feature-2'),
+        t('ultra_monthly.features.feature-3'),
+        t('ultra_monthly.features.feature-4'),
+        t('ultra_monthly.features.feature-5'),
+        t('ultra_monthly.features.feature-6'),
+      ],
+      limits: [],
+    };
+  }
+
+  if (priceConfig.plans.ultra_yearly) {
+    plans.ultra_yearly = {
+      ...priceConfig.plans.ultra_yearly,
+      name: t('ultra_yearly.name'),
+      description: t('ultra_yearly.description'),
+      features: [
+        t('ultra_yearly.features.feature-1'),
+        t('ultra_yearly.features.feature-2'),
+        t('ultra_yearly.features.feature-3'),
+        t('ultra_yearly.features.feature-4'),
+        t('ultra_yearly.features.feature-5'),
+        t('ultra_yearly.features.feature-6'),
+      ],
+      limits: [],
+    };
+  }
+
+
   if (priceConfig.plans.lifetime) {
     plans.lifetime = {
       ...priceConfig.plans.lifetime,

@@ -11,7 +11,6 @@ import {
 } from '@/payment/types';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
-import { CreditPricingCard } from './credit-pricing-card';
 import { PricingCard } from './pricing-card';
 
 interface PricingTableProps {
@@ -117,16 +116,13 @@ export function PricingTable({
           'grid gap-6',
           // Universal solution that handles any number of cards
           // We are adding one card (credit card), so total visible + 1
-          totalVisiblePlans + 1 === 1 && 'grid-cols-1 max-w-md mx-auto w-full',
-          totalVisiblePlans + 1 === 2 &&
+          totalVisiblePlans === 1 && 'grid-cols-1 max-w-md mx-auto w-full',
+          totalVisiblePlans === 2 &&
           'grid-cols-1 md:grid-cols-2 max-w-2xl mx-auto w-full',
-          totalVisiblePlans + 1 >= 3 &&
+          totalVisiblePlans >= 3 &&
           'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
         )}
       >
-        {/* Render Credit Pricing Card (Pay as you go) - Always first */}
-        <CreditPricingCard />
-
         {/* Render subscription plans for selected interval */}
         {subscriptionPlans.map((plan) => (
           <PricingCard

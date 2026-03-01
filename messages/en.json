@@ -1262,6 +1262,30 @@
         "feature-5": "VIP Support 24/7",
         "feature-6": "Credits valid for 1 year"
       }
+    },
+    "ultra_monthly": {
+      "name": "Ultra",
+      "description": "For power users and teams that need high monthly credits and priority performance.",
+      "features": {
+        "feature-1": "40,000 credits / month",
+        "feature-2": "Your own private OpenClaw workspace",
+        "feature-3": "No VPS or key setup needed",
+        "feature-4": "Faster queue priority",
+        "feature-5": "Advanced runtime operations",
+        "feature-6": "Priority support"
+      }
+    },
+    "ultra_yearly": {
+      "name": "Ultra",
+      "description": "Annual Ultra plan with 20% savings and highest monthly credits.",
+      "features": {
+        "feature-1": "480,000 credits / year",
+        "feature-2": "Your own private OpenClaw workspace",
+        "feature-3": "No VPS or key setup needed",
+        "feature-4": "Faster queue priority",
+        "feature-5": "Advanced runtime operations",
+        "feature-6": "Priority support"
+      }
     }
   },
   "TextToVideoPage": {
