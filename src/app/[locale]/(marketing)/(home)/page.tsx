@@ -32,18 +32,18 @@ export default async function HomePage(props: HomePageProps) {
   const isZh = locale.startsWith('zh');
 
   const content = {
-    badge: isZh ? 'OpenClaw 私有部署平台' : 'Private OpenClaw Runtime Platform',
+    badge: isZh ? '你的专属 OpenClaw 服务' : 'Your Personal OpenClaw Service',
     title: isZh
-      ? '给每位付费用户一台独立 Docker OpenClaw'
-      : 'One Dedicated Docker OpenClaw Runtime Per Paying User',
+      ? '注册并支付后，直接拥有你自己的 OpenClaw'
+      : 'Get Your Own OpenClaw Right After Signup and Payment',
     subtitle: isZh
-      ? '参考高转化 AI Agent 产品首页结构，聚焦“输入任务 → 后台执行 → 回传结果”。每个用户独立环境，更安全、更可控。'
-      : 'Inspired by modern AI agent landing structures: task in, autonomous run, output back. Each user gets an isolated runtime for better control and security.',
-    inputPlaceholder: isZh ? '描述你要执行的任务…' : 'Describe what you want your OpenClaw worker to do…',
-    cta: isZh ? '开始执行' : 'Run Task',
+      ? '不需要买 VPS，不需要自己的电脑 24 小时开机，不需要配置 API Key。你只管输入任务，其余都由 MyClawGo 托管完成。'
+      : 'No VPS to buy. No personal computer running 24/7. No API keys to configure. Just type your tasks and MyClawGo handles the rest for you.',
+    inputPlaceholder: isZh ? '直接输入你的任务，马上开始…' : 'Type your task and start instantly…',
+    cta: isZh ? '立即开始我的 OpenClaw' : 'Start My OpenClaw',
     trust: isZh
-      ? ['独立 Docker 隔离', '按用户计费与配额', '可观测任务日志']
-      : ['Isolated Docker runtime', 'Usage-based billing & quota', 'Observable task logs'],
+      ? ['无需技术配置', '注册支付后即开即用', '每位用户独立数据空间']
+      : ['No technical setup required', 'Ready right after signup & payment', 'Private workspace for every user'],
     sections: {
       howTitle: isZh ? '它如何工作' : 'How It Works',
       steps: isZh
