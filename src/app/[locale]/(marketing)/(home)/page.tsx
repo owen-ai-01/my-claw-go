@@ -1,11 +1,12 @@
 import CrispChat from '@/components/layout/crisp-chat';
 import { JsonLd } from '@/components/seo/json-ld';
+import { PricingTable } from '@/components/pricing/pricing-table';
 import { constructMetadata } from '@/lib/metadata';
 import { getBaseUrl } from '@/lib/urls/urls';
+import { Routes } from '@/routes';
 import type { Metadata } from 'next';
 import type { Locale } from 'next-intl';
 import { getTranslations } from 'next-intl/server';
-import { StartBox } from '@/components/myclawgo/start-box';
 
 export async function generateMetadata({
   params,
@@ -17,7 +18,7 @@ export async function generateMetadata({
 
   return constructMetadata({
     title: t('title'),
-    description: t('description'),
+    description: 'My OpenClaw: get your own private OpenClaw workspace without VPS, without local setup, and without API key hassle.',
     locale,
     pathname: '/',
   });
@@ -27,126 +28,204 @@ interface HomePageProps {
   params: Promise<{ locale: Locale }>;
 }
 
-export default async function HomePage(props: HomePageProps) {
-  const { locale } = await props.params;
-  const isZh = locale.startsWith('zh');
+const features = [
+  {
+    title: 'Your own private My OpenClaw workspace',
+    desc: 'Every account gets a private runtime and private memory so your workflows, prompts, and context stay yours.',
+  },
+  {
+    title: 'No VPS, no server setup, no terminal stress',
+    desc: 'You do not need to rent and configure infrastructure. We run the system for you so you can focus on outcomes.',
+  },
+  {
+    title: 'No API key maze for non-technical users',
+    desc: 'Start with managed defaults. You can upgrade and customize later, but you can begin immediately.',
+  },
+  {
+    title: 'Natural language control',
+    desc: 'Type in plain language and run real actions inside your own environment, just like operating your own OpenClaw instance.',
+  },
+  {
+    title: 'Persistent memory and continuity',
+    desc: 'Your workspace remembers progress, context, and files, so sessions become more useful over time.',
+  },
+  {
+    title: 'Built for creators, operators, and founders',
+    desc: 'Use My OpenClaw for growth operations, product execution, marketing systems, and daily decision support.',
+  },
+];
 
-  const content = {
-    badge: isZh ? '你的专属 OpenClaw 服务' : 'Your Personal OpenClaw Service',
-    title: isZh
-      ? '注册并支付后，直接拥有你自己的 OpenClaw'
-      : 'Get Your Own OpenClaw Right After Signup and Payment',
-    subtitle: isZh
-      ? '不需要买 VPS，不需要自己的电脑 24 小时开机，不需要配置 API Key。你只管输入任务，其余都由 MyClawGo 托管完成。'
-      : 'No VPS to buy. No personal computer running 24/7. No API keys to configure. Just type your tasks and MyClawGo handles the rest for you.',
-    inputPlaceholder: isZh ? '直接输入你的任务，马上开始…' : 'Type your task and start instantly…',
-    cta: isZh ? '立即开始我的 OpenClaw' : 'Start My OpenClaw',
-    trust: isZh
-      ? ['无需技术配置', '注册支付后即开即用', '每位用户独立数据空间']
-      : ['No technical setup required', 'Ready right after signup & payment', 'Private workspace for every user'],
-    sections: {
-      howTitle: isZh ? '它如何工作' : 'How It Works',
-      steps: isZh
-        ? [
-            ['1. 用户输入任务', '在前台输入需求，平台自动生成执行计划。'],
-            ['2. 分配独立容器', '为该用户启动（或复用）独立 OpenClaw Docker 环境。'],
-            ['3. 执行并回传', '执行工具链流程并回传结果、日志与产出文件。'],
-          ]
-        : [
-            ['1. User submits a task', 'A frontend prompt is converted into an execution plan.'],
-            ['2. Isolated container allocation', 'A dedicated OpenClaw Docker runtime is assigned per user.'],
-            ['3. Execute and return outputs', 'Results, logs, and generated assets are returned to the user.'],
-          ],
-      whyTitle: isZh ? '为什么是独立容器架构' : 'Why Per-User Isolated Runtime',
-      why: isZh
-        ? [
-            ['安全隔离', '不同用户任务、凭据与上下文互不影响。'],
-            ['稳定可扩展', '容器可按需扩缩容，适配增长流量。'],
-            ['商业化清晰', '按用户/任务计费与资源配额天然匹配。'],
-          ]
-        : [
-            ['Security isolation', 'User contexts, credentials, and tasks stay separated.'],
-            ['Scalable operations', 'Container-based scheduling scales with traffic.'],
-            ['Monetization-ready', 'Natural fit for per-user or per-task billing models.'],
-          ],
-      roadmapTitle: isZh ? '上线路线图（MVP）' : 'MVP Roadmap',
-      roadmap: isZh
-        ? ['前台任务输入页', '用户级 Docker 调度', '任务状态与日志面板', '付费与配额系统']
-        : ['Task input frontend', 'Per-user Docker orchestrator', 'Execution status & logs panel', 'Billing and quota system'],
-    },
-  };
+const faq = [
+  {
+    q: 'Do I need to buy a VPS first?',
+    a: 'No. My OpenClaw is designed for users who do not want to buy and configure servers. Sign up, choose a plan, and start using your private workspace directly.',
+  },
+  {
+    q: 'Do I need my own computer running 24/7?',
+    a: 'No. Your runtime is hosted for you. You can open the product from anywhere and continue where you left off.',
+  },
+  {
+    q: 'Do I need to configure API keys before getting value?',
+    a: 'No. Managed defaults help you start quickly. Advanced users can still bring custom model settings later.',
+  },
+  {
+    q: 'Is my workspace shared with other users?',
+    a: 'No. Your My OpenClaw runtime is isolated per user account. Your data, memory, and operations stay private to your workspace.',
+  },
+  {
+    q: 'Can I upgrade from Pro to Premium or Ultra later?',
+    a: 'Yes. You can upgrade as your usage grows. The goal is to let you start lean and scale without migration pain.',
+  },
+  {
+    q: 'Who is this product best for?',
+    a: 'My OpenClaw is best for non-technical and semi-technical founders, creators, and operators who want AI automation without infrastructure burden.',
+  },
+];
+
+export default async function HomePage(props: HomePageProps) {
+  await props.params;
 
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'SoftwareApplication',
     name: 'My Claw Go',
-    description: content.subtitle,
+    description:
+      'My OpenClaw gives every paying user a private OpenClaw workspace without VPS or complex setup.',
     applicationCategory: 'BusinessApplication',
     operatingSystem: 'Any',
     offers: {
       '@type': 'Offer',
-      price: '0',
+      price: '19.9',
       priceCurrency: 'USD',
     },
-    featureList: ['Per-user Docker runtime', 'OpenClaw orchestration', 'Task execution logs'],
+    featureList: [
+      'Private My OpenClaw workspace',
+      'No VPS setup required',
+      'No local computer always-on requirement',
+      'Managed model setup for non-technical users',
+    ],
     screenshot: `${getBaseUrl()}/hero_background_1771074066381.png`,
   };
 
   return (
     <>
       <JsonLd data={jsonLd} />
-      <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white">
+      <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/20 text-foreground">
         <main className="mx-auto max-w-6xl px-6 py-14 md:py-20">
-          <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-8 shadow-2xl md:p-12">
-            <p className="mb-5 inline-flex rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs text-slate-200">
-              {content.badge}
+          <section className="rounded-3xl border border-border bg-card p-8 shadow-xl md:p-12">
+            <p className="mb-5 inline-flex rounded-full border border-border bg-muted px-3 py-1 text-xs text-muted-foreground">
+              My OpenClaw for non-technical users
             </p>
-            <h1 className="max-w-4xl text-4xl font-semibold leading-tight md:text-6xl">{content.title}</h1>
-            <p className="mt-5 max-w-3xl text-base text-slate-300 md:text-lg">{content.subtitle}</p>
-
-            <StartBox placeholder={content.inputPlaceholder} button={content.cta} />
-
+            <h1 className="max-w-5xl text-4xl font-semibold leading-tight md:text-6xl">
+              Get your own My OpenClaw after signup and payment. No VPS. No always-on PC. No API key headache.
+            </h1>
+            <p className="mt-5 max-w-4xl text-base text-muted-foreground md:text-lg">
+              My OpenClaw is built for people who want results, not setup friction. You do not need to learn server operations, buy
+              infrastructure, or debug credentials before seeing value. You get a private workspace that feels like your own OpenClaw,
+              ready to use from day one.
+            </p>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <a
+                href={Routes.Register}
+                className="rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
+              >
+                Start My OpenClaw
+              </a>
+              <a
+                href="#choose-plan"
+                className="rounded-xl border border-border px-6 py-3 text-sm font-semibold text-foreground transition hover:bg-muted"
+              >
+                See Plans
+              </a>
+            </div>
             <div className="mt-6 flex flex-wrap gap-2">
-              {content.trust.map((item) => (
-                <span
-                  key={item}
-                  className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-300"
-                >
+              {['No VPS required', 'No local setup', 'No key management to start', 'Private workspace per user'].map((item) => (
+                <span key={item} className="rounded-full border border-border bg-muted px-3 py-1 text-xs text-muted-foreground">
                   {item}
                 </span>
               ))}
             </div>
           </section>
 
-          <section className="mt-14 grid gap-6 md:grid-cols-3">
-            <h2 className="md:col-span-3 text-2xl font-semibold">{content.sections.howTitle}</h2>
-            {content.sections.steps.map(([title, desc]) => (
-              <article key={title} className="rounded-2xl border border-white/10 bg-white/[0.03] p-6">
-                <h3 className="text-lg font-medium">{title}</h3>
-                <p className="mt-3 text-sm text-slate-300">{desc}</p>
-              </article>
-            ))}
+          <section className="mt-14 space-y-5 rounded-2xl border border-border bg-card p-8">
+            <h2 className="text-2xl font-semibold">What is My OpenClaw?</h2>
+            <p className="text-sm leading-7 text-muted-foreground">
+              My OpenClaw is a hosted OpenClaw experience for people who want AI execution power without infrastructure complexity. In a
+              traditional setup, users must choose a VPS provider, configure system packages, manage model keys, and keep services running.
+              That path works for technical users but blocks most real operators who just want to ship outcomes. My OpenClaw removes that
+              friction. Instead of spending days on setup, users can focus on actual tasks: generating outputs, running workflows, and
+              building repeatable operations. This product exists to bridge that gap between capability and usability.
+            </p>
+            <p className="text-sm leading-7 text-muted-foreground">
+              The core promise is simple: your own workspace, your own context, your own continuity. When you come back, your state is still
+              there. You are not sharing a generic chatbot session. You are working inside your own My OpenClaw environment. That means your
+              prompts, process, and knowledge can evolve over time, and your productivity compounds. This is especially important for founders,
+              marketers, and operators who run recurring systems and need consistency, not one-off answers.
+            </p>
           </section>
 
-          <section className="mt-14 grid gap-6 md:grid-cols-3">
-            <h2 className="md:col-span-3 text-2xl font-semibold">{content.sections.whyTitle}</h2>
-            {content.sections.why.map(([title, desc]) => (
-              <article key={title} className="rounded-2xl border border-white/10 bg-white/[0.03] p-6">
-                <h3 className="text-lg font-medium">{title}</h3>
-                <p className="mt-3 text-sm text-slate-300">{desc}</p>
-              </article>
-            ))}
-          </section>
-
-          <section className="mt-14 rounded-2xl border border-white/10 bg-white/[0.03] p-8">
-            <h2 className="text-2xl font-semibold">{content.sections.roadmapTitle}</h2>
-            <ul className="mt-5 grid gap-3 text-sm text-slate-300 md:grid-cols-2">
-              {content.sections.roadmap.map((item) => (
-                <li key={item} className="rounded-xl border border-white/10 bg-slate-900/70 px-4 py-3">
-                  {item}
-                </li>
+          <section className="mt-14">
+            <h2 className="mb-6 text-2xl font-semibold">Features</h2>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {features.map((f) => (
+                <article key={f.title} className="rounded-2xl border border-border bg-card p-5">
+                  <h3 className="text-base font-semibold">{f.title}</h3>
+                  <p className="mt-2 text-sm leading-6 text-muted-foreground">{f.desc}</p>
+                </article>
               ))}
-            </ul>
+            </div>
+          </section>
+
+          <section className="mt-14 space-y-6 rounded-2xl border border-border bg-card p-8">
+            <h2 className="text-2xl font-semibold">Tutorial & How It Works</h2>
+            <p className="text-sm leading-7 text-muted-foreground">
+              You can think of My OpenClaw as a practical execution workspace that is ready from the moment you subscribe. Step one is creating
+              your account and selecting the right plan. Step two is opening your workspace and entering your first instruction. Step three is
+              iterating your workflow with persistent context. Because setup burden is removed, the time from sign-up to first useful output is
+              dramatically shorter than self-hosted alternatives. The product is intentionally designed to help non-technical users produce
+              results without sacrificing quality.
+            </p>
+            <div className="grid gap-4 md:grid-cols-3">
+              <figure className="overflow-hidden rounded-xl border border-border bg-muted">
+                <img src="/hero_background_1771074066381.png" alt="My OpenClaw onboarding" className="h-44 w-full object-cover" />
+                <figcaption className="p-3 text-xs text-muted-foreground">Step 1: Start with a clear task in plain language</figcaption>
+              </figure>
+              <figure className="overflow-hidden rounded-xl border border-border bg-muted">
+                <img src="/hero_background_1771074066381.png" alt="My OpenClaw execution" className="h-44 w-full object-cover" />
+                <figcaption className="p-3 text-xs text-muted-foreground">Step 2: Execute inside your private My OpenClaw workspace</figcaption>
+              </figure>
+              <figure className="overflow-hidden rounded-xl border border-border bg-muted">
+                <img src="/hero_background_1771074066381.png" alt="My OpenClaw scaling" className="h-44 w-full object-cover" />
+                <figcaption className="p-3 text-xs text-muted-foreground">Step 3: Scale with plans that match your usage</figcaption>
+              </figure>
+            </div>
+            <p className="text-sm leading-7 text-muted-foreground">
+              For teams and advanced users, the same flow scales naturally. You can begin with lightweight usage and move to larger credit
+              plans when demand grows. This makes My OpenClaw a practical bridge between early experimentation and production-level usage.
+              Instead of rebuilding your stack later, you continue inside the same product and expand with better capacity.
+            </p>
+          </section>
+
+          <section id="choose-plan" className="mt-14 space-y-6">
+            <h2 className="text-2xl font-semibold">Choose the right plan</h2>
+            <p className="max-w-4xl text-sm leading-7 text-muted-foreground">
+              Start with Pro if you are validating your workflow. Choose Premium if you run regular weekly operations and want more headroom.
+              Choose Ultra if you depend on high-volume execution and need the highest credit allowance. All plans are built around the same
+              principle: your private My OpenClaw workspace, ready without infrastructure setup.
+            </p>
+            <PricingTable />
+          </section>
+
+          <section className="mt-14 space-y-5 rounded-2xl border border-border bg-card p-8">
+            <h2 className="text-2xl font-semibold">FAQ</h2>
+            <div className="space-y-4">
+              {faq.map((item) => (
+                <article key={item.q} className="rounded-xl border border-border bg-muted/40 p-4">
+                  <h3 className="text-sm font-semibold">{item.q}</h3>
+                  <p className="mt-2 text-sm leading-6 text-muted-foreground">{item.a}</p>
+                </article>
+              ))}
+            </div>
           </section>
         </main>
         <CrispChat />
