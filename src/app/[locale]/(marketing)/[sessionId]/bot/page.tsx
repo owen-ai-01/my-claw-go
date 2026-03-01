@@ -27,10 +27,16 @@ export default function BotPage() {
     setLoading(true);
 
     try {
-      const res = await fetch(`/api/runtime/${sessionId}/chat`, {
+      const isCommand = text.startsWith('/cmd ');
+      const endpoint = isCommand
+        ? `/api/runtime/${sessionId}/exec`
+        : `/api/runtime/${sessionId}/chat`;
+      const payload = isCommand ? { command: text.slice(5).trim() } : { message: text };
+
+      const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ message: text }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json().catch(() => ({}));
 
@@ -39,7 +45,11 @@ export default function BotPage() {
         return;
       }
 
-      setMessages((m) => [...m, { role: 'bot', text: data?.reply || 'No reply' }]);
+      const replyText = isCommand
+        ? `🛠️ [${data?.container || 'container'}]\n${data?.output || '(no output)'}`
+        : data?.reply || 'No reply';
+
+      setMessages((m) => [...m, { role: 'bot', text: replyText }]);
     } catch {
       setMessages((m) => [...m, { role: 'bot', text: '⚠️ Network request failed. Please retry.' }]);
     } finally {
@@ -55,11 +65,13 @@ export default function BotPage() {
 
         <div className="mt-6 space-y-3 rounded-xl border border-white/10 bg-slate-900/60 p-4">
           {messages.length === 0 ? (
-            <p className="text-sm text-slate-400">Start chatting. This workspace maps to your dedicated OpenClaw runtime.</p>
+            <p className="text-sm text-slate-400">
+              Start chatting. Use <code>/cmd &lt;command&gt;</code> to run safe commands inside your own container.
+            </p>
           ) : (
             messages.map((m, i) => (
               <div key={i} className={m.role === 'user' ? 'text-right' : ''}>
-                <span className={`inline-block rounded-lg px-3 py-2 text-sm ${m.role === 'user' ? 'bg-blue-600' : 'bg-slate-700'}`}>
+                <span className={`inline-block whitespace-pre-wrap rounded-lg px-3 py-2 text-sm ${m.role === 'user' ? 'bg-blue-600' : 'bg-slate-700'}`}>
                   {m.text}
                 </span>
               </div>
@@ -73,7 +85,7 @@ export default function BotPage() {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && onSend()}
             className="h-11 flex-1 rounded-lg border border-white/10 bg-slate-900 px-3 text-sm"
-            placeholder="Type your message..."
+            placeholder="Type message, or /cmd openclaw skills list"
           />
           <button
             onClick={onSend}

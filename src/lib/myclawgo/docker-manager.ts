@@ -150,3 +150,50 @@ export async function runOpenClawChatInContainer(session: UserSession, message: 
     };
   }
 }
+
+
+const ALLOWED_PREFIXES = [
+  'openclaw skills list',
+  'openclaw skills check',
+  'openclaw skills info',
+  'openclaw models status',
+  'openclaw models list',
+  'openclaw models set ',
+  'openclaw agents list',
+  'openclaw agents add ',
+  'openclaw agent --',
+  'clawhub install ',
+  'clawhub list',
+  'clawhub search ',
+];
+
+function isAllowedCommand(command: string) {
+  const c = command.trim();
+  return ALLOWED_PREFIXES.some((prefix) => c.startsWith(prefix));
+}
+
+export async function runWhitelistedCommandInContainer(session: UserSession, command: string) {
+  const containerName = safeName(session.containerName);
+
+  if (!isAllowedCommand(command)) {
+    return {
+      ok: false as const,
+      error:
+        'Command not allowed. This endpoint only supports safe OpenClaw/ClawHub commands for user-level runtime operations.',
+    };
+  }
+
+  await execFileAsync('docker', ['start', containerName]).catch(() => {});
+
+  const wrapped = `su - openclaw -c ${JSON.stringify(command)}`;
+  try {
+    const { stdout, stderr } = await dockerExec(containerName, wrapped);
+    const output = `${stdout || ''}${stderr || ''}`.trim() || '(no output)';
+    return { ok: true as const, output };
+  } catch (error: unknown) {
+    return {
+      ok: false as const,
+      error: error instanceof Error ? error.message : 'Container command failed',
+    };
+  }
+}
