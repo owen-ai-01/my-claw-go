@@ -29,12 +29,13 @@ async function bootstrapOpenClaw(containerName: string) {
   // Seed default config from host template, then start gateway daemon
   const script = [
     'set -e',
-    'mkdir -p /home/openclaw/.openclaw',
-    'if [ -f /seed/openclaw.json ] && [ ! -f /home/openclaw/.openclaw/openclaw.json ]; then cp /seed/openclaw.json /home/openclaw/.openclaw/openclaw.json; fi',
-    'mkdir -p /home/openclaw/.openclaw/agents/main/agent',
-    'if [ -f /seed/auth-profiles.json ] && [ ! -f /home/openclaw/.openclaw/agents/main/agent/auth-profiles.json ]; then cp /seed/auth-profiles.json /home/openclaw/.openclaw/agents/main/agent/auth-profiles.json; fi',
+    'mkdir -p /root/.openclaw',
+    'if [ -f /seed/openclaw.json ] && [ ! -f /root/.openclaw/openclaw.json ]; then cp /seed/openclaw.json /root/.openclaw/openclaw.json; fi',
+    'mkdir -p /root/.openclaw/agents/main/agent',
+    'if [ -f /seed/auth-profiles.json ] && [ ! -f /root/.openclaw/agents/main/agent/auth-profiles.json ]; then cp /seed/auth-profiles.json /root/.openclaw/agents/main/agent/auth-profiles.json; fi',
     'if ! command -v git >/dev/null 2>&1; then apt-get update && apt-get install -y git ca-certificates; fi',
     'if ! command -v openclaw >/dev/null 2>&1; then npm install -g openclaw@latest; fi',
+    'openclaw models set openrouter/auto || true',
     'openclaw gateway start || true',
   ].join('; ');
   await dockerExec(containerName, script);
@@ -65,13 +66,13 @@ export async function ensureUserContainer(session: UserSession) {
     '--name',
     containerName,
     '-v',
-    `${session.userDataDir}:/home/openclaw/.openclaw`,
+    `${session.userDataDir}:/root/.openclaw`,
     '-v',
     `${HOST_OPENCLAW_CONFIG}:/seed/openclaw.json:ro`,
     '-v',
     `${HOST_AUTH_PROFILES}:/seed/auth-profiles.json:ro`,
     '-w',
-    '/home/openclaw',
+    '/root',
   ];
 
   for (const env of envs) {
