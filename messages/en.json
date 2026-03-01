@@ -574,7 +574,7 @@
       }
     },
     "footer": {
-      "tagline": "URL to Video – Turn any URL into stunning videos automatically with AI.",
+      "tagline": "My Claw Go – Get your own OpenClaw without VPS, setup, or API key hassle.",
       "product": {
         "title": "Product",
         "items": {
@@ -644,7 +644,7 @@
     }
   },
   "Newsletter": {
-    "title": "UrlToVideo Newsletter",
+    "title": "My Claw Go Newsletter",
     "subtitle": "Tips, updates and offers directly in your inbox",
     "description": "Get regular news about our AI video generation tool, product updates and exclusive offers.",
     "form": {
@@ -669,10 +669,10 @@
   },
   "AboutPage": {
     "title": "About Us",
-    "description": "Learn more about UrlToVideo and our team",
-    "authorName": "UrlToVideo Team",
+    "description": "Learn more about My Claw Go and our team",
+    "authorName": "My Claw Go Team",
     "authorBio": "We develop innovative AI tools for video production",
-    "introduction": "Welcome to UrlToVideo. We offer professional AI-based solutions for video creation. Our tools help you turn ideas into motion – perfect for marketing, social media and creative projects.",
+    "introduction": "Welcome to My Claw Go. We help you run your own OpenClaw workspace without infrastructure setup, so you can focus on outcomes.",
     "talkWithMe": "Get in touch"
   },
   "ChangelogPage": {
@@ -756,27 +756,27 @@
   },
   "Mail": {
     "forgotPassword": {
-      "subject": "Reset Password – UrlToVideo",
+      "subject": "Reset Password – My Claw Go",
       "title": "Reset Password",
       "body": "We received a request to reset your password. Please click the button below to change your password.",
       "resetPassword": "Reset Password"
     },
     "verifyEmail": {
-      "subject": "Confirm Email Address – UrlToVideo",
+      "subject": "Confirm Email Address – My Claw Go",
       "title": "Confirm Email Address",
       "body": "Please confirm your email address to complete your registration.",
       "confirmEmail": "Confirm Email"
     },
     "common": {
       "team": "Your {name} Team",
-      "copyright": "© {year} UrlToVideo. All rights reserved."
+      "copyright": "© {year} My Claw Go. All rights reserved."
     },
     "subscribeNewsletter": {
-      "subject": "Newsletter Subscription Confirmed – UrlToVideo",
+      "subject": "Newsletter Subscription Confirmed – My Claw Go",
       "body": "Thanks for subscribing! You will now receive exciting news and updates."
     },
     "contactMessage": {
-      "subject": "New Contact Request – UrlToVideo",
+      "subject": "New Contact Request – My Claw Go",
       "name": "Name: {name}",
       "email": "Email: {email}",
       "message": "Message: {message}"

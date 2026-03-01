@@ -70,7 +70,7 @@ export default async function AboutPage() {
                 <div className="flex items-center gap-4">
                   <Button className="rounded-lg cursor-pointer">
                     <MailIcon className="mr-1 size-4" />
-                    <a href="mailto:support@genproduct.video">
+                    <a href="mailto:support@myclawgo.com">
                       {t('talkWithMe')}
                     </a>
                   </Button>

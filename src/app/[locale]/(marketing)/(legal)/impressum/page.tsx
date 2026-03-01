@@ -29,7 +29,7 @@ export default async function ImpressumPage() {
 
       <h2>Kontakt</h2>
       <p>
-        E-Mail: support@genproduct.video
+        E-Mail: support@myclawgo.com
       </p>
 
       <h2>Redaktionell verantwortlich</h2>

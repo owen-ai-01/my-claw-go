@@ -234,6 +234,28 @@ export default async function HomePage(props: HomePageProps) {
               ))}
             </div>
           </section>
+
+
+          <section className="mt-10 rounded-2xl border border-border bg-card p-8 text-center">
+            <h2 className="text-2xl font-semibold">Ready to start your own OpenClaw?</h2>
+            <p className="mx-auto mt-3 max-w-3xl text-sm leading-7 text-muted-foreground">
+              Skip infrastructure work and start executing right away with your private My Claw Go workspace.
+            </p>
+            <div className="mt-6 flex flex-wrap justify-center gap-3">
+              <a
+                href={Routes.Register}
+                className="rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
+              >
+                Create My Claw Go Account
+              </a>
+              <a
+                href="mailto:support@myclawgo.com"
+                className="rounded-xl border border-border px-6 py-3 text-sm font-semibold text-foreground transition hover:bg-muted"
+              >
+                Contact Support
+              </a>
+            </div>
+          </section>
         </main>
         <CrispChat />
       </div>

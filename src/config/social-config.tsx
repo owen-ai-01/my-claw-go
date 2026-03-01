@@ -118,7 +118,7 @@ export function useSocialLinks(): MenuItem[] {
 
   socialLinks.push({
     title: 'Email',
-    href: 'mailto:support@genproduct.video',
+    href: 'mailto:support@myclawgo.com',
     icon: <MailIcon className="size-4 shrink-0" />,
   });
 
