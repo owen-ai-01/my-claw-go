@@ -3,6 +3,7 @@ import { JsonLd } from '@/components/seo/json-ld';
 import { PricingTable } from '@/components/pricing/pricing-table';
 import { constructMetadata } from '@/lib/metadata';
 import { getBaseUrl } from '@/lib/urls/urls';
+import { Routes } from '@/routes';
 import { StartMyOpenClawButton } from '@/components/myclawgo/start-my-openclaw-button';
 import type { Metadata } from 'next';
 import type { Locale } from 'next-intl';
