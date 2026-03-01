@@ -183,29 +183,32 @@ export default async function HomePage(props: HomePageProps) {
           <section id="how-to-use" className="mt-14 space-y-6 rounded-2xl border border-border bg-card p-8">
             <h2 className="text-2xl font-semibold">🧭 Tutorial & How It Works</h2>
             <p className="text-sm leading-7 text-muted-foreground">
-              You can think of My OpenClaw as a practical execution workspace that is ready from the moment you subscribe. Step one is creating
+              You can think of My Claw Go as a practical execution workspace that is ready from the moment you subscribe. Step one is creating
               your account and selecting the right plan. Step two is opening your workspace and entering your first instruction. Step three is
               iterating your workflow with persistent context. Because setup burden is removed, the time from sign-up to first useful output is
               dramatically shorter than self-hosted alternatives. The product is intentionally designed to help non-technical users produce
               results without sacrificing quality.
             </p>
             <div className="grid gap-4 md:grid-cols-3">
-              <figure className="overflow-hidden rounded-xl border border-border bg-muted">
-                <img src="/blocks/mail2-light.png" alt="My Claw Go onboarding" className="h-44 w-full object-cover" />
-                <figcaption className="p-3 text-xs text-muted-foreground">Step 1: Start with a clear task in plain language</figcaption>
-              </figure>
-              <figure className="overflow-hidden rounded-xl border border-border bg-muted">
-                <img src="/blocks/charts-light.png" alt="My Claw Go execution" className="h-44 w-full object-cover" />
-                <figcaption className="p-3 text-xs text-muted-foreground">Step 2: Execute inside your private My OpenClaw workspace</figcaption>
-              </figure>
-              <figure className="overflow-hidden rounded-xl border border-border bg-muted">
-                <img src="/blocks/payments-light.png" alt="My Claw Go scaling" className="h-44 w-full object-cover" />
-                <figcaption className="p-3 text-xs text-muted-foreground">Step 3: Scale with plans that match your usage</figcaption>
-              </figure>
+              <article className="rounded-xl border border-border bg-muted/50 p-5">
+                <div className="text-2xl">📝</div>
+                <h3 className="mt-3 text-sm font-semibold">Step 1: Create your account and pick a plan</h3>
+                <p className="mt-2 text-xs leading-6 text-muted-foreground">Sign up in minutes, choose Pro/Premium/Ultra, and unlock your private My Claw Go workspace instantly.</p>
+              </article>
+              <article className="rounded-xl border border-border bg-muted/50 p-5">
+                <div className="text-2xl">⚙️</div>
+                <h3 className="mt-3 text-sm font-semibold">Step 2: Open your workspace and give your first instruction</h3>
+                <p className="mt-2 text-xs leading-6 text-muted-foreground">Use natural language to run tasks. Your context and operations stay inside your own isolated workspace.</p>
+              </article>
+              <article className="rounded-xl border border-border bg-muted/50 p-5">
+                <div className="text-2xl">📊</div>
+                <h3 className="mt-3 text-sm font-semibold">Step 3: Scale usage as your workload grows</h3>
+                <p className="mt-2 text-xs leading-6 text-muted-foreground">Start lean, then move to higher-credit plans when your weekly execution volume increases.</p>
+              </article>
             </div>
             <p className="text-sm leading-7 text-muted-foreground">
               For teams and advanced users, the same flow scales naturally. You can begin with lightweight usage and move to larger credit
-              plans when demand grows. This makes My OpenClaw a practical bridge between early experimentation and production-level usage.
+              plans when demand grows. This makes My Claw Go a practical bridge between early experimentation and production-level usage.
               Instead of rebuilding your stack later, you continue inside the same product and expand with better capacity.
             </p>
           </section>
