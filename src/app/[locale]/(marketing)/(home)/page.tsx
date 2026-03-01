@@ -17,7 +17,7 @@ export async function generateMetadata({
   const t = await getTranslations({ locale, namespace: 'Metadata' });
 
   return constructMetadata({
-    title: `${t('title')} | OpenClaw Start`,
+    title: 'My Claw Go: Hosted OpenClaw Without VPS or Setup | OpenClaw Start',
     description:
       'My OpenClaw Start helps you launch your own private OpenClaw workspace without VPS, local setup, or API key hassle. Sign up, pay, and start fast.',
     locale,
@@ -250,6 +250,24 @@ export default async function HomePage(props: HomePageProps) {
                 Contact Support
               </a>
             </div>
+          </section>
+
+
+          <section className="mt-10 space-y-5 rounded-2xl border border-border bg-card p-8">
+            <h2 className="text-2xl font-semibold">More about My OpenClaw and hosted OpenClaw</h2>
+            <p className="text-sm leading-7 text-muted-foreground">
+              If you are searching for <strong>my openclaw</strong>, <strong>hosted openclaw</strong>, or <strong>managed openclaw</strong>,
+              My Claw Go is built for that exact need. You get a private OpenClaw experience without the operational complexity that usually
+              blocks adoption.
+            </p>
+            <p className="text-sm leading-7 text-muted-foreground">
+              My Claw Go is ideal for people who want <strong>openclaw without vps</strong> and <strong>openclaw without setup</strong>.
+              You do not need to prepare infrastructure, manage server updates, or run your own machine all day.
+            </p>
+            <p className="text-sm leading-7 text-muted-foreground">
+              For users looking for <strong>openclaw for non-technical users</strong> and <strong>openclaw as a service</strong>,
+              this platform provides a practical path: sign up, choose a plan, and start using your own OpenClaw workspace immediately.
+            </p>
           </section>
         </main>
         <CrispChat />
