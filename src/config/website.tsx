@@ -114,7 +114,7 @@ export const websiteConfig: WebsiteConfig = {
           {
             type: PaymentTypes.SUBSCRIPTION,
             priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_MONTHLY!,
-            amount: 990,
+            amount: 1990,
             currency: 'USD',
             interval: PlanIntervals.MONTH,
           },
@@ -124,7 +124,7 @@ export const websiteConfig: WebsiteConfig = {
         popular: false,
         credits: {
           enable: true,
-          amount: 700,
+          amount: 2000,
           expireDays: 30, // 1 month
         },
         capacity: {
@@ -138,7 +138,7 @@ export const websiteConfig: WebsiteConfig = {
           {
             type: PaymentTypes.SUBSCRIPTION,
             priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_YEARLY!,
-            amount: 8390,
+            amount: 19104,
             currency: 'USD',
             interval: PlanIntervals.YEAR,
           },
@@ -148,7 +148,7 @@ export const websiteConfig: WebsiteConfig = {
         popular: false,
         credits: {
           enable: true,
-          amount: 8400,
+          amount: 24000,
           expireDays: 365, // 1 year
         },
         capacity: {
@@ -162,7 +162,7 @@ export const websiteConfig: WebsiteConfig = {
           {
             type: PaymentTypes.SUBSCRIPTION,
             priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_PREMIUM_MONTHLY!,
-            amount: 2990,
+            amount: 3990,
             currency: 'USD',
             interval: PlanIntervals.MONTH,
           },
@@ -172,7 +172,7 @@ export const websiteConfig: WebsiteConfig = {
         popular: true,
         credits: {
           enable: true,
-          amount: 2400,
+          amount: 8000,
           expireDays: 30, // 1 month
         },
         capacity: {
@@ -186,7 +186,7 @@ export const websiteConfig: WebsiteConfig = {
           {
             type: PaymentTypes.SUBSCRIPTION,
             priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_PREMIUM_YEARLY!,
-            amount: 24990,
+            amount: 38304,
             currency: 'USD',
             interval: PlanIntervals.YEAR,
           },
@@ -196,12 +196,61 @@ export const websiteConfig: WebsiteConfig = {
         popular: true,
         credits: {
           enable: true,
-          amount: 28800,
+          amount: 96000,
           expireDays: 365, // 1 year
         },
         capacity: {
           videoSeconds: 17280, // 288 videos x 60s
           imageCount: 5760,
+        },
+      },
+
+      ultra_monthly: {
+        id: 'ultra_monthly',
+        prices: [
+          {
+            type: PaymentTypes.SUBSCRIPTION,
+            priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_ULTRA_MONTHLY!,
+            amount: 19990,
+            currency: 'USD',
+            interval: PlanIntervals.MONTH,
+          },
+        ],
+        isFree: false,
+        isLifetime: false,
+        popular: false,
+        credits: {
+          enable: true,
+          amount: 40000,
+          expireDays: 30, // 1 month
+        },
+        capacity: {
+          videoSeconds: 48000,
+          imageCount: 16000,
+        },
+      },
+      ultra_yearly: {
+        id: 'ultra_yearly',
+        prices: [
+          {
+            type: PaymentTypes.SUBSCRIPTION,
+            priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_ULTRA_YEARLY!,
+            amount: 191904,
+            currency: 'USD',
+            interval: PlanIntervals.YEAR,
+          },
+        ],
+        isFree: false,
+        isLifetime: false,
+        popular: false,
+        credits: {
+          enable: true,
+          amount: 480000,
+          expireDays: 365, // 1 year
+        },
+        capacity: {
+          videoSeconds: 576000,
+          imageCount: 192000,
         },
       },
     },
