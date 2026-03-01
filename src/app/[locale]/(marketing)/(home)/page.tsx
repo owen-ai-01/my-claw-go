@@ -263,34 +263,28 @@ export default async function HomePage(props: HomePageProps) {
             </p>
 
             <div className="grid gap-4 md:grid-cols-3">
-              <article className="overflow-hidden rounded-xl border border-border bg-muted/40">
-                <img src="/blocks/charts-light.png" alt="Hosted OpenClaw dashboard" className="h-40 w-full object-cover" />
-                <div className="p-4">
-                  <h3 className="text-sm font-semibold">Hosted OpenClaw, ready after payment</h3>
-                  <p className="mt-2 text-xs leading-6 text-muted-foreground">
-                    Start with a managed OpenClaw runtime instead of provisioning servers and dependencies yourself.
-                  </p>
-                </div>
+              <article className="rounded-xl border border-border bg-muted/40 p-5">
+                <div className="text-2xl">🚀</div>
+                <h3 className="mt-3 text-sm font-semibold">Hosted OpenClaw, ready after payment</h3>
+                <p className="mt-2 text-xs leading-6 text-muted-foreground">
+                  Start with a managed OpenClaw runtime instead of provisioning servers and dependencies yourself.
+                </p>
               </article>
 
-              <article className="overflow-hidden rounded-xl border border-border bg-muted/40">
-                <img src="/blocks/mail2-light.png" alt="OpenClaw without setup" className="h-40 w-full object-cover" />
-                <div className="p-4">
-                  <h3 className="text-sm font-semibold">OpenClaw without setup complexity</h3>
-                  <p className="mt-2 text-xs leading-6 text-muted-foreground">
-                    No VPS procurement, no environment troubleshooting, and no long setup checklist before you can use OpenClaw.
-                  </p>
-                </div>
+              <article className="rounded-xl border border-border bg-muted/40 p-5">
+                <div className="text-2xl">🧩</div>
+                <h3 className="mt-3 text-sm font-semibold">OpenClaw without setup complexity</h3>
+                <p className="mt-2 text-xs leading-6 text-muted-foreground">
+                  No VPS procurement, no environment troubleshooting, and no long setup checklist before you can use OpenClaw.
+                </p>
               </article>
 
-              <article className="overflow-hidden rounded-xl border border-border bg-muted/40">
-                <img src="/blocks/payments-light.png" alt="Managed OpenClaw plans" className="h-40 w-full object-cover" />
-                <div className="p-4">
-                  <h3 className="text-sm font-semibold">OpenClaw as a service for non-technical users</h3>
-                  <p className="mt-2 text-xs leading-6 text-muted-foreground">
-                    My Claw Go is built for users who want OpenClaw outcomes, not infrastructure burden.
-                  </p>
-                </div>
+              <article className="rounded-xl border border-border bg-muted/40 p-5">
+                <div className="text-2xl">💼</div>
+                <h3 className="mt-3 text-sm font-semibold">OpenClaw as a service for non-technical users</h3>
+                <p className="mt-2 text-xs leading-6 text-muted-foreground">
+                  My Claw Go is built for users who want OpenClaw outcomes, not infrastructure burden.
+                </p>
               </article>
             </div>
           </section>
