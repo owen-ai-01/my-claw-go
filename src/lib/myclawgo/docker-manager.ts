@@ -67,6 +67,7 @@ async function bootstrapOpenClaw(containerName: string) {
     'if [ -f /seed/openclaw.json ] && [ ! -f /home/openclaw/.openclaw/openclaw.json ]; then cp /seed/openclaw.json /home/openclaw/.openclaw/openclaw.json; fi',
     'if [ -f /seed/auth-profiles.json ] && [ ! -f /home/openclaw/.openclaw/agents/main/agent/auth-profiles.json ]; then cp /seed/auth-profiles.json /home/openclaw/.openclaw/agents/main/agent/auth-profiles.json; fi',
     'chown -R openclaw:openclaw /home/openclaw/.openclaw',
+    "python3 - <<'PYCFG'\nimport json\np='/home/openclaw/.openclaw/openclaw.json'\ntry:\n  c=json.load(open(p))\n  c.setdefault('agents',{}).setdefault('defaults',{}).setdefault('model',{})['primary']='openrouter/google/gemini-2.5-flash-lite'\n  c['agents']['defaults']['model']['fallbacks']=['openrouter/google/gemini-2.5-flash-lite','openrouter/z-ai/glm-4.7-flash','openai/gpt-4o-mini']\n  json.dump(c,open(p,'w'),ensure_ascii=False,indent=2);open(p,'a').write('\n')\nexcept Exception:\n  pass\nPYCFG",
     "su - openclaw -c \"if ! command -v node >/dev/null 2>&1; then curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash - && sudo apt-get install -y nodejs; fi\"",
     "su - openclaw -c 'if ! command -v openclaw >/dev/null 2>&1; then sudo npm install -g openclaw@latest; fi'",
     "su - openclaw -c 'openclaw models set openrouter/auto || true'",
@@ -135,7 +136,7 @@ export async function runOpenClawChatInContainer(session: UserSession, message: 
   await dockerExec(containerName, ensureGatewayCmd).catch(() => {});
 
   const cmd = `su - openclaw -c ${JSON.stringify(
-    `openclaw agent --agent main --message ${JSON.stringify(message)} --thinking low`,
+    `openclaw agent --agent main --message ${JSON.stringify(message)} --thinking off`,
   )}`;
 
   try {
