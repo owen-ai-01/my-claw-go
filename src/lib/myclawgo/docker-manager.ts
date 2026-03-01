@@ -70,7 +70,7 @@ async function bootstrapOpenClaw(containerName: string) {
     "su - openclaw -c \"if ! command -v node >/dev/null 2>&1; then curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash - && sudo apt-get install -y nodejs; fi\"",
     "su - openclaw -c 'if ! command -v openclaw >/dev/null 2>&1; then sudo npm install -g openclaw@latest; fi'",
     "su - openclaw -c 'openclaw models set openrouter/auto || true'",
-    "su - openclaw -c 'openclaw gateway start || true'",
+    "su - openclaw -c 'pgrep -f \"openclaw gateway run\" >/dev/null || nohup openclaw gateway run --auth none --bind loopback --port 18789 > /home/openclaw/.openclaw/gateway.log 2>&1 &'",
   ].join('; ');
 
   await dockerExec(containerName, script);
@@ -127,6 +127,12 @@ export async function runOpenClawChatInContainer(session: UserSession, message: 
   const containerName = safeName(session.containerName);
 
   await execFileAsync('docker', ['start', containerName]).catch(() => {});
+
+  const ensureGatewayCmd = `su - openclaw -c ${JSON.stringify(
+    "pgrep -f 'openclaw gateway run' >/dev/null || (nohup openclaw gateway run --auth none --bind loopback --port 18789 > /home/openclaw/.openclaw/gateway.log 2>&1 &)"
+  )}`;
+
+  await dockerExec(containerName, ensureGatewayCmd).catch(() => {});
 
   const cmd = `su - openclaw -c ${JSON.stringify(
     `openclaw agent --agent main --message ${JSON.stringify(message)} --thinking low`,
