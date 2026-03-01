@@ -115,10 +115,10 @@ export default async function HomePage(props: HomePageProps) {
         <main className="mx-auto max-w-6xl px-6 py-14 md:py-20">
           <section className="rounded-3xl border border-border bg-card p-8 shadow-xl md:p-12">
             <h1 className="mx-auto max-w-5xl text-center text-4xl font-semibold leading-tight md:text-6xl">
-              Get your own My OpenClaw after signup and payment. No VPS. No always-on PC. No API key headache.
+              Get your own OpenClaw after signup and payment. No VPS. No always-on PC. No API key headache.
             </h1>
             <p className="mx-auto mt-5 max-w-4xl text-center text-base text-muted-foreground md:text-lg">
-              My OpenClaw is built for people who want results, not setup friction. You do not need to learn server operations, buy
+              My Claw Go is built for people who want results, not setup friction. You do not need to learn server operations, buy
               infrastructure, or debug credentials before seeing value. You get a private workspace that feels like your own OpenClaw,
               ready to use from day one.
             </p>
