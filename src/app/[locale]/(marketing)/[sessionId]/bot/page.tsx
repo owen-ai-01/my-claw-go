@@ -3,6 +3,14 @@
 import { useState } from 'react';
 import { useParams } from 'next/navigation';
 
+function normalizeError(raw: string) {
+  if (!raw) return 'Request failed. Please retry.';
+  if (raw.includes('spawn docker ENOENT')) {
+    return 'Runtime backend is not ready: Docker is missing on server.';
+  }
+  return raw;
+}
+
 export default function BotPage() {
   const params = useParams<{ sessionId: string }>();
   const sessionId = params.sessionId;
@@ -24,10 +32,16 @@ export default function BotPage() {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ message: text }),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok || !data?.ok) {
+        setMessages((m) => [...m, { role: 'bot', text: `⚠️ ${normalizeError(String(data?.error || 'Request failed'))}` }]);
+        return;
+      }
+
       setMessages((m) => [...m, { role: 'bot', text: data?.reply || 'No reply' }]);
     } catch {
-      setMessages((m) => [...m, { role: 'bot', text: 'Request failed. Please retry.' }]);
+      setMessages((m) => [...m, { role: 'bot', text: '⚠️ Network request failed. Please retry.' }]);
     } finally {
       setLoading(false);
     }
