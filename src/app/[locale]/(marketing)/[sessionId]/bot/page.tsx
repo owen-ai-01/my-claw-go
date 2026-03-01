@@ -66,7 +66,7 @@ export default function BotPage() {
         <div className="mt-6 space-y-3 rounded-xl border border-white/10 bg-slate-900/60 p-4">
           {messages.length === 0 ? (
             <p className="text-sm text-slate-400">
-              Start chatting. Use <code>/cmd &lt;command&gt;</code> to run safe commands inside your own container.
+              Start chatting naturally. Example: 安装一下gog这个skill / 列出有哪些skill。These actions run only in your own container.
             </p>
           ) : (
             messages.map((m, i) => (
@@ -85,7 +85,7 @@ export default function BotPage() {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && onSend()}
             className="h-11 flex-1 rounded-lg border border-white/10 bg-slate-900 px-3 text-sm"
-            placeholder="Type message, or /cmd openclaw skills list"
+            placeholder="Ask naturally, e.g. 安装一下gog这个skill"
           />
           <button
             onClick={onSend}
