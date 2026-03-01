@@ -138,7 +138,7 @@ export const websiteConfig: WebsiteConfig = {
           {
             type: PaymentTypes.SUBSCRIPTION,
             priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_YEARLY!,
-            amount: 19104,
+            amount: 19100,
             currency: 'USD',
             interval: PlanIntervals.YEAR,
           },
@@ -186,7 +186,7 @@ export const websiteConfig: WebsiteConfig = {
           {
             type: PaymentTypes.SUBSCRIPTION,
             priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_PREMIUM_YEARLY!,
-            amount: 38304,
+            amount: 38300,
             currency: 'USD',
             interval: PlanIntervals.YEAR,
           },
@@ -235,7 +235,7 @@ export const websiteConfig: WebsiteConfig = {
           {
             type: PaymentTypes.SUBSCRIPTION,
             priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_ULTRA_YEARLY!,
-            amount: 191904,
+            amount: 191900,
             currency: 'USD',
             interval: PlanIntervals.YEAR,
           },
