@@ -13,12 +13,42 @@ function normalizeError(raw: string) {
     return 'Command blocked by safety policy. Try: openclaw skills list / openclaw models status / clawhub search <keyword>.';
   }
   if (raw.includes('timed out')) {
-    return 'Command timed out (20s). Try a shorter command.';
+    return 'Command timed out. For install/agent commands, retry once and wait for completion.';
   }
   if (lower.includes('insufficient') && lower.includes('credit')) {
     return 'Credits are insufficient. Please recharge to continue.';
   }
   return raw;
+}
+
+const SAFE_COMMAND_PATTERNS: RegExp[] = [
+  /^openclaw\s+skills\s+list$/i,
+  /^openclaw\s+skills\s+check(?:\s+[a-zA-Z0-9_.@/-]+)?$/i,
+  /^openclaw\s+skills\s+info\s+[a-zA-Z0-9_.@/-]+$/i,
+  /^openclaw\s+models\s+status$/i,
+  /^openclaw\s+models\s+list$/i,
+  /^openclaw\s+models\s+set\s+[a-zA-Z0-9_.:/-]+$/i,
+  /^openclaw\s+agents\s+list(?:\s+--bindings)?$/i,
+  /^openclaw\s+agents\s+add\s+[a-zA-Z0-9_.-]+$/i,
+  /^openclaw\s+agent\s+--(?:message|agent|thinking|model|help)\b[\s\S]*$/i,
+  /^clawhub\s+install\s+[a-zA-Z0-9_.@/-]+$/i,
+  /^clawhub\s+list$/i,
+  /^clawhub\s+search\s+[^\n]+$/i,
+];
+
+function isSafeCommandInput(text: string) {
+  const value = text.trim();
+  if (!value || value.length > 300) return false;
+  if (/[\r\n]/.test(value)) return false;
+  return SAFE_COMMAND_PATTERNS.some((pattern) => pattern.test(value));
+}
+
+function getClientTimeoutMs(isCommand: boolean, command?: string) {
+  if (!isCommand) return 25_000;
+  const c = (command || '').toLowerCase();
+  if (c.startsWith('clawhub install ')) return 130_000;
+  if (c.startsWith('openclaw agent ')) return 70_000;
+  return 30_000;
 }
 
 export default function BotPage() {
@@ -84,16 +114,18 @@ export default function BotPage() {
     setLoading(true);
 
     try {
-      const isCommand = text.startsWith('/cmd ');
+      const rawCommand = text.startsWith('/cmd ') ? text.slice(5).trim() : text;
+      const isCommand = text.startsWith('/cmd ') || isSafeCommandInput(text);
       const endpoint = isCommand
         ? `/api/runtime/${sessionId}/exec`
         : `/api/runtime/${sessionId}/chat`;
-      const payload = isCommand
-        ? { command: text.slice(5).trim() }
-        : { message: text };
+      const payload = isCommand ? { command: rawCommand } : { message: text };
 
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 25_000);
+      const timeout = setTimeout(
+        () => controller.abort(),
+        getClientTimeoutMs(isCommand, rawCommand)
+      );
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
@@ -231,7 +263,7 @@ export default function BotPage() {
             placeholder={
               lowCredits
                 ? 'Recharge credits to continue'
-                : 'Ask naturally, e.g. install gog skill'
+                : 'Ask naturally, or run a safe command directly (e.g. openclaw skills list)'
             }
           />
           <button

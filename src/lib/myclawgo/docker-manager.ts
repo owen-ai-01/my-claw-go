@@ -194,6 +194,13 @@ function isAllowedCommand(command: string) {
   return ALLOWED_COMMAND_PATTERNS.some((pattern) => pattern.test(c));
 }
 
+function getCommandTimeoutMs(command: string) {
+  const c = command.trim().toLowerCase();
+  if (c.startsWith('clawhub install ')) return 120_000;
+  if (c.startsWith('openclaw agent ')) return 60_000;
+  return 20_000;
+}
+
 export async function runWhitelistedCommandInContainer(
   session: UserSession,
   command: string
@@ -211,8 +218,13 @@ export async function runWhitelistedCommandInContainer(
   await execFileAsync('docker', ['start', containerName]).catch(() => {});
 
   const wrapped = `su - openclaw -c ${JSON.stringify(command)}`;
+  const timeoutMs = getCommandTimeoutMs(command);
   try {
-    const { stdout, stderr } = await dockerExec(containerName, wrapped, 20_000);
+    const { stdout, stderr } = await dockerExec(
+      containerName,
+      wrapped,
+      timeoutMs
+    );
     const merged = `${stdout || ''}${stderr || ''}`.trim() || '(no output)';
     const output =
       merged.length > 8_000
@@ -225,7 +237,7 @@ export async function runWhitelistedCommandInContainer(
     if (message.includes('timed out')) {
       return {
         ok: false as const,
-        error: 'Command timed out after 20s. Please run a shorter command.',
+        error: `Command timed out after ${Math.floor(timeoutMs / 1000)}s. Please retry with a shorter or simpler command.`,
       };
     }
     return {
