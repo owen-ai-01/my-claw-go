@@ -89,6 +89,26 @@ export async function POST(
     );
   }
 
+  const authSession = await auth.api.getSession({ headers: await headers() });
+  const currentUserId = authSession?.user?.id;
+
+  if (!currentUserId) {
+    return NextResponse.json(
+      { ok: false, error: 'Unauthorized' },
+      { status: 401 }
+    );
+  }
+
+  if (currentUserId !== sessionId) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: 'Forbidden: session does not belong to current user',
+      },
+      { status: 403 }
+    );
+  }
+
   const runtimeSession = await getSession(sessionId);
   if (!runtimeSession) {
     return NextResponse.json(
@@ -98,9 +118,6 @@ export async function POST(
   }
 
   await touchSession(sessionId);
-
-  const authSession = await auth.api.getSession({ headers: await headers() });
-  const currentUserId = authSession?.user?.id;
 
   // Ensure container exists for this user session (covers old users without pre-created runtime)
   const ensured = await ensureUserContainer(runtimeSession);
@@ -150,7 +167,7 @@ export async function POST(
   // Credit deduction only when session owner is authenticated and calling their own bot route
   let creditsLeft: number | null = null;
   let creditsUsed: number | null = null;
-  if (currentUserId && currentUserId === sessionId) {
+  if (currentUserId === sessionId) {
     try {
       const tokens = estimateTokens(message, result.reply);
       const usdCost = estimateUsdCostFromTokens(tokens);

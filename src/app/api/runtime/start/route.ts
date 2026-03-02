@@ -1,12 +1,12 @@
-import { NextResponse } from 'next/server';
-import { headers } from 'next/headers';
-import { and, desc, eq, or } from 'drizzle-orm';
-import { auth } from '@/lib/auth';
 import { getDb } from '@/db';
 import { payment, userCredit } from '@/db/schema';
-import { PaymentTypes } from '@/payment/types';
-import { ensureSessionById } from '@/lib/myclawgo/session-store';
+import { auth } from '@/lib/auth';
 import { ensureUserContainer } from '@/lib/myclawgo/docker-manager';
+import { ensureSessionById } from '@/lib/myclawgo/session-store';
+import { PaymentTypes } from '@/payment/types';
+import { and, desc, eq, or } from 'drizzle-orm';
+import { headers } from 'next/headers';
+import { NextResponse } from 'next/server';
 
 export async function POST() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -26,14 +26,18 @@ export async function POST() {
         eq(payment.userId, userId),
         eq(payment.type, PaymentTypes.SUBSCRIPTION),
         eq(payment.paid, true),
-        or(eq(payment.status, 'active'), eq(payment.status, 'trialing')),
-      ),
+        or(eq(payment.status, 'active'), eq(payment.status, 'trialing'))
+      )
     )
     .orderBy(desc(payment.createdAt))
     .limit(1);
 
   if (!sub.length) {
-    return NextResponse.json({ ok: true, action: 'redirect-pricing', redirectTo: '/pricing' });
+    return NextResponse.json({
+      ok: true,
+      action: 'redirect-pricing',
+      redirectTo: '/pricing',
+    });
   }
 
   const credit = await db
@@ -44,9 +48,6 @@ export async function POST() {
 
   const credits = credit[0]?.currentCredits ?? 0;
 
-  const runtimeSession = await ensureSessionById(userId, 'start-button');
-  await ensureUserContainer(runtimeSession);
-
   if (credits <= 0) {
     return NextResponse.json({
       ok: true,
@@ -56,5 +57,13 @@ export async function POST() {
     });
   }
 
-  return NextResponse.json({ ok: true, action: 'redirect-bot', redirectTo: `/${userId}/bot`, credits });
+  const runtimeSession = await ensureSessionById(userId, 'start-button');
+  await ensureUserContainer(runtimeSession);
+
+  return NextResponse.json({
+    ok: true,
+    action: 'redirect-bot',
+    redirectTo: `/${userId}/bot`,
+    credits,
+  });
 }

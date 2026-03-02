@@ -1,5 +1,7 @@
+import { auth } from '@/lib/auth';
 import { runWhitelistedCommandInContainer } from '@/lib/myclawgo/docker-manager';
 import { getSession, touchSession } from '@/lib/myclawgo/session-store';
+import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 
 export async function POST(
@@ -7,6 +9,26 @@ export async function POST(
   { params }: { params: Promise<{ sessionId: string }> }
 ) {
   const { sessionId } = await params;
+  const authSession = await auth.api.getSession({ headers: await headers() });
+  const currentUserId = authSession?.user?.id;
+
+  if (!currentUserId) {
+    return NextResponse.json(
+      { ok: false, error: 'Unauthorized' },
+      { status: 401 }
+    );
+  }
+
+  if (currentUserId !== sessionId) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: 'Forbidden: session does not belong to current user',
+      },
+      { status: 403 }
+    );
+  }
+
   const body = await req.json().catch(() => ({}));
   const command = String(body?.command || '').trim();
 
