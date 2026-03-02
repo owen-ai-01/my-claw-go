@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 
 function normalizeError(raw: string) {
   if (!raw) return 'Request failed. Please retry.';
+  const lower = raw.toLowerCase();
   if (raw.includes('spawn docker ENOENT')) {
     return 'Runtime backend is not ready: Docker is missing on server.';
   }
@@ -13,6 +14,9 @@ function normalizeError(raw: string) {
   }
   if (raw.includes('timed out')) {
     return 'Command timed out (20s). Try a shorter command.';
+  }
+  if (lower.includes('insufficient') && lower.includes('credit')) {
+    return 'Credits are insufficient. Please recharge to continue.';
   }
   return raw;
 }
@@ -100,6 +104,10 @@ export default function BotPage() {
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok || !data?.ok) {
+        if (data?.code === 'INSUFFICIENT_CREDITS' || res.status === 402) {
+          setLowCredits(true);
+        }
+
         setMessages((m) => [
           ...m,
           {

@@ -58,7 +58,18 @@ export async function POST() {
   }
 
   const runtimeSession = await ensureSessionById(userId, 'start-button');
-  await ensureUserContainer(runtimeSession);
+  const runtime = await ensureUserContainer(runtimeSession);
+
+  if (!runtime.ok) {
+    return NextResponse.json(
+      {
+        ok: false,
+        action: 'runtime-not-ready',
+        error: runtime.error || 'Failed to prepare runtime container',
+      },
+      { status: 500 }
+    );
+  }
 
   return NextResponse.json({
     ok: true,
