@@ -77,6 +77,11 @@ export async function POST(
   } catch (error) {
     const message =
       error instanceof Error ? error.message : 'Internal runtime error';
+    // Log error for monitoring
+    console.error(
+      `[MyClawGo Exec Error] session=${sessionId} container=${session.containerName} command=${command}`,
+      error
+    );
     return NextResponse.json(
       {
         ok: false,
