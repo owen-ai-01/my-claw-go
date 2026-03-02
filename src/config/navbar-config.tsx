@@ -69,21 +69,21 @@ export function useNavbarLinks(): NestedMenuItem[] {
 
     ...(websiteConfig.blog.enable
       ? [
-        {
-          title: t('blog.title'),
-          href: Routes.Blog,
-          external: false,
-        },
-      ]
+          {
+            title: t('blog.title'),
+            href: Routes.Blog,
+            external: false,
+          },
+        ]
       : []),
     ...(websiteConfig.docs.enable
       ? [
-        {
-          title: t('docs.title'),
-          href: Routes.Docs,
-          external: false,
-        },
-      ]
+          {
+            title: t('docs.title'),
+            href: Routes.Docs,
+            external: false,
+          },
+        ]
       : []),
     {
       title: t('pages.title'),

@@ -381,7 +381,9 @@ export class StripeProvider implements PaymentProvider {
       // Determine mode based on credit package price type
       // default to payment for backward compatibility
       const mode =
-        creditPackage.price.type === 'subscription' ? 'subscription' : 'payment';
+        creditPackage.price.type === 'subscription'
+          ? 'subscription'
+          : 'payment';
 
       // Create checkout session parameters
       const checkoutParams: Stripe.Checkout.SessionCreateParams = {
@@ -453,8 +455,8 @@ export class StripeProvider implements PaymentProvider {
         return_url: returnUrl ?? '',
         locale: locale
           ? (this.mapLocaleToStripeLocale(
-            locale
-          ) as Stripe.BillingPortal.SessionCreateParams.Locale)
+              locale
+            ) as Stripe.BillingPortal.SessionCreateParams.Locale)
           : undefined,
       });
 
@@ -557,7 +559,9 @@ export class StripeProvider implements PaymentProvider {
         console.log(`>> Processing checkout event: ${eventType}`);
         if (eventType === 'checkout.session.completed') {
           const session = event.data.object as Stripe.Checkout.Session;
-          console.log(`>> checkout.session.completed - session id: ${session.id}, mode: ${session.mode}, status: ${session.status}`);
+          console.log(
+            `>> checkout.session.completed - session id: ${session.id}, mode: ${session.mode}, status: ${session.status}`
+          );
           await this.onCheckoutCompleted(session);
         } else {
           console.log(`Unhandled checkout event: ${eventType}`);

@@ -58,15 +58,12 @@ export default async function middleware(req: NextRequest) {
   let session: Session | null = null;
   let isLoggedIn = false;
   try {
-    const { data } = await betterFetch<Session>(
-      '/api/auth/get-session',
-      {
-        baseURL: getBaseUrl(),
-        headers: {
-          cookie: req.headers.get('cookie') || '', // Forward the cookies from the request
-        },
-      }
-    );
+    const { data } = await betterFetch<Session>('/api/auth/get-session', {
+      baseURL: getBaseUrl(),
+      headers: {
+        cookie: req.headers.get('cookie') || '', // Forward the cookies from the request
+      },
+    });
     session = data;
     isLoggedIn = !!session;
   } catch (err) {

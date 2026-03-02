@@ -1,9 +1,7 @@
 import { routing } from '@/i18n/routing';
 import type { Locale } from 'next-intl';
 
-const baseUrl =
-  process.env.NEXT_PUBLIC_BASE_URL ??
-  'https://genproduct.video';
+const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://genproduct.video';
 
 /**
  * Get the base URL of the application

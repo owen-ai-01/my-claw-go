@@ -13,13 +13,13 @@ interface CreditCheckoutButtonProps {
   priceId: string;
   metadata?: Record<string, string>;
   variant?:
-  | 'default'
-  | 'outline'
-  | 'destructive'
-  | 'secondary'
-  | 'ghost'
-  | 'link'
-  | null;
+    | 'default'
+    | 'outline'
+    | 'destructive'
+    | 'secondary'
+    | 'ghost'
+    | 'link'
+    | null;
   size?: 'default' | 'sm' | 'lg' | 'icon' | null;
   className?: string;
   children?: React.ReactNode;
@@ -73,11 +73,11 @@ export function CreditCheckoutButton({
         const affonsoReferral =
           typeof document !== 'undefined'
             ? (() => {
-              const match = document.cookie.match(
-                /(?:^|; )affonso_referral=([^;]*)/
-              );
-              return match ? decodeURIComponent(match[1]) : null;
-            })()
+                const match = document.cookie.match(
+                  /(?:^|; )affonso_referral=([^;]*)/
+                );
+                return match ? decodeURIComponent(match[1]) : null;
+              })()
             : null;
         if (affonsoReferral) {
           console.log(
@@ -89,7 +89,10 @@ export function CreditCheckoutButton({
       }
 
       // Create checkout session using server action
-      console.log('Calling createCreditCheckoutSession client-side', { packageId, priceId });
+      console.log('Calling createCreditCheckoutSession client-side', {
+        packageId,
+        priceId,
+      });
       const result = await createCreditCheckoutSession({
         packageId,
         priceId,
@@ -97,13 +100,19 @@ export function CreditCheckoutButton({
           Object.keys(mergedMetadata).length > 0 ? mergedMetadata : undefined,
       });
 
-      console.log('createCreditCheckoutSession result client-side:', JSON.stringify(result, null, 2));
+      console.log(
+        'createCreditCheckoutSession result client-side:',
+        JSON.stringify(result, null, 2)
+      );
 
       // Redirect to checkout page
       if (result?.data?.success && result.data.data?.url) {
         window.location.href = result.data.data?.url;
       } else {
-        console.error('Create credit checkout session error, result (full):', JSON.stringify(result, null, 2));
+        console.error(
+          'Create credit checkout session error, result (full):',
+          JSON.stringify(result, null, 2)
+        );
         const errorMessage = result?.data?.error || t('checkoutFailed');
         toast.error(errorMessage);
       }

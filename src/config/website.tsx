@@ -79,8 +79,7 @@ export const websiteConfig: WebsiteConfig = {
   mail: {
     provider: 'resend',
     fromEmail: 'My Claw Go <support@myclawgo.com>',
-    supportEmail:
-      'My Claw Go <support@myclawgo.com>',
+    supportEmail: 'My Claw Go <support@myclawgo.com>',
   },
   newsletter: {
     enable: true,

@@ -671,7 +671,7 @@ export function PromptInput({
         console.error('[Background Removal] Background removal error:', error);
         toast.error(
           'Hintergrund entfernen fehlgeschlagen: ' +
-          (error instanceof Error ? error.message : 'Unbekannter Fehler')
+            (error instanceof Error ? error.message : 'Unbekannter Fehler')
         );
       } finally {
         setIsRemovingBg(false);
@@ -821,7 +821,7 @@ export function PromptInput({
       console.error('[Background Removal] HD background removal error:', error);
       toast.error(
         'Hintergrund entfernen fehlgeschlagen: ' +
-        (error instanceof Error ? error.message : 'Unbekannter Fehler')
+          (error instanceof Error ? error.message : 'Unbekannter Fehler')
       );
     } finally {
       setIsRemovingBg(false);
@@ -1252,8 +1252,8 @@ export function PromptInput({
                             const imageUrl =
                               isR2Url || isReplicateUrl || isCustomDomain
                                 ? `/api/proxy-image?url=${encodeURIComponent(
-                                  hdImage
-                                )}`
+                                    hdImage
+                                  )}`
                                 : hdImage;
 
                             try {
@@ -1320,7 +1320,9 @@ export function PromptInput({
                           // Consume 1 credit after successful download
                           if (downloadSuccess && hdImage) {
                             if (paidImageIds.has(hdImage)) {
-                              console.log('HD download: Already paid for this image');
+                              console.log(
+                                'HD download: Already paid for this image'
+                              );
                             } else {
                               try {
                                 await consumeCreditsMutation.mutateAsync({
@@ -1329,7 +1331,9 @@ export function PromptInput({
                                 });
                                 console.log('HD download: 1 credit consumed');
                                 // Mark this image as paid
-                                setPaidImageIds((prev) => new Set(prev).add(hdImage));
+                                setPaidImageIds((prev) =>
+                                  new Set(prev).add(hdImage)
+                                );
                               } catch (creditError) {
                                 console.error(
                                   'Failed to consume credit for HD download:',
@@ -1499,9 +1503,9 @@ export function PromptInput({
                         console.error('Download error:', error);
                         toast.error(
                           'Fehler beim Herunterladen des Bildes: ' +
-                          (error instanceof Error
-                            ? error.message
-                            : 'Unbekannter Fehler')
+                            (error instanceof Error
+                              ? error.message
+                              : 'Unbekannter Fehler')
                         );
                       }
                     }}

@@ -17,7 +17,9 @@ type FAQItem = {
   answer: string;
 };
 
-export default function FaqSection({ namespace = 'HomePage.faqs' }: { namespace?: any }) {
+export default function FaqSection({
+  namespace = 'HomePage.faqs',
+}: { namespace?: any }) {
   const locale = useLocale();
   const t = useTranslations(namespace) as any;
 

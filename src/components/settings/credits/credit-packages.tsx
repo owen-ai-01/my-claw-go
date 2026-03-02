@@ -116,7 +116,6 @@ export function CreditPackages() {
                         seconds: creditPackage.capacity.videoSeconds,
                       })}
                     </div>
-
                   </div>
                 )}
 

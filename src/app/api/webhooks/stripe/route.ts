@@ -17,7 +17,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   // Get the Stripe signature from headers
   const signature = req.headers.get('stripe-signature') || '';
 
-  console.log(`>> Webhook payload length: ${payload.length}, signature present: ${!!signature}`);
+  console.log(
+    `>> Webhook payload length: ${payload.length}, signature present: ${!!signature}`
+  );
 
   try {
     // Validate inputs

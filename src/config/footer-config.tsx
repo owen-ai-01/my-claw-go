@@ -44,21 +44,21 @@ export function useFooterLinks(): NestedMenuItem[] {
       items: [
         ...(websiteConfig.blog.enable
           ? [
-            {
-              title: t('resources.items.blog'),
-              href: Routes.Blog,
-              external: false,
-            },
-          ]
+              {
+                title: t('resources.items.blog'),
+                href: Routes.Blog,
+                external: false,
+              },
+            ]
           : []),
         ...(websiteConfig.docs.enable
           ? [
-            {
-              title: t('resources.items.docs'),
-              href: Routes.Docs,
-              external: false,
-            },
-          ]
+              {
+                title: t('resources.items.docs'),
+                href: Routes.Docs,
+                external: false,
+              },
+            ]
           : []),
         {
           title: t('resources.items.changelog'),
@@ -105,7 +105,6 @@ export function useFooterLinks(): NestedMenuItem[] {
           href: Routes.TermsOfService,
           external: false,
         },
-
       ],
     },
   ];

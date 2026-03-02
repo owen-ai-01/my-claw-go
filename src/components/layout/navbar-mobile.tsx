@@ -196,12 +196,12 @@ function MainMobileMenu({ userLoggedIn, onLinkClicked }: MainMobileMenuProps) {
                 ? localePathname === '/'
                 : localePathname.startsWith(item.href)
               : item.items?.some(
-                (subItem) =>
-                  subItem.href &&
-                  (subItem.href === '/'
-                    ? localePathname === '/'
-                    : localePathname.startsWith(subItem.href))
-              );
+                  (subItem) =>
+                    subItem.href &&
+                    (subItem.href === '/'
+                      ? localePathname === '/'
+                      : localePathname.startsWith(subItem.href))
+                );
 
             return (
               <li key={item.title} className="py-1">
@@ -225,7 +225,7 @@ function MainMobileMenu({ userLoggedIn, onLinkClicked }: MainMobileMenuProps) {
                           'hover:bg-transparent hover:text-foreground',
                           'focus:bg-transparent focus:text-foreground',
                           isActive &&
-                          'font-semibold bg-transparent text-foreground'
+                            'font-semibold bg-transparent text-foreground'
                         )}
                       >
                         <span className="text-base">{item.title}</span>
@@ -260,7 +260,7 @@ function MainMobileMenu({ userLoggedIn, onLinkClicked }: MainMobileMenuProps) {
                                   'hover:bg-transparent hover:text-foreground',
                                   'focus:bg-transparent focus:text-foreground',
                                   isSubItemActive &&
-                                  'font-semibold bg-transparent text-foreground'
+                                    'font-semibold bg-transparent text-foreground'
                                 )}
                                 onClick={onLinkClicked}
                               >
@@ -271,7 +271,7 @@ function MainMobileMenu({ userLoggedIn, onLinkClicked }: MainMobileMenuProps) {
                                     'group-hover:bg-transparent group-hover:text-foreground',
                                     'group-focus:bg-transparent group-focus:text-foreground',
                                     isSubItemActive &&
-                                    'bg-transparent text-foreground'
+                                      'bg-transparent text-foreground'
                                   )}
                                 >
                                   {subItem.icon ? subItem.icon : null}
@@ -283,7 +283,7 @@ function MainMobileMenu({ userLoggedIn, onLinkClicked }: MainMobileMenuProps) {
                                       'group-hover:bg-transparent group-hover:text-foreground',
                                       'group-focus:bg-transparent group-focus:text-foreground',
                                       isSubItemActive &&
-                                      'font-semibold bg-transparent text-foreground'
+                                        'font-semibold bg-transparent text-foreground'
                                     )}
                                   >
                                     {subItem.title}
@@ -310,7 +310,7 @@ function MainMobileMenu({ userLoggedIn, onLinkClicked }: MainMobileMenuProps) {
                                       'group-hover:bg-transparent group-hover:text-foreground',
                                       'group-focus:bg-transparent group-focus:text-foreground',
                                       isSubItemActive &&
-                                      'bg-transparent text-foreground'
+                                        'bg-transparent text-foreground'
                                     )}
                                   />
                                 )}

@@ -1,6 +1,6 @@
+import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import crypto from 'node:crypto';
 
 export type UserSession = {
   id: string;
@@ -12,7 +12,9 @@ export type UserSession = {
   lastActiveAt: string;
 };
 
-const BASE_DIR = process.env.MYCLAWGO_DATA_DIR || '/home/openclaw/project/my-claw-go/.runtime-data';
+const BASE_DIR =
+  process.env.MYCLAWGO_DATA_DIR ||
+  '/home/openclaw/project/my-claw-go/.runtime-data';
 const SESSIONS_FILE = path.join(BASE_DIR, 'sessions.json');
 
 async function ensureBase() {
@@ -58,7 +60,10 @@ export async function createSession(initialPrompt: string) {
   return session;
 }
 
-export async function ensureSessionById(id: string, initialPrompt = 'user-start') {
+export async function ensureSessionById(
+  id: string,
+  initialPrompt = 'user-start'
+) {
   const sessions = await readAll();
   if (sessions[id]) {
     sessions[id].lastActiveAt = new Date().toISOString();

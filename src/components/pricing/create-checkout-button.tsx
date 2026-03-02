@@ -14,13 +14,13 @@ interface CheckoutButtonProps {
   priceId: string;
   metadata?: Record<string, string>;
   variant?:
-  | 'default'
-  | 'outline'
-  | 'destructive'
-  | 'secondary'
-  | 'ghost'
-  | 'link'
-  | null;
+    | 'default'
+    | 'outline'
+    | 'destructive'
+    | 'secondary'
+    | 'ghost'
+    | 'link'
+    | null;
   size?: 'default' | 'sm' | 'lg' | 'icon' | null;
   className?: string;
   children?: React.ReactNode;
@@ -74,11 +74,11 @@ export function CheckoutButton({
         const affonsoReferral =
           typeof document !== 'undefined'
             ? (() => {
-              const match = document.cookie.match(
-                /(?:^|; )affonso_referral=([^;]*)/
-              );
-              return match ? decodeURIComponent(match[1]) : null;
-            })()
+                const match = document.cookie.match(
+                  /(?:^|; )affonso_referral=([^;]*)/
+                );
+                return match ? decodeURIComponent(match[1]) : null;
+              })()
             : null;
         if (affonsoReferral) {
           console.log(

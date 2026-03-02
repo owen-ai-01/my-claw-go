@@ -230,7 +230,9 @@ export async function consumeCredits({
   if (paymentId) {
     const alreadyProcessed = await hasTransactionForPaymentId(paymentId);
     if (alreadyProcessed) {
-      console.log(`consumeCredits, paymentId ${paymentId} already processed, skipping.`);
+      console.log(
+        `consumeCredits, paymentId ${paymentId} already processed, skipping.`
+      );
       return;
     }
   }

@@ -1,7 +1,9 @@
 import { HeaderSection } from '@/components/layout/header-section';
 import { useTranslations } from 'next-intl';
 
-export default function SeoTextSection({ namespace = 'HomePage.seoText' }: { namespace?: string }) {
+export default function SeoTextSection({
+  namespace = 'HomePage.seoText',
+}: { namespace?: string }) {
   const t = useTranslations(namespace as any) as any;
 
   return (

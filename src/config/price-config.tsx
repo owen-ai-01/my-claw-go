@@ -32,8 +32,6 @@ export function usePricePlans(): Record<string, PricePlan> {
     };
   }
 
-
-
   if (priceConfig.plans.pro_monthly) {
     plans.pro_monthly = {
       ...priceConfig.plans.pro_monthly,
@@ -135,7 +133,6 @@ export function usePricePlans(): Record<string, PricePlan> {
       limits: [],
     };
   }
-
 
   if (priceConfig.plans.lifetime) {
     plans.lifetime = {

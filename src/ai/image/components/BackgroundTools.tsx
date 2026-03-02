@@ -224,7 +224,10 @@ export function BackgroundTools({
                 variant={isEraserMode ? 'secondary' : 'ghost'}
                 size="sm"
                 onClick={() => onEraserModeChange(!isEraserMode)}
-                className={cn('h-8 gap-2 cursor-pointer', isEraserMode && 'text-primary')}
+                className={cn(
+                  'h-8 gap-2 cursor-pointer',
+                  isEraserMode && 'text-primary'
+                )}
               >
                 <Eraser className="w-4 h-4" />
                 <span className="hidden sm:inline">

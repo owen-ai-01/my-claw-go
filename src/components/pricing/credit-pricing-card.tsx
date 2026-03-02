@@ -53,7 +53,9 @@ export function CreditPricingCard({ className }: { className?: string }) {
   const [selectedPackageId, setSelectedPackageId] = useState<string>(() => {
     if (Object.keys(creditPackages).length === 0) return '';
     // Try to select 'enterprise' first, otherwise the first available
-    return creditPackages.enterprise ? 'enterprise' : sortedPackages[0]?.id || '';
+    return creditPackages.enterprise
+      ? 'enterprise'
+      : sortedPackages[0]?.id || '';
   });
 
   const selectedPackage = creditPackages[selectedPackageId];
@@ -155,7 +157,6 @@ export function CreditPricingCard({ className }: { className?: string }) {
         <hr className="border-dashed" />
 
         <ul className="list-outside space-y-4 text-sm">
-
           <li className="flex items-center gap-2">
             <CheckCircleIcon className="size-4 text-green-500 dark:text-green-400" />
             <span>1 Year Validity</span>
@@ -176,7 +177,6 @@ export function CreditPricingCard({ className }: { className?: string }) {
                   })}
                 </span>
               </li>
-
             </>
           )}
         </ul>

@@ -1,20 +1,24 @@
-import { NextResponse } from 'next/server';
-import { headers } from 'next/headers';
-import { and, desc, eq, or } from 'drizzle-orm';
-import { auth } from '@/lib/auth';
 import { getDb } from '@/db';
 import { payment, userCredit } from '@/db/schema';
+import { auth } from '@/lib/auth';
 import { PaymentTypes } from '@/payment/types';
+import { and, desc, eq, or } from 'drizzle-orm';
+import { headers } from 'next/headers';
+import { NextResponse } from 'next/server';
 
 export async function GET(
   _req: Request,
-  { params }: { params: Promise<{ sessionId: string }> },
+  { params }: { params: Promise<{ sessionId: string }> }
 ) {
   const { sessionId } = await params;
 
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user?.id) {
-    return NextResponse.json({ ok: true, action: 'redirect-login', redirectTo: '/login' });
+    return NextResponse.json({
+      ok: true,
+      action: 'redirect-login',
+      redirectTo: '/login',
+    });
   }
 
   const userId = session.user.id;
@@ -37,14 +41,18 @@ export async function GET(
         eq(payment.userId, userId),
         eq(payment.type, PaymentTypes.SUBSCRIPTION),
         eq(payment.paid, true),
-        or(eq(payment.status, 'active'), eq(payment.status, 'trialing')),
-      ),
+        or(eq(payment.status, 'active'), eq(payment.status, 'trialing'))
+      )
     )
     .orderBy(desc(payment.createdAt))
     .limit(1);
 
   if (!sub.length) {
-    return NextResponse.json({ ok: true, action: 'redirect-pricing', redirectTo: '/pricing' });
+    return NextResponse.json({
+      ok: true,
+      action: 'redirect-pricing',
+      redirectTo: '/pricing',
+    });
   }
 
   const credit = await db

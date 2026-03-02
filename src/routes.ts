@@ -27,7 +27,6 @@ export enum Routes {
   PrivacyPolicy = '/privacy',
   TermsOfService = '/terms',
 
-
   // auth routes
   Login = '/auth/login',
   Register = '/auth/register',

@@ -28,9 +28,7 @@ export default async function ImpressumPage() {
       </p>
 
       <h2>Kontakt</h2>
-      <p>
-        E-Mail: support@myclawgo.com
-      </p>
+      <p>E-Mail: support@myclawgo.com</p>
 
       <h2>Redaktionell verantwortlich</h2>
       <p>

@@ -30,7 +30,11 @@ export const createCreditCheckoutSession = userActionClient
     const currentUser = (ctx as { user: User }).user;
 
     try {
-      console.log('Starting createCreditCheckoutSession', { packageId, priceId, userId: currentUser.id });
+      console.log('Starting createCreditCheckoutSession', {
+        packageId,
+        priceId,
+        userId: currentUser.id,
+      });
       // Check if Stripe is properly configured
       if (!process.env.STRIPE_SECRET_KEY) {
         console.error('STRIPE_SECRET_KEY environment variable is not set');

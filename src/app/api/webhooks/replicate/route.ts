@@ -33,16 +33,17 @@ export async function POST(req: Request) {
             userId,
             amount: cost,
             description: `Video Generation (Webhook): ${duration}s @ ${height}p`,
-            paymentId: prediction.id
+            paymentId: prediction.id,
           });
-          console.log(`Credits consumed for user ${userId}, paymentId: ${prediction.id}`);
+          console.log(
+            `Credits consumed for user ${userId}, paymentId: ${prediction.id}`
+          );
         } catch (err) {
           console.error('Error consuming credits in webhook:', err);
         }
       } else {
         console.warn('No userId provided in webhook, cannot consume credits');
       }
-
     } else if (prediction.status === 'failed') {
       // Handle failure
       console.error('Generation failed:', prediction.error);

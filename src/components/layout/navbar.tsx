@@ -1,8 +1,8 @@
 'use client';
 
-import { CreditsBalanceButton } from '@/components/layout/credits-balance-button';
 import { LoginWrapper } from '@/components/auth/login-wrapper';
 import Container from '@/components/layout/container';
+import { CreditsBalanceButton } from '@/components/layout/credits-balance-button';
 import { Logo } from '@/components/layout/logo';
 import { ModeSwitcher } from '@/components/layout/mode-switcher';
 import { NavbarMobile } from '@/components/layout/navbar-mobile';
@@ -126,7 +126,7 @@ export function Navbar({ scroll }: NavBarProps) {
                                       'hover:bg-accent hover:text-accent-foreground',
                                       'focus:bg-accent focus:text-accent-foreground',
                                       isSubItemActive &&
-                                      'bg-accent text-accent-foreground'
+                                        'bg-accent text-accent-foreground'
                                     )}
                                   >
                                     <div
@@ -136,7 +136,7 @@ export function Navbar({ scroll }: NavBarProps) {
                                         'group-hover:bg-transparent group-hover:text-accent-foreground',
                                         'group-focus:bg-transparent group-focus:text-accent-foreground',
                                         isSubItemActive &&
-                                        'bg-transparent text-accent-foreground'
+                                          'bg-transparent text-accent-foreground'
                                       )}
                                     >
                                       {subItem.icon ? subItem.icon : null}
@@ -148,7 +148,7 @@ export function Navbar({ scroll }: NavBarProps) {
                                           'group-hover:bg-transparent group-hover:text-accent-foreground',
                                           'group-focus:bg-transparent group-focus:text-accent-foreground',
                                           isSubItemActive &&
-                                          'bg-transparent text-accent-foreground'
+                                            'bg-transparent text-accent-foreground'
                                         )}
                                       >
                                         {subItem.title}
@@ -160,7 +160,7 @@ export function Navbar({ scroll }: NavBarProps) {
                                             'group-hover:bg-transparent group-hover:text-accent-foreground/80',
                                             'group-focus:bg-transparent group-focus:text-accent-foreground/80',
                                             isSubItemActive &&
-                                            'bg-transparent text-accent-foreground/80'
+                                              'bg-transparent text-accent-foreground/80'
                                           )}
                                         >
                                           {subItem.description}
@@ -174,7 +174,7 @@ export function Navbar({ scroll }: NavBarProps) {
                                           'group-hover:bg-transparent group-hover:text-accent-foreground',
                                           'group-focus:bg-transparent group-focus:text-accent-foreground',
                                           isSubItemActive &&
-                                          'bg-transparent text-accent-foreground'
+                                            'bg-transparent text-accent-foreground'
                                         )}
                                       />
                                     )}

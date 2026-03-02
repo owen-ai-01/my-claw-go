@@ -111,9 +111,9 @@ export function PricingCard({
       className={cn(
         'flex flex-col h-full',
         plan.popular &&
-        'relative border-blue-500 shadow-lg shadow-blue-100 dark:shadow-blue-900/20',
+          'relative border-blue-500 shadow-lg shadow-blue-100 dark:shadow-blue-900/20',
         isCurrentPlan &&
-        'border-blue-500 shadow-lg shadow-blue-100 dark:shadow-blue-900/20',
+          'border-blue-500 shadow-lg shadow-blue-100 dark:shadow-blue-900/20',
         className
       )}
     >

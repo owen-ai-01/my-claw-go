@@ -71,13 +71,13 @@ export function useSidebarLinks(): NestedMenuItem[] {
         },
         ...(websiteConfig.credits.enableCredits
           ? [
-            {
-              title: t('settings.credits.title'),
-              icon: <CoinsIcon className="size-4 shrink-0" />,
-              href: Routes.SettingsCredits,
-              external: false,
-            },
-          ]
+              {
+                title: t('settings.credits.title'),
+                icon: <CoinsIcon className="size-4 shrink-0" />,
+                href: Routes.SettingsCredits,
+                external: false,
+              },
+            ]
           : []),
         {
           title: t('settings.security.title'),

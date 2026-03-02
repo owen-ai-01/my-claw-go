@@ -73,7 +73,7 @@ export function StartMyOpenClawButton() {
         type="button"
         onClick={onClick}
         disabled={loading}
-        className="rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-60"
+        className="rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 px-8 py-4 text-lg font-bold text-white shadow-lg hover:shadow-xl transition-all hover:scale-105 disabled:opacity-60"
       >
         {loading ? 'Checking...' : 'Start My OpenClaw'}
       </button>

@@ -70,10 +70,13 @@ export class S3Provider implements StorageProvider {
     const isR2 = endpoint.includes('r2.cloudflarestorage.com');
 
     const finalEndpoint = isR2
-      ? endpoint.replace(/\/$/, '')  // R2: use endpoint as-is
-      : `${endpoint.replace(/\/$/, '')}/${bucketName}`;  // S3: include bucket
+      ? endpoint.replace(/\/$/, '') // R2: use endpoint as-is
+      : `${endpoint.replace(/\/$/, '')}/${bucketName}`; // S3: include bucket
 
-    console.log(`[S3Provider] Using ${isR2 ? 'R2' : 'S3'} endpoint:`, finalEndpoint);
+    console.log(
+      `[S3Provider] Using ${isR2 ? 'R2' : 'S3'} endpoint:`,
+      finalEndpoint
+    );
 
     this.s3Client = new s3mini({
       accessKeyId,
@@ -132,9 +135,13 @@ export class S3Provider implements StorageProvider {
 
         if (response.status === 403) {
           console.error('  🔒 403 Forbidden - Check:');
-          console.error('    - Access key ID and secret access key are correct');
+          console.error(
+            '    - Access key ID and secret access key are correct'
+          );
           console.error('    - R2 bucket permissions allow PutObject');
-          console.error('    - Endpoint URL is correct (should not include bucket for R2)');
+          console.error(
+            '    - Endpoint URL is correct (should not include bucket for R2)'
+          );
         }
 
         throw new UploadError(errorMsg);

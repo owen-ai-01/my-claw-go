@@ -156,8 +156,16 @@ export const getCurrentPlanAction = userActionClient
           ) || null;
 
         if (!subscriptionPlan) {
-          console.warn('Check current plan, subscription plan NOT found for priceId:', activeSubscription!.priceId);
-          console.warn('Available plan priceIds:', JSON.stringify(plans.map(p => p.prices.map(price => price.priceId)).flat()));
+          console.warn(
+            'Check current plan, subscription plan NOT found for priceId:',
+            activeSubscription!.priceId
+          );
+          console.warn(
+            'Available plan priceIds:',
+            JSON.stringify(
+              plans.flatMap((p) => p.prices.map((price) => price.priceId))
+            )
+          );
         }
 
         return {

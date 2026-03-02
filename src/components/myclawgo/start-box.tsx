@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { useLocale } from 'next-intl';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 function buildBotPath(locale: string, sessionId: string) {
   if (!locale || locale === 'de') return `/${sessionId}/bot`;
@@ -47,7 +47,11 @@ export function StartBox({
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok || !data?.ok) {
-        setError(normalizeError(String(data?.error || 'Failed to create runtime session')));
+        setError(
+          normalizeError(
+            String(data?.error || 'Failed to create runtime session')
+          )
+        );
         return;
       }
 
