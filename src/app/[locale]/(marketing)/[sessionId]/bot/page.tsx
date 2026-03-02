@@ -1,5 +1,9 @@
 'use client';
 
+import {
+  getClientTimeoutMs,
+  isSafeCommandInput,
+} from '@/lib/myclawgo/command-policy';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -19,36 +23,6 @@ function normalizeError(raw: string) {
     return 'Credits are insufficient. Please recharge to continue.';
   }
   return raw;
-}
-
-const SAFE_COMMAND_PATTERNS: RegExp[] = [
-  /^openclaw\s+skills\s+list$/i,
-  /^openclaw\s+skills\s+check(?:\s+[a-zA-Z0-9_.@/-]+)?$/i,
-  /^openclaw\s+skills\s+info\s+[a-zA-Z0-9_.@/-]+$/i,
-  /^openclaw\s+models\s+status$/i,
-  /^openclaw\s+models\s+list$/i,
-  /^openclaw\s+models\s+set\s+[a-zA-Z0-9_.:/-]+$/i,
-  /^openclaw\s+agents\s+list(?:\s+--bindings)?$/i,
-  /^openclaw\s+agents\s+add\s+[a-zA-Z0-9_.-]+$/i,
-  /^openclaw\s+agent\s+--(?:message|agent|thinking|model|help)\b[\s\S]*$/i,
-  /^clawhub\s+install\s+[a-zA-Z0-9_.@/-]+$/i,
-  /^clawhub\s+list$/i,
-  /^clawhub\s+search\s+[^\n]+$/i,
-];
-
-function isSafeCommandInput(text: string) {
-  const value = text.trim();
-  if (!value || value.length > 300) return false;
-  if (/[\r\n]/.test(value)) return false;
-  return SAFE_COMMAND_PATTERNS.some((pattern) => pattern.test(value));
-}
-
-function getClientTimeoutMs(isCommand: boolean, command?: string) {
-  if (!isCommand) return 25_000;
-  const c = (command || '').toLowerCase();
-  if (c.startsWith('clawhub install ')) return 130_000;
-  if (c.startsWith('openclaw agent ')) return 70_000;
-  return 30_000;
 }
 
 export default function BotPage() {
@@ -162,7 +136,7 @@ export default function BotPage() {
         {
           role: 'bot',
           text: aborted
-            ? '⚠️ Request timeout after 25s. Please retry or shorten the command.'
+            ? '⚠️ Request timed out. Please retry once; for install/agent commands, allow more time.'
             : '⚠️ Network request failed. Please retry.',
         },
       ]);

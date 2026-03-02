@@ -3,6 +3,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { promisify } from 'node:util';
+import { getCommandTimeoutMs, isSafeCommandInput } from './command-policy';
 import type { UserSession } from './session-store';
 
 const execFileAsync = promisify(execFile);
@@ -169,45 +170,13 @@ export async function runOpenClawChatInContainer(
   }
 }
 
-const ALLOWED_COMMAND_PATTERNS: RegExp[] = [
-  /^openclaw\s+skills\s+list$/,
-  /^openclaw\s+skills\s+check(?:\s+[a-zA-Z0-9_.@\/-]+)?$/,
-  /^openclaw\s+skills\s+info\s+[a-zA-Z0-9_.@\/-]+$/,
-  /^openclaw\s+models\s+status$/,
-  /^openclaw\s+models\s+list$/,
-  /^openclaw\s+models\s+set\s+[a-zA-Z0-9_.:\/-]+$/,
-  /^openclaw\s+agents\s+list(?:\s+--bindings)?$/,
-  /^openclaw\s+agents\s+add\s+[a-zA-Z0-9_.-]+$/,
-  /^openclaw\s+agent\s+--(?:message|agent|thinking|model|help)\b[\s\S]*$/,
-  /^clawhub\s+install\s+[a-zA-Z0-9_.@\/-]+$/,
-  /^clawhub\s+list$/,
-  /^clawhub\s+search\s+[^\n]+$/,
-];
-
-const FORBIDDEN_SHELL_CHARS = /[;&|><`$\\]/;
-
-function isAllowedCommand(command: string) {
-  const c = command.trim();
-  if (!c || c.length > 300) return false;
-  if (/[\r\n]/.test(c)) return false;
-  if (FORBIDDEN_SHELL_CHARS.test(c)) return false;
-  return ALLOWED_COMMAND_PATTERNS.some((pattern) => pattern.test(c));
-}
-
-function getCommandTimeoutMs(command: string) {
-  const c = command.trim().toLowerCase();
-  if (c.startsWith('clawhub install ')) return 120_000;
-  if (c.startsWith('openclaw agent ')) return 60_000;
-  return 20_000;
-}
-
 export async function runWhitelistedCommandInContainer(
   session: UserSession,
   command: string
 ) {
   const containerName = safeName(session.containerName);
 
-  if (!isAllowedCommand(command)) {
+  if (!isSafeCommandInput(command)) {
     return {
       ok: false as const,
       error:
