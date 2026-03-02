@@ -1,13 +1,13 @@
-import { NextResponse } from 'next/server';
-import { headers } from 'next/headers';
+import { consumeCredits, getUserCredits } from '@/credits/credits';
 import { auth } from '@/lib/auth';
-import { getSession, touchSession } from '@/lib/myclawgo/session-store';
 import {
+  ensureUserContainer,
   runOpenClawChatInContainer,
   runWhitelistedCommandInContainer,
-  ensureUserContainer,
 } from '@/lib/myclawgo/docker-manager';
-import { consumeCredits, getUserCredits } from '@/credits/credits';
+import { getSession, touchSession } from '@/lib/myclawgo/session-store';
+import { headers } from 'next/headers';
+import { NextResponse } from 'next/server';
 
 type Intent =
   | { kind: 'install-skill'; command: string; skill: string }
@@ -19,8 +19,12 @@ function parseNaturalLanguageIntent(message: string): Intent {
   const text = message.trim();
   if (!text) return { kind: 'none' };
 
-  const installCn = text.match(/安装(?:一下)?\s*([a-zA-Z0-9-_]+)\s*(?:这个)?\s*skill/i);
-  const installEn = text.match(/install\s+(?:the\s+)?skill\s+([a-zA-Z0-9-_]+)/i);
+  const installCn = text.match(
+    /安装(?:一下)?\s*([a-zA-Z0-9-_]+)\s*(?:这个)?\s*skill/i
+  );
+  const installEn = text.match(
+    /install\s+(?:the\s+)?skill\s+([a-zA-Z0-9-_]+)/i
+  );
   const installAlt = text.match(/skill\s*[:：]\s*([a-zA-Z0-9-_]+)\s*.*安装/i);
 
   const skill = installCn?.[1] || installEn?.[1] || installAlt?.[1];
@@ -62,19 +66,35 @@ function creditsFromUsd(usdCost: number) {
 
 export async function POST(
   req: Request,
-  { params }: { params: Promise<{ sessionId: string }> },
+  { params }: { params: Promise<{ sessionId: string }> }
 ) {
   const { sessionId } = await params;
   const body = await req.json().catch(() => ({}));
   const message = String(body?.message || '').trim();
 
   if (!message) {
-    return NextResponse.json({ ok: false, error: 'Message is required' }, { status: 400 });
+    return NextResponse.json(
+      { ok: false, error: 'Message is required' },
+      { status: 400 }
+    );
+  }
+
+  if (message.length > 4000) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: 'Message is too long. Keep it under 4000 characters.',
+      },
+      { status: 400 }
+    );
   }
 
   const runtimeSession = await getSession(sessionId);
   if (!runtimeSession) {
-    return NextResponse.json({ ok: false, error: 'Session not found' }, { status: 404 });
+    return NextResponse.json(
+      { ok: false, error: 'Session not found' },
+      { status: 404 }
+    );
   }
 
   await touchSession(sessionId);
@@ -85,15 +105,23 @@ export async function POST(
   // Ensure container exists for this user session (covers old users without pre-created runtime)
   const ensured = await ensureUserContainer(runtimeSession);
   if (!ensured.ok) {
-    return NextResponse.json({ ok: false, error: ensured.error || 'Failed to prepare user runtime' }, { status: 500 });
+    return NextResponse.json(
+      { ok: false, error: ensured.error || 'Failed to prepare user runtime' },
+      { status: 500 }
+    );
   }
-
 
   const intent = parseNaturalLanguageIntent(message);
   if (intent.kind !== 'none') {
-    const result = await runWhitelistedCommandInContainer(runtimeSession, intent.command);
+    const result = await runWhitelistedCommandInContainer(
+      runtimeSession,
+      intent.command
+    );
     if (!result.ok) {
-      return NextResponse.json({ ok: false, error: result.error }, { status: 500 });
+      return NextResponse.json(
+        { ok: false, error: result.error },
+        { status: 500 }
+      );
     }
 
     const header =
@@ -113,7 +141,10 @@ export async function POST(
 
   const result = await runOpenClawChatInContainer(runtimeSession, message);
   if (!result.ok) {
-    return NextResponse.json({ ok: false, error: result.error }, { status: 500 });
+    return NextResponse.json(
+      { ok: false, error: result.error },
+      { status: 500 }
+    );
   }
 
   // Credit deduction only when session owner is authenticated and calling their own bot route
@@ -132,15 +163,17 @@ export async function POST(
       creditsUsed = used;
       creditsLeft = await getUserCredits(currentUserId);
     } catch (error) {
-      const msg = error instanceof Error ? error.message : 'credit consume failed';
+      const msg =
+        error instanceof Error ? error.message : 'credit consume failed';
       if (msg.toLowerCase().includes('insufficient')) {
         return NextResponse.json(
           {
             ok: false,
-            error: 'Credits are insufficient. Please recharge credits to continue running tasks.',
+            error:
+              'Credits are insufficient. Please recharge credits to continue running tasks.',
             code: 'INSUFFICIENT_CREDITS',
           },
-          { status: 402 },
+          { status: 402 }
         );
       }
       // non-blocking for temporary issues

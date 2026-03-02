@@ -1,6 +1,6 @@
-import { NextResponse } from 'next/server';
-import { createSession } from '@/lib/myclawgo/session-store';
 import { ensureUserContainer } from '@/lib/myclawgo/docker-manager';
+import { createSession } from '@/lib/myclawgo/session-store';
+import { NextResponse } from 'next/server';
 
 export async function POST(req: Request) {
   try {
@@ -8,7 +8,20 @@ export async function POST(req: Request) {
     const prompt = String(body?.prompt || '').trim();
 
     if (!prompt) {
-      return NextResponse.json({ ok: false, error: 'Prompt is required' }, { status: 400 });
+      return NextResponse.json(
+        { ok: false, error: 'Prompt is required' },
+        { status: 400 }
+      );
+    }
+
+    if (prompt.length > 600) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: 'Prompt is too long. Keep it under 600 characters.',
+        },
+        { status: 400 }
+      );
     }
 
     const session = await createSession(prompt);
@@ -22,8 +35,11 @@ export async function POST(req: Request) {
     });
   } catch (error: unknown) {
     return NextResponse.json(
-      { ok: false, error: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 },
+      {
+        ok: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      },
+      { status: 500 }
     );
   }
 }

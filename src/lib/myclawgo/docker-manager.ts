@@ -1,31 +1,39 @@
 import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
+import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import crypto from 'node:crypto';
+import { promisify } from 'node:util';
 import type { UserSession } from './session-store';
 
 const execFileAsync = promisify(execFile);
 
 const OPENCLAW_IMAGE = process.env.MYCLAWGO_OPENCLAW_IMAGE || 'ubuntu:24.04';
 const HOST_OPENCLAW_CONFIG =
-  process.env.MYCLAWGO_SEED_CONFIG_PATH || '/home/openclaw/.openclaw/openclaw.json';
+  process.env.MYCLAWGO_SEED_CONFIG_PATH ||
+  '/home/openclaw/.openclaw/openclaw.json';
 const HOST_AUTH_PROFILES =
-  process.env.MYCLAWGO_SEED_AUTH_PATH || '/home/openclaw/.openclaw/agents/main/agent/auth-profiles.json';
-const HOST_PW_DIR = process.env.MYCLAWGO_PW_DIR || '/home/openclaw/docker-openclaw-pw';
+  process.env.MYCLAWGO_SEED_AUTH_PATH ||
+  '/home/openclaw/.openclaw/agents/main/agent/auth-profiles.json';
+const HOST_PW_DIR =
+  process.env.MYCLAWGO_PW_DIR || '/home/openclaw/docker-openclaw-pw';
 
 function safeName(value: string) {
   return value.replace(/[^a-zA-Z0-9_.-]/g, '');
 }
 
-async function dockerExec(containerName: string, cmd: string) {
-  const { stdout, stderr } = await execFileAsync('docker', [
-    'exec',
-    containerName,
-    'sh',
-    '-lc',
-    cmd,
-  ]);
+async function dockerExec(
+  containerName: string,
+  cmd: string,
+  timeoutMs = 20_000
+) {
+  const { stdout, stderr } = await execFileAsync(
+    'docker',
+    ['exec', containerName, 'sh', '-lc', cmd],
+    {
+      timeout: timeoutMs,
+      maxBuffer: 1024 * 1024,
+    }
+  );
   return { stdout, stderr };
 }
 
@@ -67,10 +75,10 @@ async function bootstrapOpenClaw(containerName: string) {
     'if [ -f /seed/openclaw.json ] && [ ! -f /home/openclaw/.openclaw/openclaw.json ]; then cp /seed/openclaw.json /home/openclaw/.openclaw/openclaw.json; fi',
     'if [ -f /seed/auth-profiles.json ] && [ ! -f /home/openclaw/.openclaw/agents/main/agent/auth-profiles.json ]; then cp /seed/auth-profiles.json /home/openclaw/.openclaw/agents/main/agent/auth-profiles.json; fi',
     'chown -R openclaw:openclaw /home/openclaw/.openclaw',
-    "su - openclaw -c \"if ! command -v node >/dev/null 2>&1; then curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash - && sudo apt-get install -y nodejs; fi\"",
+    'su - openclaw -c "if ! command -v node >/dev/null 2>&1; then curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash - && sudo apt-get install -y nodejs; fi"',
     "su - openclaw -c 'if ! command -v openclaw >/dev/null 2>&1; then sudo npm install -g openclaw@latest; fi'",
     "su - openclaw -c 'openclaw models set openrouter/minimax/minimax-m2.5 || true'",
-    "su - openclaw -c 'pgrep -f \"openclaw gateway run\" >/dev/null || nohup openclaw gateway run --auth none --bind loopback --port 18789 > /home/openclaw/.openclaw/gateway.log 2>&1 &'",
+    'su - openclaw -c \'pgrep -f "openclaw gateway run" >/dev/null || nohup openclaw gateway run --auth none --bind loopback --port 18789 > /home/openclaw/.openclaw/gateway.log 2>&1 &\'',
   ].join('; ');
 
   await dockerExec(containerName, script);
@@ -86,7 +94,12 @@ export async function ensureUserContainer(session: UserSession) {
     // continue and create
   }
 
-  const envs = ['OPENROUTER_API_KEY', 'OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'GOOGLE_API_KEY']
+  const envs = [
+    'OPENROUTER_API_KEY',
+    'OPENAI_API_KEY',
+    'ANTHROPIC_API_KEY',
+    'GOOGLE_API_KEY',
+  ]
     .map((k) => ({ key: k, value: process.env[k] }))
     .filter((e) => Boolean(e.value));
 
@@ -123,7 +136,10 @@ export async function ensureUserContainer(session: UserSession) {
   }
 }
 
-export async function runOpenClawChatInContainer(session: UserSession, message: string) {
+export async function runOpenClawChatInContainer(
+  session: UserSession,
+  message: string
+) {
   const containerName = safeName(session.containerName);
 
   await execFileAsync('docker', ['start', containerName]).catch(() => {});
@@ -135,7 +151,7 @@ export async function runOpenClawChatInContainer(session: UserSession, message: 
   await dockerExec(containerName, ensureGatewayCmd).catch(() => {});
 
   const cmd = `su - openclaw -c ${JSON.stringify(
-    `openclaw agent --agent main --message ${JSON.stringify(message)} --thinking off`,
+    `openclaw agent --agent main --message ${JSON.stringify(message)} --thinking off`
   )}`;
 
   try {
@@ -145,40 +161,50 @@ export async function runOpenClawChatInContainer(session: UserSession, message: 
   } catch (error: unknown) {
     return {
       ok: false as const,
-      error: error instanceof Error ? error.message : 'Failed to execute containerized OpenClaw',
+      error:
+        error instanceof Error
+          ? error.message
+          : 'Failed to execute containerized OpenClaw',
     };
   }
 }
 
-
-const ALLOWED_PREFIXES = [
-  'openclaw skills list',
-  'openclaw skills check',
-  'openclaw skills info',
-  'openclaw models status',
-  'openclaw models list',
-  'openclaw models set ',
-  'openclaw agents list',
-  'openclaw agents add ',
-  'openclaw agent --',
-  'clawhub install ',
-  'clawhub list',
-  'clawhub search ',
+const ALLOWED_COMMAND_PATTERNS: RegExp[] = [
+  /^openclaw\s+skills\s+list$/,
+  /^openclaw\s+skills\s+check(?:\s+[a-zA-Z0-9_.@\/-]+)?$/,
+  /^openclaw\s+skills\s+info\s+[a-zA-Z0-9_.@\/-]+$/,
+  /^openclaw\s+models\s+status$/,
+  /^openclaw\s+models\s+list$/,
+  /^openclaw\s+models\s+set\s+[a-zA-Z0-9_.:\/-]+$/,
+  /^openclaw\s+agents\s+list(?:\s+--bindings)?$/,
+  /^openclaw\s+agents\s+add\s+[a-zA-Z0-9_.-]+$/,
+  /^openclaw\s+agent\s+--(?:message|agent|thinking|model|help)\b[\s\S]*$/,
+  /^clawhub\s+install\s+[a-zA-Z0-9_.@\/-]+$/,
+  /^clawhub\s+list$/,
+  /^clawhub\s+search\s+[^\n]+$/,
 ];
+
+const FORBIDDEN_SHELL_CHARS = /[;&|><`$\\]/;
 
 function isAllowedCommand(command: string) {
   const c = command.trim();
-  return ALLOWED_PREFIXES.some((prefix) => c.startsWith(prefix));
+  if (!c || c.length > 300) return false;
+  if (/[\r\n]/.test(c)) return false;
+  if (FORBIDDEN_SHELL_CHARS.test(c)) return false;
+  return ALLOWED_COMMAND_PATTERNS.some((pattern) => pattern.test(c));
 }
 
-export async function runWhitelistedCommandInContainer(session: UserSession, command: string) {
+export async function runWhitelistedCommandInContainer(
+  session: UserSession,
+  command: string
+) {
   const containerName = safeName(session.containerName);
 
   if (!isAllowedCommand(command)) {
     return {
       ok: false as const,
       error:
-        'Command not allowed. This endpoint only supports safe OpenClaw/ClawHub commands for user-level runtime operations.',
+        'Command not allowed. Only safe OpenClaw/ClawHub commands without shell operators are supported.',
     };
   }
 
@@ -186,13 +212,25 @@ export async function runWhitelistedCommandInContainer(session: UserSession, com
 
   const wrapped = `su - openclaw -c ${JSON.stringify(command)}`;
   try {
-    const { stdout, stderr } = await dockerExec(containerName, wrapped);
-    const output = `${stdout || ''}${stderr || ''}`.trim() || '(no output)';
+    const { stdout, stderr } = await dockerExec(containerName, wrapped, 20_000);
+    const merged = `${stdout || ''}${stderr || ''}`.trim() || '(no output)';
+    const output =
+      merged.length > 8_000
+        ? `${merged.slice(0, 8_000)}\n\n...output truncated...`
+        : merged;
     return { ok: true as const, output };
   } catch (error: unknown) {
+    const message =
+      error instanceof Error ? error.message : 'Container command failed';
+    if (message.includes('timed out')) {
+      return {
+        ok: false as const,
+        error: 'Command timed out after 20s. Please run a shorter command.',
+      };
+    }
     return {
       ok: false as const,
-      error: error instanceof Error ? error.message : 'Container command failed',
+      error: message,
     };
   }
 }
