@@ -209,6 +209,19 @@ export async function runWhitelistedCommandInContainer(
         error: `Command timed out after ${Math.floor(timeoutMs / 1000)}s. Please retry with a shorter or simpler command.`,
       };
     }
+    const lower = message.toLowerCase();
+    if (
+      lower.includes('no such container') ||
+      lower.includes('is not running') ||
+      lower.includes('cannot connect to the docker daemon') ||
+      lower.includes('container not found')
+    ) {
+      return {
+        ok: false as const,
+        error:
+          'Runtime container is not ready. Please try again or contact support.',
+      };
+    }
     return {
       ok: false as const,
       error: message,

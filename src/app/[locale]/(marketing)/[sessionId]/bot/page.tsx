@@ -22,6 +22,14 @@ function normalizeError(raw: string) {
   if (lower.includes('insufficient') && lower.includes('credit')) {
     return 'Credits are insufficient. Please recharge to continue.';
   }
+  if (
+    lower.includes('no such container') ||
+    lower.includes('is not running') ||
+    lower.includes('cannot connect to the docker daemon') ||
+    lower.includes('container not found')
+  ) {
+    return 'Runtime container is not ready. Please try again or contact support.';
+  }
   return raw;
 }
 
