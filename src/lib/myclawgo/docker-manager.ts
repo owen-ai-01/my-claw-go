@@ -206,7 +206,7 @@ export async function runWhitelistedCommandInContainer(
     if (message.includes('timed out')) {
       return {
         ok: false as const,
-        error: `Command timed out after ${Math.floor(timeoutMs / 1000)}s. Please retry with a shorter or simpler command.`,
+        error: `Command timed out after ${Math.floor(timeoutMs / 1000)}s. Please retry with a shorter or simpler command. If this is a package installation, it can take up to 2 minutes.`,
       };
     }
     const lower = message.toLowerCase();
