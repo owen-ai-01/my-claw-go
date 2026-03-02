@@ -19,7 +19,8 @@ export async function generateMetadata({
 
   return constructMetadata({
     title: 'My Claw Go: Hosted OpenClaw Without Setup | OpenClaw Start',
-    description:
+      description:
+        "My Claw Go: Get your own private OpenClaw workspace instantly—no VPS, no setup, no API keys required. Sign up and start automating your workflows in minutes.",
       'My Claw Go helps you launch your own private OpenClaw workspace without VPS, local setup, or API key hassle. Sign up, pay, and start fast.My openclaw start.',
     locale,
     pathname: '/',
@@ -122,8 +123,7 @@ export default async function HomePage(props: HomePageProps) {
         <main className="mx-auto max-w-6xl px-6 py-14 md:py-20">
           <section className="rounded-3xl border border-border bg-card p-8 shadow-xl md:p-12">
             <h1 className="mx-auto max-w-5xl text-center text-4xl font-semibold leading-tight md:text-6xl">
-              Get your own OpenClaw after signup and payment. No VPS. No
-              always-on PC. No API key headache.
+              Launch your private OpenClaw workspace in minutes—no VPS, no setup, no API key hassle.
             </h1>
             <p className="mx-auto mt-5 max-w-4xl text-center text-base text-muted-foreground md:text-lg">
               My Claw Go is built for people who want results, not setup
