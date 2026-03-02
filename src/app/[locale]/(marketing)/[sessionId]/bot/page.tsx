@@ -1,19 +1,27 @@
 'use client';
 
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { useParams, useSearchParams, useRouter } from 'next/navigation';
 
 function normalizeError(raw: string) {
   if (!raw) return 'Request failed. Please retry.';
   if (raw.includes('spawn docker ENOENT')) {
     return 'Runtime backend is not ready: Docker is missing on server.';
   }
+  if (raw.includes('Command not allowed')) {
+    return 'Command blocked by safety policy. Try: openclaw skills list / openclaw models status / clawhub search <keyword>.';
+  }
+  if (raw.includes('timed out')) {
+    return 'Command timed out (20s). Try a shorter command.';
+  }
   return raw;
 }
 
 export default function BotPage() {
-  const params = useParams<{ sessionId: string }>();
+  const params = useParams<{ sessionId: string; locale?: string }>();
   const sessionId = params.sessionId;
+  const locale = params.locale || 'en';
+  const pricingHref = `/${locale}/pricing`;
   const searchParams = useSearchParams();
   const router = useRouter();
   const [guardReady, setGuardReady] = useState(false);
@@ -22,14 +30,18 @@ export default function BotPage() {
   const [lowCredits, setLowCredits] = useState(lowCreditsFromQuery);
 
   const [input, setInput] = useState('');
-  const [messages, setMessages] = useState<Array<{ role: 'user' | 'bot'; text: string }>>([]);
+  const [messages, setMessages] = useState<
+    Array<{ role: 'user' | 'bot'; text: string }>
+  >([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     let mounted = true;
     const run = async () => {
       try {
-        const res = await fetch(`/api/runtime/${sessionId}/guard`, { method: 'GET' });
+        const res = await fetch(`/api/runtime/${sessionId}/guard`, {
+          method: 'GET',
+        });
         const data = await res.json().catch(() => ({}));
 
         if (!mounted) return;
@@ -61,7 +73,7 @@ export default function BotPage() {
 
   async function onSend() {
     const text = input.trim();
-    if (!text || loading) return;
+    if (!text || loading || lowCredits) return;
 
     setMessages((m) => [...m, { role: 'user', text }]);
     setInput('');
@@ -72,17 +84,29 @@ export default function BotPage() {
       const endpoint = isCommand
         ? `/api/runtime/${sessionId}/exec`
         : `/api/runtime/${sessionId}/chat`;
-      const payload = isCommand ? { command: text.slice(5).trim() } : { message: text };
+      const payload = isCommand
+        ? { command: text.slice(5).trim() }
+        : { message: text };
 
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 25_000);
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(payload),
+        signal: controller.signal,
       });
+      clearTimeout(timeout);
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok || !data?.ok) {
-        setMessages((m) => [...m, { role: 'bot', text: `⚠️ ${normalizeError(String(data?.error || 'Request failed'))}` }]);
+        setMessages((m) => [
+          ...m,
+          {
+            role: 'bot',
+            text: `⚠️ ${normalizeError(String(data?.error || 'Request failed'))}`,
+          },
+        ]);
         return;
       }
 
@@ -91,8 +115,17 @@ export default function BotPage() {
         : data?.reply || 'No reply';
 
       setMessages((m) => [...m, { role: 'bot', text: replyText }]);
-    } catch {
-      setMessages((m) => [...m, { role: 'bot', text: '⚠️ Network request failed. Please retry.' }]);
+    } catch (error) {
+      const aborted = error instanceof Error && error.name === 'AbortError';
+      setMessages((m) => [
+        ...m,
+        {
+          role: 'bot',
+          text: aborted
+            ? '⚠️ Request timeout after 25s. Please retry or shorten the command.'
+            : '⚠️ Network request failed. Please retry.',
+        },
+      ]);
     } finally {
       setLoading(false);
     }
@@ -101,7 +134,9 @@ export default function BotPage() {
   if (!guardReady) {
     return (
       <main className="min-h-screen bg-slate-950 text-white">
-        <div className="mx-auto max-w-4xl p-6 text-sm text-slate-300">Checking your workspace access...</div>
+        <div className="mx-auto max-w-4xl p-6 text-sm text-slate-300">
+          Checking your workspace access...
+        </div>
       </main>
     );
   }
@@ -110,23 +145,40 @@ export default function BotPage() {
     <main className="min-h-screen bg-slate-950 text-white">
       <div className="mx-auto max-w-4xl p-6">
         <h1 className="text-2xl font-semibold">MyClawGo Bot Workspace</h1>
-        <p className="mt-2 text-sm text-slate-300">Session ID: {sessionId} · isolated docker runtime initialized.</p>
+        <p className="mt-2 text-sm text-slate-300">
+          Session ID: {sessionId} · isolated docker runtime initialized.
+        </p>
 
         {lowCredits && (
-          <div className="mt-4 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-200">
-            Credits are insufficient. Please recharge credits to continue running tasks.
+          <div className="mt-4 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-3 text-sm text-amber-200">
+            <p>
+              Credits are insufficient. Please recharge credits to continue
+              running tasks.
+            </p>
+            <button
+              type="button"
+              onClick={() => router.push(pricingHref)}
+              className="mt-2 inline-flex h-9 items-center rounded-md bg-amber-300 px-3 text-sm font-semibold text-amber-950"
+            >
+              Recharge Credits
+            </button>
           </div>
         )}
 
         <div className="mt-6 space-y-3 rounded-xl border border-white/10 bg-slate-900/60 p-4">
           {messages.length === 0 ? (
             <p className="text-sm text-slate-400">
-              Start chatting naturally. Example: install gog skill / list available skills. All actions run only inside your own container, and your conversation context is stored in your private My Claw Go workspace.
+              Start chatting naturally. Example: install gog skill / list
+              available skills. All actions run only inside your own container,
+              and your conversation context is stored in your private My Claw Go
+              workspace.
             </p>
           ) : (
             messages.map((m, i) => (
               <div key={i} className={m.role === 'user' ? 'text-right' : ''}>
-                <span className={`inline-block whitespace-pre-wrap rounded-lg px-3 py-2 text-sm ${m.role === 'user' ? 'bg-blue-600' : 'bg-slate-700'}`}>
+                <span
+                  className={`inline-block whitespace-pre-wrap rounded-lg px-3 py-2 text-sm ${m.role === 'user' ? 'bg-blue-600' : 'bg-slate-700'}`}
+                >
                   {m.text}
                 </span>
               </div>
@@ -134,20 +186,53 @@ export default function BotPage() {
           )}
         </div>
 
-        <div className="mt-4 flex gap-2">
+        <div className="mt-4 flex flex-wrap gap-2 text-xs text-slate-300">
+          <button
+            type="button"
+            onClick={() => setInput('/cmd openclaw skills list')}
+            disabled={loading || lowCredits}
+            className="rounded-md border border-white/15 px-2 py-1 hover:bg-white/5 disabled:opacity-60"
+          >
+            Try: skills list
+          </button>
+          <button
+            type="button"
+            onClick={() => setInput('/cmd openclaw models status')}
+            disabled={loading || lowCredits}
+            className="rounded-md border border-white/15 px-2 py-1 hover:bg-white/5 disabled:opacity-60"
+          >
+            Try: models status
+          </button>
+          <button
+            type="button"
+            onClick={() => setInput('/cmd clawhub search browser-use')}
+            disabled={loading || lowCredits}
+            className="rounded-md border border-white/15 px-2 py-1 hover:bg-white/5 disabled:opacity-60"
+          >
+            Try: skill search
+          </button>
+        </div>
+
+        <div className="mt-3 flex gap-2">
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && onSend()}
-            className="h-11 flex-1 rounded-lg border border-white/10 bg-slate-900 px-3 text-sm"
-            placeholder="Ask naturally, e.g. install gog skill"
+            disabled={lowCredits}
+            className="h-11 flex-1 rounded-lg border border-white/10 bg-slate-900 px-3 text-sm disabled:opacity-60"
+            placeholder={
+              lowCredits
+                ? 'Recharge credits to continue'
+                : 'Ask naturally, e.g. install gog skill'
+            }
           />
           <button
+            type="button"
             onClick={onSend}
-            disabled={loading}
+            disabled={loading || lowCredits}
             className="h-11 rounded-lg bg-white px-4 text-sm font-semibold text-slate-900 disabled:opacity-60"
           >
-            {loading ? 'Sending...' : 'Send'}
+            {lowCredits ? 'Recharge Needed' : loading ? 'Sending...' : 'Send'}
           </button>
         </div>
       </div>
