@@ -124,6 +124,17 @@ export default function BotPage() {
         return;
       }
 
+      if (explicitCmd && rawCommand && !isSafeCommandInput(rawCommand)) {
+        setMessages((m) => [
+          ...m,
+          {
+            role: 'bot',
+            text: '⚠️ That command is not in the safe allowlist. Try: /cmd openclaw skills list',
+          },
+        ]);
+        return;
+      }
+
       const endpoint = isCommand
         ? `/api/runtime/${sessionId}/exec`
         : `/api/runtime/${sessionId}/chat`;
