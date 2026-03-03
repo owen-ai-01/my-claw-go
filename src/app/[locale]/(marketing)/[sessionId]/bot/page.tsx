@@ -144,7 +144,9 @@ export default function BotPage() {
         {
           role: 'bot',
           text: aborted
-            ? `⚠️ Request timed out after ${Math.floor(timeoutMs / 1000)}s. Please retry once.`
+            ? timeoutMs >= 60_000
+              ? `⚠️ Request timed out after ${Math.floor(timeoutMs / 1000)}s. This command may need longer; please retry once.`
+              : `⚠️ Request timed out after ${Math.floor(timeoutMs / 1000)}s. Please retry once.`
             : '⚠️ Network request failed. Please retry.',
         },
       ]);
