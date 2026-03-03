@@ -31,6 +31,9 @@ function normalizeError(raw: string) {
   if (lower.includes('http 400') || lower.includes('http 422')) {
     return 'The request format is invalid. Please check your command and retry.';
   }
+  if (lower.includes('http 409')) {
+    return 'This request conflicts with current runtime state. Please retry in a moment.';
+  }
   if (lower.includes('http 429')) {
     return 'Too many requests right now. Please wait a few seconds and retry.';
   }
