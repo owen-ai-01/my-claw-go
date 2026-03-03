@@ -14,3 +14,9 @@ node_modules
 **/node_modules
 Dockerfile
 LICENSE
+.env*
+*.pem
+*.key
+*.crt
+*.secret
+secrets/

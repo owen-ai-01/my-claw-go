@@ -17,7 +17,7 @@ export async function GET(
     return NextResponse.json({
       ok: true,
       action: 'redirect-login',
-      redirectTo: '/login',
+      redirectTo: '/auth/login',
     });
   }
 
