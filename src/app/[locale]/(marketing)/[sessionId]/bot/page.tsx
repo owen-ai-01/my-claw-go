@@ -118,7 +118,7 @@ export default function BotPage() {
           ...m,
           {
             role: 'bot',
-            text: '⚠️ Unknown slash command. Use /cmd <command> or enter a safe command directly.',
+            text: '⚠️ Unknown slash command. Try: /cmd openclaw skills list (or directly: openclaw skills list).',
           },
         ]);
         return;
