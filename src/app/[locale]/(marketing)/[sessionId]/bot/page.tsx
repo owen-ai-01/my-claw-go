@@ -96,6 +96,7 @@ export default function BotPage() {
     setLoading(true);
 
     let timeoutMs = 25_000;
+    let timeout: ReturnType<typeof setTimeout> | null = null;
 
     try {
       const explicitCmd = /^\/cmd(?:\s|$)/i.test(text);
@@ -147,14 +148,13 @@ export default function BotPage() {
 
       const controller = new AbortController();
       timeoutMs = getClientTimeoutMs(isCommand, rawCommand);
-      const timeout = setTimeout(() => controller.abort(), timeoutMs);
+      timeout = setTimeout(() => controller.abort(), timeoutMs);
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(payload),
         signal: controller.signal,
       });
-      clearTimeout(timeout);
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok || !data?.ok) {
@@ -191,6 +191,7 @@ export default function BotPage() {
         },
       ]);
     } finally {
+      if (timeout) clearTimeout(timeout);
       setLoading(false);
     }
   }
