@@ -22,6 +22,25 @@ function safeName(value: string) {
   return value.replace(/[^a-zA-Z0-9_.-]/g, '');
 }
 
+function formatCommandOutput(rawOutput: string, command: string): string {
+  const trimmed = rawOutput.trim();
+  if (!trimmed || trimmed === '(no output)') {
+    return '✅ Command executed successfully (no output).';
+  }
+
+  // 应用截断逻辑（保留现有逻辑）
+  const truncated =
+    trimmed.length > 8_000
+      ? `${trimmed.slice(0, 8_000)}\n\n...output truncated...`
+      : trimmed;
+
+  // 简单格式化：添加命令上下文和分隔线
+  const lines = truncated.split('\n');
+  const outputLines = lines.map((line) => `  ${line}`);
+
+  return `📟 Command: \`${command}\`\n${outputLines.join('\n')}`;
+}
+
 async function dockerExec(
   containerName: string,
   cmd: string,
@@ -198,10 +217,7 @@ export async function runWhitelistedCommandInContainer(
       timeoutMs
     );
     const merged = `${stdout || ''}${stderr || ''}`.trim() || '(no output)';
-    const output =
-      merged.length > 8_000
-        ? `${merged.slice(0, 8_000)}\n\n...output truncated...`
-        : merged;
+    const output = formatCommandOutput(merged, command);
     return { ok: true as const, output };
   } catch (error: unknown) {
     const message =
