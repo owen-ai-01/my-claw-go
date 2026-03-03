@@ -19,9 +19,8 @@ export async function generateMetadata({
 
   return constructMetadata({
     title: 'My Claw Go: Hosted OpenClaw Without Setup | OpenClaw Start',
-      description:
-        "My Claw Go: Get your own private OpenClaw workspace instantly—no VPS, no setup, no API keys required. Sign up and start automating your workflows in minutes.",
-      'My Claw Go helps you launch your own private OpenClaw workspace without VPS, local setup, or API key hassle. Sign up, pay, and start fast.My openclaw start.',
+    description:
+      'My Claw Go helps you launch your own private OpenClaw workspace without VPS, local setup, or API key hassle. Sign up, pay, and start fast.',
     locale,
     pathname: '/',
   });
