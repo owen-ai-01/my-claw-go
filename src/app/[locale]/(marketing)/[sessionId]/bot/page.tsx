@@ -171,11 +171,14 @@ export default function BotPage() {
           setLowCredits(true);
         }
 
+        const rawError = String(
+          data?.error || `Request failed (HTTP ${res.status})`
+        );
         setMessages((m) => [
           ...m,
           {
             role: 'bot',
-            text: `⚠️ ${normalizeError(String(data?.error || 'Request failed'))}`,
+            text: `⚠️ ${normalizeError(rawError)}`,
           },
         ]);
         return;
