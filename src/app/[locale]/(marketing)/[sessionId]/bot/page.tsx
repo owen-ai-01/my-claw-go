@@ -211,7 +211,7 @@ export default function BotPage() {
         <div className="mt-4 flex flex-wrap gap-2 text-xs text-slate-300">
           <button
             type="button"
-            onClick={() => setInput('/cmd openclaw skills list')}
+            onClick={() => setInput('openclaw skills list')}
             disabled={loading || lowCredits}
             className="rounded-md border border-white/15 px-2 py-1 hover:bg-white/5 disabled:opacity-60"
           >
@@ -219,7 +219,7 @@ export default function BotPage() {
           </button>
           <button
             type="button"
-            onClick={() => setInput('/cmd openclaw models status')}
+            onClick={() => setInput('openclaw models status')}
             disabled={loading || lowCredits}
             className="rounded-md border border-white/15 px-2 py-1 hover:bg-white/5 disabled:opacity-60"
           >
@@ -227,7 +227,7 @@ export default function BotPage() {
           </button>
           <button
             type="button"
-            onClick={() => setInput('/cmd clawhub search browser-use')}
+            onClick={() => setInput('clawhub search browser-use')}
             disabled={loading || lowCredits}
             className="rounded-md border border-white/15 px-2 py-1 hover:bg-white/5 disabled:opacity-60"
           >
