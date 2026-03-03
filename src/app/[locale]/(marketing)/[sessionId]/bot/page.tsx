@@ -98,8 +98,10 @@ export default function BotPage() {
     let timeoutMs = 25_000;
 
     try {
-      const explicitCmd = text.startsWith('/cmd ') || /^\/cmd\s*$/i.test(text);
-      const rawCommand = text.startsWith('/cmd ') ? text.slice(5).trim() : text;
+      const explicitCmd = /^\/cmd(?:\s|$)/i.test(text);
+      const rawCommand = explicitCmd
+        ? text.replace(/^\/cmd\s*/i, '').trim()
+        : text;
       const isCommand = explicitCmd || isSafeCommandInput(text);
 
       if (explicitCmd && !rawCommand) {
