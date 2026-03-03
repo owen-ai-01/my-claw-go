@@ -112,6 +112,7 @@ export default function BotPage() {
             text: '⚠️ Please add a command after /cmd. Example: /cmd openclaw skills list',
           },
         ]);
+        setInput('/cmd openclaw skills list');
         return;
       }
 
@@ -123,6 +124,7 @@ export default function BotPage() {
             text: '⚠️ Unknown slash command. Try: /cmd openclaw skills list (or directly: openclaw skills list).',
           },
         ]);
+        setInput('openclaw skills list');
         return;
       }
 
@@ -134,6 +136,7 @@ export default function BotPage() {
             text: '⚠️ That command is not in the safe allowlist. Try: /cmd openclaw skills list',
           },
         ]);
+        setInput('/cmd openclaw skills list');
         return;
       }
 
