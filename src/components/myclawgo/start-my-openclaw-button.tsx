@@ -61,7 +61,9 @@ export function StartMyOpenClawButton() {
 
       router.push(withLocale('/pricing', locale));
     } catch {
-      setError('We’re having trouble connecting to our servers. Please check your internet connection and try again.');
+      setError(
+        'We’re having trouble connecting to our servers. Please check your internet connection and try again.'
+      );
     } finally {
       setLoading(false);
     }
