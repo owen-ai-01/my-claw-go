@@ -95,6 +95,8 @@ export default function BotPage() {
     setInput('');
     setLoading(true);
 
+    let timeoutMs = 25_000;
+
     try {
       const rawCommand = text.startsWith('/cmd ') ? text.slice(5).trim() : text;
       const isCommand = text.startsWith('/cmd ') || isSafeCommandInput(text);
@@ -104,10 +106,8 @@ export default function BotPage() {
       const payload = isCommand ? { command: rawCommand } : { message: text };
 
       const controller = new AbortController();
-      const timeout = setTimeout(
-        () => controller.abort(),
-        getClientTimeoutMs(isCommand, rawCommand)
-      );
+      timeoutMs = getClientTimeoutMs(isCommand, rawCommand);
+      const timeout = setTimeout(() => controller.abort(), timeoutMs);
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
@@ -144,7 +144,7 @@ export default function BotPage() {
         {
           role: 'bot',
           text: aborted
-            ? '⚠️ Request timed out. Please retry once; for install/agent commands, allow more time.'
+            ? `⚠️ Request timed out after ${Math.floor(timeoutMs / 1000)}s. Please retry once.`
             : '⚠️ Network request failed. Please retry.',
         },
       ]);
