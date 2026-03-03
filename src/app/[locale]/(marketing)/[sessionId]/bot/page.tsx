@@ -155,7 +155,16 @@ export default function BotPage() {
         body: JSON.stringify(payload),
         signal: controller.signal,
       });
-      const data = await res.json().catch(() => ({}));
+
+      const rawBody = await res.text();
+      let data: Record<string, unknown> = {};
+      if (rawBody) {
+        try {
+          data = JSON.parse(rawBody) as Record<string, unknown>;
+        } catch {
+          data = { error: rawBody.slice(0, 500) };
+        }
+      }
 
       if (!res.ok || !data?.ok) {
         if (data?.code === 'INSUFFICIENT_CREDITS' || res.status === 402) {
