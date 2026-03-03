@@ -40,7 +40,7 @@ const features = [
   {
     icon: '🧩',
     title: 'No VPS, no server setup, no terminal stress',
-    desc: 'You do not need to rent and configure infrastructure. We run the system for you so you can focus on outcomes.',
+    desc: 'No need to rent and configure infrastructure. We run the system for you so you can focus on outcomes.',
   },
   {
     icon: '⚡',

@@ -88,6 +88,9 @@ async function bootstrapOpenClaw(containerName: string) {
 export async function ensureUserContainer(session: UserSession) {
   const containerName = safeName(session.containerName);
 
+  console.log(
+    `[MyClawGo] Ensuring container ${containerName} for user ${session.userId}`
+  );
   try {
     await execFileAsync('docker', ['start', containerName]);
     return { ok: true as const, mode: 'started-existing' as const };
