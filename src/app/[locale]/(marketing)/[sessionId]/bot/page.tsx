@@ -98,8 +98,21 @@ export default function BotPage() {
     let timeoutMs = 25_000;
 
     try {
+      const explicitCmd = text.startsWith('/cmd ') || /^\/cmd\s*$/i.test(text);
       const rawCommand = text.startsWith('/cmd ') ? text.slice(5).trim() : text;
-      const isCommand = text.startsWith('/cmd ') || isSafeCommandInput(text);
+      const isCommand = explicitCmd || isSafeCommandInput(text);
+
+      if (explicitCmd && !rawCommand) {
+        setMessages((m) => [
+          ...m,
+          {
+            role: 'bot',
+            text: '⚠️ Please add a command after /cmd. Example: /cmd openclaw skills list',
+          },
+        ]);
+        return;
+      }
+
       const endpoint = isCommand
         ? `/api/runtime/${sessionId}/exec`
         : `/api/runtime/${sessionId}/chat`;
