@@ -1,9 +1,20 @@
+import { auth } from '@/lib/auth';
 import { ensureUserContainer } from '@/lib/myclawgo/docker-manager';
-import { createSession } from '@/lib/myclawgo/session-store';
+import { ensureSessionById } from '@/lib/myclawgo/session-store';
+import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 
 export async function POST(req: Request) {
   try {
+    const userSession = await auth.api.getSession({ headers: await headers() });
+
+    if (!userSession?.user?.id) {
+      return NextResponse.json(
+        { ok: false, error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
     const body = await req.json().catch(() => ({}));
     const prompt = String(body?.prompt || '').trim();
 
@@ -24,7 +35,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const session = await createSession(prompt);
+    const session = await ensureSessionById(userSession.user.id, prompt);
     const container = await ensureUserContainer(session);
 
     return NextResponse.json({

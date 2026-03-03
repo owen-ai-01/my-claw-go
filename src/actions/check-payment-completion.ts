@@ -3,11 +3,11 @@
 import { getDb } from '@/db';
 import { payment } from '@/db/schema';
 import { userActionClient } from '@/lib/safe-action';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 
 const checkPaymentCompletionSchema = z.object({
-  sessionId: z.string(),
+  sessionId: z.string().min(8).max(128),
 });
 
 /**
@@ -15,18 +15,25 @@ const checkPaymentCompletionSchema = z.object({
  */
 export const checkPaymentCompletionAction = userActionClient
   .schema(checkPaymentCompletionSchema)
-  .action(async ({ parsedInput: { sessionId } }) => {
+  .action(async ({ parsedInput: { sessionId }, ctx }) => {
     try {
+      if (!ctx.user?.id) {
+        return {
+          success: false,
+          error: 'Unauthorized',
+        };
+      }
+
       const db = await getDb();
       const paymentRecord = await db
-        .select()
+        .select({ paid: payment.paid })
         .from(payment)
-        .where(eq(payment.sessionId, sessionId))
+        .where(
+          and(eq(payment.sessionId, sessionId), eq(payment.userId, ctx.user.id))
+        )
         .limit(1);
 
-      const paymentData = paymentRecord[0] || null;
-      const isPaid = paymentData ? paymentData.paid : false;
-      console.log('Check payment completion, isPaid:', isPaid);
+      const isPaid = paymentRecord[0]?.paid ?? false;
 
       return {
         success: true,
