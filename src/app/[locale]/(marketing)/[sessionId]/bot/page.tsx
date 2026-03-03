@@ -237,6 +237,9 @@ export default function BotPage() {
           </button>
         </div>
 
+        <p className="mt-3 text-xs text-slate-400">
+          Tip: You can run safe commands directly (no /cmd needed).
+        </p>
         <div className="mt-3 flex gap-2">
           <input
             value={input}
