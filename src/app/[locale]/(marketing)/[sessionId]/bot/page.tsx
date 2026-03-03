@@ -31,6 +31,9 @@ function normalizeError(raw: string) {
   if (lower.includes('http 429')) {
     return 'Too many requests right now. Please wait a few seconds and retry.';
   }
+  if (lower.includes('http 408') || lower.includes('http 504')) {
+    return 'The runtime took too long to respond. Please retry your request.';
+  }
   if (
     lower.includes('http 500') ||
     lower.includes('http 502') ||
