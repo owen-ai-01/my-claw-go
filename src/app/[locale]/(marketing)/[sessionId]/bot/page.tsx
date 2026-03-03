@@ -22,6 +22,19 @@ function normalizeError(raw: string) {
   if (lower.includes('insufficient') && lower.includes('credit')) {
     return 'Credits are insufficient. Please recharge to continue.';
   }
+  if (lower.includes('http 401') || lower.includes('http 403')) {
+    return 'Access denied or session expired. Please sign in again and retry.';
+  }
+  if (lower.includes('http 404')) {
+    return 'Runtime endpoint not found. Please refresh and retry.';
+  }
+  if (
+    lower.includes('http 500') ||
+    lower.includes('http 502') ||
+    lower.includes('http 503')
+  ) {
+    return 'Runtime service is temporarily unavailable. Please retry in a moment.';
+  }
   if (
     lower.includes('no such container') ||
     lower.includes('is not running') ||
