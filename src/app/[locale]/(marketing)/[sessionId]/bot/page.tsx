@@ -113,6 +113,17 @@ export default function BotPage() {
         return;
       }
 
+      if (!explicitCmd && /^\/(?!cmd\b)[^\s]+/.test(text)) {
+        setMessages((m) => [
+          ...m,
+          {
+            role: 'bot',
+            text: '⚠️ Unknown slash command. Use /cmd <command> or enter a safe command directly.',
+          },
+        ]);
+        return;
+      }
+
       const endpoint = isCommand
         ? `/api/runtime/${sessionId}/exec`
         : `/api/runtime/${sessionId}/chat`;
