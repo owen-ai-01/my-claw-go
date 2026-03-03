@@ -28,6 +28,9 @@ function normalizeError(raw: string) {
   if (lower.includes('http 404')) {
     return 'Runtime endpoint not found. Please refresh and retry.';
   }
+  if (lower.includes('http 429')) {
+    return 'Too many requests right now. Please wait a few seconds and retry.';
+  }
   if (
     lower.includes('http 500') ||
     lower.includes('http 502') ||
