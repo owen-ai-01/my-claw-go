@@ -176,7 +176,7 @@ export async function runOpenClawChatInContainer(
   await dockerExec(containerName, ensureGatewayCmd).catch(() => {});
 
   const cmd = `su - openclaw -c ${JSON.stringify(
-    `openclaw agent --agent main --model ${DEFAULT_RUNTIME_MODEL} --message ${JSON.stringify(message)} --thinking off`
+    `openclaw models set ${DEFAULT_RUNTIME_MODEL} >/dev/null 2>&1 || true; openclaw agent --agent main --message ${JSON.stringify(message)} --thinking off`
   )}`;
 
   try {
