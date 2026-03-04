@@ -186,6 +186,21 @@ export async function runOpenClawChatInContainer(
 
   await dockerExec(containerName, ensureGatewayCmd).catch(() => {});
 
+  // Check if openclaw is installed yet (bootstrap may still be running for new containers)
+  const checkCmd =
+    "su - openclaw -c 'which openclaw 2>/dev/null && echo ready || echo not_ready'";
+  const { stdout: checkOut } = await dockerExec(containerName, checkCmd).catch(
+    () => ({ stdout: 'not_ready' })
+  );
+  if (!checkOut.includes('ready')) {
+    return {
+      ok: false as const,
+      error:
+        '🚀 Your workspace is still initializing (installing OpenClaw runtime). This takes about 1–2 minutes on first launch. Please wait a moment and try again.',
+      isInitializing: true,
+    };
+  }
+
   const cmd = `su - openclaw -c ${JSON.stringify(
     `openclaw models set ${DEFAULT_RUNTIME_MODEL} >/dev/null 2>&1 || true; openclaw agent --agent main --message ${JSON.stringify(message)} --thinking off --json`
   )}`;
