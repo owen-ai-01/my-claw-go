@@ -17,7 +17,8 @@ export const checkPaymentCompletionAction = userActionClient
   .schema(checkPaymentCompletionSchema)
   .action(async ({ parsedInput: { sessionId }, ctx }) => {
     try {
-      if (!ctx.user?.id) {
+      const user = (ctx as { user?: { id?: string } }).user;
+      if (!user?.id) {
         return {
           success: false,
           error: 'Unauthorized',
@@ -29,7 +30,7 @@ export const checkPaymentCompletionAction = userActionClient
         .select({ paid: payment.paid })
         .from(payment)
         .where(
-          and(eq(payment.sessionId, sessionId), eq(payment.userId, ctx.user.id))
+          and(eq(payment.sessionId, sessionId), eq(payment.userId, user.id))
         )
         .limit(1);
 
