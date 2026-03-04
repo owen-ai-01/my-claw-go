@@ -2,15 +2,17 @@ import { DashboardHeader } from '@/components/dashboard/dashboard-header';
 import { Button } from '@/components/ui/button';
 import { LocaleLink } from '@/i18n/navigation';
 import { auth } from '@/lib/auth';
-import { useTranslations } from 'next-intl';
+import { getTranslations } from 'next-intl/server';
 import { headers } from 'next/headers';
 
 /**
  * Dashboard page
  */
 export default async function DashboardPage() {
-  const t = useTranslations();
-  const authSession = await auth.api.getSession({ headers: await headers() });
+  const [t, authSession] = await Promise.all([
+    getTranslations(),
+    auth.api.getSession({ headers: await headers() }),
+  ]);
   const userId = authSession?.user?.id;
 
   const breadcrumbs = [
