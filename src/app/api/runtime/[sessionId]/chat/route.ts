@@ -161,7 +161,7 @@ export async function POST(
         result.model ||
         process.env.MYCLAWGO_RUNTIME_MODEL ||
         'openrouter/minimax/minimax-m2.5';
-      const usage = estimateUsage(message, result.reply);
+      const usage = result.usage || estimateUsage(message, result.reply);
       const usdCost = estimateUsdCostByModel({
         model: modelUsed,
         inputTokens: usage.inputTokens,

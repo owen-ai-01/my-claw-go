@@ -24,6 +24,22 @@ function safeName(value: string) {
   return value.replace(/[^a-zA-Z0-9_.-]/g, '');
 }
 
+function extractJsonObjectFromStdout(stdout: string): unknown | null {
+  const trimmed = stdout.trim();
+  if (!trimmed) return null;
+
+  const jsonStart = trimmed.lastIndexOf('\n{');
+  const candidate = (
+    jsonStart >= 0 ? trimmed.slice(jsonStart + 1) : trimmed
+  ).trim();
+
+  try {
+    return JSON.parse(candidate);
+  } catch {
+    return null;
+  }
+}
+
 function formatCommandOutput(rawOutput: string, command: string): string {
   const trimmed = rawOutput.trim();
   if (!trimmed || trimmed === '(no output)') {
@@ -176,13 +192,48 @@ export async function runOpenClawChatInContainer(
   await dockerExec(containerName, ensureGatewayCmd).catch(() => {});
 
   const cmd = `su - openclaw -c ${JSON.stringify(
-    `openclaw models set ${DEFAULT_RUNTIME_MODEL} >/dev/null 2>&1 || true; openclaw agent --agent main --message ${JSON.stringify(message)} --thinking off`
+    `openclaw models set ${DEFAULT_RUNTIME_MODEL} >/dev/null 2>&1 || true; openclaw agent --agent main --message ${JSON.stringify(message)} --thinking off --json`
   )}`;
 
   try {
     const { stdout } = await dockerExec(containerName, cmd);
-    const reply = stdout.trim() || 'OpenClaw returned empty output.';
-    return { ok: true as const, reply, model: DEFAULT_RUNTIME_MODEL };
+
+    const parsed = extractJsonObjectFromStdout(stdout) as {
+      payloads?: Array<{ text?: string }>;
+      meta?: {
+        agentMeta?: {
+          model?: string;
+          usage?: { input?: number; output?: number; total?: number };
+          lastCallUsage?: { input?: number; output?: number; total?: number };
+        };
+      };
+    } | null;
+
+    const payloadText =
+      parsed?.payloads
+        ?.map((p) => p?.text || '')
+        .filter(Boolean)
+        .join('\n\n')
+        .trim() || '';
+
+    const reply =
+      payloadText || stdout.trim() || 'OpenClaw returned empty output.';
+    const model = parsed?.meta?.agentMeta?.model || DEFAULT_RUNTIME_MODEL;
+    const usageSource =
+      parsed?.meta?.agentMeta?.lastCallUsage || parsed?.meta?.agentMeta?.usage;
+
+    return {
+      ok: true as const,
+      reply,
+      model,
+      usage: usageSource
+        ? {
+            inputTokens: Math.max(0, Number(usageSource.input || 0)),
+            outputTokens: Math.max(0, Number(usageSource.output || 0)),
+            totalTokens: Math.max(0, Number(usageSource.total || 0)),
+          }
+        : undefined,
+    };
   } catch (error: unknown) {
     return {
       ok: false as const,
