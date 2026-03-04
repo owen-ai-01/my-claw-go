@@ -1,6 +1,8 @@
 import { getDb } from '@/db';
 import { payment, userCredit } from '@/db/schema';
 import { auth } from '@/lib/auth';
+import { ensureUserContainer } from '@/lib/myclawgo/docker-manager';
+import { ensureSessionById } from '@/lib/myclawgo/session-store';
 import { PaymentTypes } from '@/payment/types';
 import { and, desc, eq, or } from 'drizzle-orm';
 import { headers } from 'next/headers';
@@ -70,6 +72,10 @@ export async function GET(
       credits,
     });
   }
+
+  // Ensure the runtime session and container exist (idempotent)
+  const runtimeSession = await ensureSessionById(userId, 'guard-auto-start');
+  await ensureUserContainer(runtimeSession).catch(() => {});
 
   return NextResponse.json({ ok: true, action: 'allow', credits });
 }
