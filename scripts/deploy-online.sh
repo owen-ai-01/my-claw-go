@@ -49,7 +49,13 @@ if [[ ! -f "$TARGET_DIR/.env" ]]; then
 fi
 
 log "install dependencies"
-npm ci --no-audit --no-fund
+if [[ -f "pnpm-lock.yaml" ]] && command -v pnpm >/dev/null 2>&1; then
+  pnpm install --frozen-lockfile
+elif [[ -f "package-lock.json" ]]; then
+  npm ci --no-audit --no-fund
+else
+  npm install --no-audit --no-fund
+fi
 
 log "build"
 npm run build
