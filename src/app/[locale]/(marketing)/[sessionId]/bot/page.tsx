@@ -247,9 +247,6 @@ export default function BotPage() {
     <main className="min-h-screen bg-slate-950 text-white">
       <div className="mx-auto max-w-4xl p-6">
         <h1 className="text-2xl font-semibold">MyClawGo Bot Workspace</h1>
-        <p className="mt-2 text-sm text-slate-300">
-          Session ID: {sessionId} · isolated docker runtime initialized.
-        </p>
 
         {lowCredits && (
           <div className="mt-4 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-3 text-sm text-amber-200">
