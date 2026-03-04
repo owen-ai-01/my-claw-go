@@ -17,6 +17,8 @@ const HOST_AUTH_PROFILES =
   '/home/openclaw/.openclaw/agents/main/agent/auth-profiles.json';
 const HOST_PW_DIR =
   process.env.MYCLAWGO_PW_DIR || '/home/openclaw/docker-openclaw-pw';
+const DEFAULT_RUNTIME_MODEL =
+  process.env.MYCLAWGO_RUNTIME_MODEL || 'openrouter/minimax/minimax-m2.5';
 
 function safeName(value: string) {
   return value.replace(/[^a-zA-Z0-9_.-]/g, '');
@@ -174,13 +176,13 @@ export async function runOpenClawChatInContainer(
   await dockerExec(containerName, ensureGatewayCmd).catch(() => {});
 
   const cmd = `su - openclaw -c ${JSON.stringify(
-    `openclaw agent --agent main --message ${JSON.stringify(message)} --thinking off`
+    `openclaw agent --agent main --model ${DEFAULT_RUNTIME_MODEL} --message ${JSON.stringify(message)} --thinking off`
   )}`;
 
   try {
     const { stdout } = await dockerExec(containerName, cmd);
     const reply = stdout.trim() || 'OpenClaw returned empty output.';
-    return { ok: true as const, reply };
+    return { ok: true as const, reply, model: DEFAULT_RUNTIME_MODEL };
   } catch (error: unknown) {
     return {
       ok: false as const,

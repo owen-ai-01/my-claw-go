@@ -1,6 +1,11 @@
 import { consumeCredits, getUserCredits } from '@/credits/credits';
 import { auth } from '@/lib/auth';
 import {
+  creditsFromUsd,
+  estimateUsage,
+  estimateUsdCostByModel,
+} from '@/lib/myclawgo/billing';
+import {
   ensureUserContainer,
   runOpenClawChatInContainer,
   runWhitelistedCommandInContainer,
@@ -45,23 +50,6 @@ function parseNaturalLanguageIntent(message: string): Intent {
   }
 
   return { kind: 'none' };
-}
-
-function estimateTokens(message: string, reply: string) {
-  const chars = (message?.length || 0) + (reply?.length || 0);
-  return Math.max(1, Math.ceil(chars / 4));
-}
-
-function estimateUsdCostFromTokens(tokens: number) {
-  // configurable rough estimate for runtime billing, default: $0.00001/token
-  const usdPerToken = Number(process.env.MYCLAWGO_USD_PER_TOKEN || '0.00001');
-  return tokens * usdPerToken;
-}
-
-function creditsFromUsd(usdCost: number) {
-  // 1 credit = $0.001 cost
-  const usdPerCredit = Number(process.env.MYCLAWGO_USD_PER_CREDIT || '0.001');
-  return Math.max(1, Math.ceil(usdCost / usdPerCredit));
 }
 
 export async function POST(
@@ -169,13 +157,21 @@ export async function POST(
   let creditsUsed: number | null = null;
   if (currentUserId === sessionId) {
     try {
-      const tokens = estimateTokens(message, result.reply);
-      const usdCost = estimateUsdCostFromTokens(tokens);
+      const modelUsed =
+        result.model ||
+        process.env.MYCLAWGO_RUNTIME_MODEL ||
+        'openrouter/minimax/minimax-m2.5';
+      const usage = estimateUsage(message, result.reply);
+      const usdCost = estimateUsdCostByModel({
+        model: modelUsed,
+        inputTokens: usage.inputTokens,
+        outputTokens: usage.outputTokens,
+      });
       const used = creditsFromUsd(usdCost);
       await consumeCredits({
         userId: currentUserId,
         amount: used,
-        description: `MyClawGo runtime usage: estimated ${tokens} tokens (~$${usdCost.toFixed(4)})`,
+        description: `MyClawGo runtime usage: model=${modelUsed}, input=${usage.inputTokens}, output=${usage.outputTokens}, total=${usage.totalTokens}, est_cost=$${usdCost.toFixed(6)}`,
       });
       creditsUsed = used;
       creditsLeft = await getUserCredits(currentUserId);
@@ -205,5 +201,9 @@ export async function POST(
     creditsUsed,
     container: runtimeSession.containerName,
     mode: 'openclaw-chat',
+    model:
+      result.model ||
+      process.env.MYCLAWGO_RUNTIME_MODEL ||
+      'openrouter/minimax/minimax-m2.5',
   });
 }
