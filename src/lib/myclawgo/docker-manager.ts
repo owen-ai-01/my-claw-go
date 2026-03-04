@@ -126,7 +126,7 @@ export async function ensureUserContainer(session: UserSession) {
   const containerName = safeName(session.containerName);
 
   console.log(
-    `[MyClawGo] Ensuring container ${containerName} for user ${session.userId}`
+    `[MyClawGo] Ensuring container ${containerName} for user ${session.id}`
   );
   try {
     await execFileAsync('docker', ['start', containerName]);
