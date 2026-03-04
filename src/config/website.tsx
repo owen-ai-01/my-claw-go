@@ -61,11 +61,7 @@ export const websiteConfig: WebsiteConfig = {
         name: 'English',
         hreflang: 'en',
       },
-      de: {
-        flag: '🇩🇪',
-        name: 'Deutsch',
-        hreflang: 'de',
-      },
+      // de locale disabled - re-enable when German content is ready
     },
   },
   blog: {

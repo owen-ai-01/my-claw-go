@@ -26,8 +26,10 @@ export function constructMetadata({
 } = {}): Metadata {
   title = title || defaultMessages.Metadata.title;
   description = description || defaultMessages.Metadata.description;
-  image = image || websiteConfig.metadata.images?.ogImage;
-  const ogImageUrl = getImageUrl(image || '');
+  // Use dynamic OG image when no custom image is specified
+  const ogImageUrl = image
+    ? getImageUrl(image)
+    : `${getBaseUrl()}/api/og?title=${encodeURIComponent(title)}&desc=${encodeURIComponent(description)}`;
 
   // Generate canonical URL from pathname and locale
   let canonicalUrl: string | undefined;

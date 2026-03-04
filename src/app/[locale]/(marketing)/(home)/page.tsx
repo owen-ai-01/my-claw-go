@@ -93,36 +93,76 @@ const faq = [
 export default async function HomePage(props: HomePageProps) {
   await props.params;
 
-  const jsonLd = {
+  const baseUrl = getBaseUrl();
+
+  const softwareAppLd = {
     '@context': 'https://schema.org',
     '@type': 'SoftwareApplication',
-    name: 'My Claw Go',
+    name: 'MyClawGo',
+    url: baseUrl,
     description:
-      'My OpenClaw gives every paying user a private OpenClaw workspace without VPS or complex setup.',
+      'MyClawGo gives every user a private hosted OpenClaw workspace without VPS, setup, or API key complexity.',
     applicationCategory: 'BusinessApplication',
     operatingSystem: 'Any',
     offers: {
-      '@type': 'Offer',
-      price: '19.9',
+      '@type': 'AggregateOffer',
+      lowPrice: '19.9',
+      highPrice: '199.9',
       priceCurrency: 'USD',
+      offerCount: '3',
     },
     featureList: [
-      'Private My OpenClaw workspace',
+      'Private hosted OpenClaw workspace',
       'No VPS setup required',
-      'No local computer always-on requirement',
-      'Managed model setup for non-technical users',
+      'No API key configuration needed to start',
+      'Persistent memory and context',
+      'Multiple AI models via OpenRouter',
+      'Credit-based pay-as-you-go usage',
     ],
-    screenshot: `${getBaseUrl()}/hero_background_1771074066381.png`,
+    screenshot: `${baseUrl}/hero_background_1771074066381.png`,
+  };
+
+  const websiteLd = {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: 'MyClawGo',
+    url: baseUrl,
+    description:
+      'Hosted OpenClaw workspace for non-technical users — no VPS, no setup.',
+    potentialAction: {
+      '@type': 'SearchAction',
+      target: {
+        '@type': 'EntryPoint',
+        urlTemplate: `${baseUrl}/search?q={search_term_string}`,
+      },
+      'query-input': 'required name=search_term_string',
+    },
+  };
+
+  const faqLd = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: faq.map((item) => ({
+      '@type': 'Question',
+      name: item.q,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: item.a,
+      },
+    })),
   };
 
   return (
     <>
-      <JsonLd data={jsonLd} />
+      <JsonLd data={softwareAppLd} />
+      <JsonLd data={websiteLd} />
+      <JsonLd data={faqLd} />
       <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/20 text-foreground">
         <main className="mx-auto max-w-6xl px-6 py-14 md:py-20">
           <section className="rounded-3xl border border-border bg-card p-8 shadow-xl md:p-12">
             <h1 className="mx-auto max-w-5xl text-center text-4xl font-semibold leading-tight md:text-6xl">
-              Launch your private OpenClaw workspace in minutes—no VPS, no setup, no API key hassle.
+              Launch your private OpenClaw workspace in minutes—no VPS, no
+              setup, no API key hassle.
             </h1>
             <p className="mx-auto mt-5 max-w-4xl text-center text-base text-muted-foreground md:text-lg">
               My Claw Go is built for people who want results, not setup

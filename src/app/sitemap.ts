@@ -13,17 +13,24 @@ type Href = Parameters<typeof getLocalePathname>[0]['href'];
  * static routes for sitemap, you may change the routes for your own
  * Only include public pages that should be indexed by search engines
  */
-const staticRoutes = [
-  '/',
-  '/pricing',
-  '/about',
-  '/contact',
-  '/privacy',
-  '/terms',
-  '/cookie',
-  ...(websiteConfig.blog.enable ? ['/blog'] : []),
-  ...(websiteConfig.docs.enable ? ['/docs'] : []),
+// Priority pages for SEO - only include pages with real content value
+const staticRoutes: Array<{
+  path: string;
+  changeFrequency: 'weekly' | 'monthly' | 'yearly';
+  priority: number;
+}> = [
+  { path: '/', changeFrequency: 'weekly', priority: 1.0 },
+  { path: '/pricing', changeFrequency: 'monthly', priority: 0.9 },
+  { path: '/about', changeFrequency: 'monthly', priority: 0.7 },
+  { path: '/contact', changeFrequency: 'yearly', priority: 0.5 },
+  { path: '/privacy', changeFrequency: 'yearly', priority: 0.3 },
+  { path: '/terms', changeFrequency: 'yearly', priority: 0.3 },
+  ...(websiteConfig.blog.enable
+    ? [{ path: '/blog', changeFrequency: 'weekly' as const, priority: 0.8 }]
+    : []),
 ];
+
+const SITE_LAST_MODIFIED = new Date('2026-03-04').toISOString();
 
 /**
  * Generate a sitemap for the website with hreflang support
@@ -35,16 +42,17 @@ const staticRoutes = [
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const sitemapList: MetadataRoute.Sitemap = []; // final result
 
-  // add static routes
+  // add static routes (en only — DE disabled until localised content is ready)
   sitemapList.push(
-    ...staticRoutes.flatMap((route) => {
-      return routing.locales.map((locale) => ({
-        url: getUrl(route, locale),
-        alternates: {
-          languages: generateHreflangUrls(route),
-        },
-      }));
-    })
+    ...staticRoutes.map(({ path, changeFrequency, priority }) => ({
+      url: getUrl(path, routing.defaultLocale),
+      lastModified: SITE_LAST_MODIFIED,
+      changeFrequency,
+      priority,
+      alternates: {
+        languages: generateHreflangUrls(path),
+      },
+    }))
   );
 
   // add blog related routes if enabled
