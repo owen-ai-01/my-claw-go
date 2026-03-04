@@ -11,10 +11,10 @@ const execFileAsync = promisify(execFile);
 const OPENCLAW_IMAGE = process.env.MYCLAWGO_OPENCLAW_IMAGE || 'ubuntu:24.04';
 const HOST_OPENCLAW_CONFIG =
   process.env.MYCLAWGO_SEED_CONFIG_PATH ||
-  '/home/openclaw/.openclaw/openclaw.json';
+  '/home/openclaw/docker-openclaw-seed/openclaw.json';
 const HOST_AUTH_PROFILES =
   process.env.MYCLAWGO_SEED_AUTH_PATH ||
-  '/home/openclaw/.openclaw/agents/main/agent/auth-profiles.json';
+  '/home/openclaw/docker-openclaw-seed/auth-profiles.json';
 const HOST_PW_DIR =
   process.env.MYCLAWGO_PW_DIR || '/home/openclaw/docker-openclaw-pw';
 const DEFAULT_RUNTIME_MODEL =
@@ -135,12 +135,7 @@ export async function ensureUserContainer(session: UserSession) {
     // continue and create
   }
 
-  const envs = [
-    'OPENROUTER_API_KEY',
-    'OPENAI_API_KEY',
-    'ANTHROPIC_API_KEY',
-    'GOOGLE_API_KEY',
-  ]
+  const envs = ['OPENROUTER_API_KEY']
     .map((k) => ({ key: k, value: process.env[k] }))
     .filter((e) => Boolean(e.value));
 
