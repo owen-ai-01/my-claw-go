@@ -28,16 +28,34 @@ function extractJsonObjectFromStdout(stdout: string): unknown | null {
   const trimmed = stdout.trim();
   if (!trimmed) return null;
 
-  const jsonStart = trimmed.lastIndexOf('\n{');
-  const candidate = (
-    jsonStart >= 0 ? trimmed.slice(jsonStart + 1) : trimmed
-  ).trim();
-
+  // 1. Try direct parse (JSON is the entire stdout)
   try {
-    return JSON.parse(candidate);
+    return JSON.parse(trimmed);
   } catch {
-    return null;
+    // continue
   }
+
+  // 2. Find last top-level JSON object starting with newline
+  const jsonStart = trimmed.lastIndexOf('\n{');
+  if (jsonStart >= 0) {
+    try {
+      return JSON.parse(trimmed.slice(jsonStart + 1).trim());
+    } catch {
+      // continue
+    }
+  }
+
+  // 3. Find first { and try from there
+  const firstBrace = trimmed.indexOf('{');
+  if (firstBrace >= 0) {
+    try {
+      return JSON.parse(trimmed.slice(firstBrace));
+    } catch {
+      // continue
+    }
+  }
+
+  return null;
 }
 
 function formatCommandOutput(rawOutput: string, command: string): string {
