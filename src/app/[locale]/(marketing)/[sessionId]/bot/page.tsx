@@ -210,8 +210,8 @@ export default function BotPage() {
       }
 
       const replyText = isCommand
-        ? `🛠️ [${data?.container || 'container'}]\n${data?.output || '(no output)'}`
-        : data?.reply || 'No reply';
+        ? `🛠️ [${String(data?.container || 'container')}]\n${String(data?.output || '(no output)')}`
+        : String(data?.reply || 'No reply');
 
       setMessages((m) => [...m, { role: 'bot', text: replyText }]);
     } catch (error) {
