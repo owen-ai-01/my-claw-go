@@ -11,6 +11,7 @@ import {
   runWhitelistedCommandInContainer,
 } from '@/lib/myclawgo/docker-manager';
 import { getSession, touchSession } from '@/lib/myclawgo/session-store';
+import { appendMessage, readUserPrefs } from '@/lib/myclawgo/user-data';
 import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 
@@ -168,7 +169,13 @@ export async function POST(
     });
   }
 
-  const result = await runOpenClawChatInContainer(runtimeSession, message);
+  // Use user's saved model preference
+  const userPrefs = await readUserPrefs(sessionId);
+  const result = await runOpenClawChatInContainer(
+    runtimeSession,
+    message,
+    userPrefs.model
+  );
   if (!result.ok) {
     const ownerEmail = authSession?.user?.email;
     return NextResponse.json(
@@ -179,6 +186,23 @@ export async function POST(
       { status: 500 }
     );
   }
+
+  // Save messages to chat history
+  await Promise.all([
+    appendMessage(sessionId, { role: 'user', text: message }),
+    appendMessage(sessionId, {
+      role: 'assistant',
+      text: result.reply,
+      model: result.model,
+      tokens: result.usage
+        ? {
+            input: result.usage.inputTokens,
+            output: result.usage.outputTokens,
+            total: result.usage.totalTokens,
+          }
+        : undefined,
+    }),
+  ]).catch(() => {}); // non-blocking
 
   // Credit deduction only when session owner is authenticated and calling their own bot route
   let creditsLeft: number | null = null;

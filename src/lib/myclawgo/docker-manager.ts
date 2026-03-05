@@ -192,7 +192,8 @@ export async function ensureUserContainer(session: UserSession) {
 
 export async function runOpenClawChatInContainer(
   session: UserSession,
-  message: string
+  message: string,
+  model?: string
 ) {
   const containerName = safeName(session.containerName);
 
@@ -219,8 +220,9 @@ export async function runOpenClawChatInContainer(
     };
   }
 
+  const activeModel = model || DEFAULT_RUNTIME_MODEL;
   const cmd = `su - openclaw -c ${JSON.stringify(
-    `openclaw models set ${DEFAULT_RUNTIME_MODEL} >/dev/null 2>&1 || true; openclaw agent --agent main --message ${JSON.stringify(message)} --thinking off --json`
+    `openclaw models set ${activeModel} >/dev/null 2>&1 || true; openclaw agent --agent main --message ${JSON.stringify(message)} --thinking off --json`
   )}`;
 
   try {
