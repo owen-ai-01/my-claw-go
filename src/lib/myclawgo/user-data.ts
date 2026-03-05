@@ -46,14 +46,17 @@ export const AVAILABLE_MODELS: { id: string; label: string }[] = [
 function userDir(userId: string) {
   return path.join(BASE_DIR, 'users', userId);
 }
+function chatDir(userId: string) {
+  return path.join(BASE_DIR, 'chats', userId);
+}
 function historyFile(userId: string) {
-  return path.join(userDir(userId), 'chat-history.json');
+  return path.join(chatDir(userId), 'chat-history.json');
 }
 function prefsFile(userId: string) {
-  return path.join(userDir(userId), 'user-prefs.json');
+  return path.join(chatDir(userId), 'user-prefs.json');
 }
 async function ensureUserDir(userId: string) {
-  await fs.mkdir(userDir(userId), { recursive: true });
+  await fs.mkdir(chatDir(userId), { recursive: true });
 }
 
 // ── Chat History ─────────────────────────────────────────────────────────────
