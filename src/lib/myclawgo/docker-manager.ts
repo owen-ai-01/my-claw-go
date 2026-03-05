@@ -221,8 +221,30 @@ export async function runOpenClawChatInContainer(
   }
 
   const activeModel = model || DEFAULT_RUNTIME_MODEL;
+
+  // If model changed from what gateway currently knows, update config and restart gateway
+  const storedModel = (session as { activeGatewayModel?: string })
+    .activeGatewayModel;
+  if (storedModel !== activeModel) {
+    // Set model in config
+    await dockerExec(
+      containerName,
+      `su - openclaw -c 'openclaw models set ${activeModel} >/dev/null 2>&1 || true'`
+    ).catch(() => {});
+    // Kill existing gateway and restart with new config
+    const restartGatewayCmd = `su - openclaw -c ${JSON.stringify(
+      "pkill -f 'openclaw gateway run' 2>/dev/null || true; sleep 1; nohup openclaw gateway run --auth none --bind loopback --port 18789 > /home/openclaw/.openclaw/gateway.log 2>&1 &"
+    )}`;
+    await dockerExec(containerName, restartGatewayCmd).catch(() => {});
+    // Wait for gateway to be ready
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    // Save active model in session memory (not persisted to store, but avoids repeated restarts in same process lifetime)
+    (session as { activeGatewayModel?: string }).activeGatewayModel =
+      activeModel;
+  }
+
   const cmd = `su - openclaw -c ${JSON.stringify(
-    `openclaw models set ${activeModel} >/dev/null 2>&1 || true; openclaw agent --agent main --message ${JSON.stringify(message)} --thinking off --json`
+    `openclaw agent --agent main --message ${JSON.stringify(message)} --thinking off --json`
   )}`;
 
   try {
