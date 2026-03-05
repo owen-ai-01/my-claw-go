@@ -169,13 +169,7 @@ export async function POST(
     });
   }
 
-  // Use user's saved model preference
-  const userPrefs = await readUserPrefs(sessionId);
-  const result = await runOpenClawChatInContainer(
-    runtimeSession,
-    message,
-    userPrefs.model
-  );
+  const result = await runOpenClawChatInContainer(runtimeSession, message);
   if (!result.ok) {
     const ownerEmail = authSession?.user?.email;
     return NextResponse.json(
