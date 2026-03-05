@@ -139,6 +139,11 @@ export async function POST(
 
   const intent = parseNaturalLanguageIntent(message);
   if (intent.kind !== 'none') {
+    // Save user message before processing intent
+    await appendMessage(sessionId, { role: 'user', text: message }).catch(
+      () => {}
+    );
+
     const result = await runWhitelistedCommandInContainer(
       runtimeSession,
       intent.command
@@ -161,9 +166,16 @@ export async function POST(
           ? '📦 Skills in your container runtime'
           : '🤖 Agents in your container runtime';
 
+    const intentReply = `${header}\n\n${result.output}`;
+    // Save assistant reply
+    await appendMessage(sessionId, {
+      role: 'assistant',
+      text: intentReply,
+    }).catch(() => {});
+
     return NextResponse.json({
       ok: true,
-      reply: `${header}\n\n${result.output}`,
+      reply: intentReply,
       container: runtimeSession.containerName,
       mode: 'container-intent',
     });
