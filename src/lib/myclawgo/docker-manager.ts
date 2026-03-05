@@ -224,7 +224,7 @@ export async function runOpenClawChatInContainer(
   )}`;
 
   try {
-    const { stdout } = await dockerExec(containerName, cmd);
+    const { stdout } = await dockerExec(containerName, cmd, 90_000);
 
     const parsed = extractJsonObjectFromStdout(stdout) as {
       payloads?: Array<{ text?: string }>;
