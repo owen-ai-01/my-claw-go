@@ -140,6 +140,50 @@ async function bootstrapOpenClaw(containerName: string) {
   await dockerExec(containerName, script);
 }
 
+async function ensureGatewayForContainer(containerName: string) {
+  // Write keep-alive script via docker exec --user (avoids permission issues with uid mismatch)
+  const scriptContent = [
+    '#!/bin/bash',
+    'while true; do',
+    '  openclaw gateway run --auth none --bind loopback --port 18789 >> /home/openclaw/.openclaw/gateway.log 2>&1',
+    '  sleep 2',
+    'done',
+  ].join('\n');
+  // Write script if not present
+  await execFileAsync('docker', [
+    'exec',
+    '--user',
+    'openclaw',
+    containerName,
+    'bash',
+    '-c',
+    `[ -f /home/openclaw/.openclaw/keep-gateway.sh ] || printf '%s' ${JSON.stringify(scriptContent)} > /home/openclaw/.openclaw/keep-gateway.sh && chmod +x /home/openclaw/.openclaw/keep-gateway.sh`,
+  ]).catch(() => {});
+  // Start keep-alive via docker exec -d (detached, survives exec session)
+  const running = await execFileAsync('docker', [
+    'exec',
+    '--user',
+    'openclaw',
+    containerName,
+    'bash',
+    '-c',
+    'pgrep -f keep-gateway.sh >/dev/null 2>&1 && echo yes || echo no',
+  ])
+    .then(({ stdout }) => stdout.trim() === 'yes')
+    .catch(() => false);
+  if (!running) {
+    await execFileAsync('docker', [
+      'exec',
+      '-d',
+      '--user',
+      'openclaw',
+      containerName,
+      'bash',
+      '/home/openclaw/.openclaw/keep-gateway.sh',
+    ]).catch(() => {});
+  }
+}
+
 export async function ensureUserContainer(session: UserSession) {
   const containerName = safeName(session.containerName);
 
@@ -213,9 +257,21 @@ export async function runOpenClawChatInContainer(
     };
   }
 
-  const cmd = `su - openclaw -c ${JSON.stringify(
-    `openclaw agent --local --agent main --message ${JSON.stringify(message)} --thinking off --json`
-  )}`;
+  // Quick gateway health check — if up use gateway (session memory), else --local fallback
+  const { stdout: healthOut } = await dockerExec(
+    containerName,
+    "su - openclaw -c 'openclaw gateway call health --json 2>/dev/null | head -1'",
+    5_000
+  ).catch(() => ({ stdout: '' }));
+  const gatewayReady = healthOut.includes('{');
+
+  const cmd = gatewayReady
+    ? `su - openclaw -c ${JSON.stringify(
+        `openclaw agent --agent main --message ${JSON.stringify(message)} --thinking off --json`
+      )}`
+    : `su - openclaw -c ${JSON.stringify(
+        `openclaw agent --local --agent main --message ${JSON.stringify(message)} --thinking off --json`
+      )}`;
 
   try {
     const { stdout } = await dockerExec(containerName, cmd, 90_000);
