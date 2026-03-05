@@ -61,20 +61,14 @@ function extractJsonObjectFromStdout(stdout: string): unknown | null {
 function formatCommandOutput(rawOutput: string, command: string): string {
   const trimmed = rawOutput.trim();
   if (!trimmed || trimmed === '(no output)') {
-    return '✅ Command executed successfully (no output).';
+    return '✅ Done.';
   }
-
-  // 应用截断逻辑（保留现有逻辑）
-  const truncated =
-    trimmed.length > 8_000
-      ? `${trimmed.slice(0, 8_000)}\n\n...output truncated...`
+  // Truncate at 20k chars to avoid UI overflow
+  const out =
+    trimmed.length > 20_000
+      ? `${trimmed.slice(0, 20_000)}\n\n...(output truncated)...`
       : trimmed;
-
-  // 简单格式化：添加命令上下文和分隔线
-  const lines = truncated.split('\n');
-  const outputLines = lines.map((line) => `  ${line}`);
-
-  return `📟 Command: \`${command}\`\n${outputLines.join('\n')}`;
+  return out;
 }
 
 async function dockerExec(
