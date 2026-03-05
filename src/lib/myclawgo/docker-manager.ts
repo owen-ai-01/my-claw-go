@@ -276,7 +276,8 @@ export async function runOpenClawChatInContainer(
   try {
     const { stdout } = await dockerExec(containerName, cmd, 90_000);
 
-    const parsed = extractJsonObjectFromStdout(stdout) as {
+    const rawParsed = extractJsonObjectFromStdout(stdout) as {
+      // --local format: { payloads, meta }
       payloads?: Array<{ text?: string }>;
       meta?: {
         agentMeta?: {
@@ -285,7 +286,22 @@ export async function runOpenClawChatInContainer(
           lastCallUsage?: { input?: number; output?: number; total?: number };
         };
       };
+      // gateway format: { runId, status, result: { payloads, meta } }
+      result?: {
+        payloads?: Array<{ text?: string }>;
+        meta?: {
+          agentMeta?: {
+            model?: string;
+            usage?: { input?: number; output?: number; total?: number };
+            lastCallUsage?: { input?: number; output?: number; total?: number };
+          };
+        };
+      };
     } | null;
+
+    // Normalise: gateway wraps everything in result{}
+    const parsed =
+      (rawParsed as { result?: typeof rawParsed })?.result ?? rawParsed;
 
     const payloadText =
       parsed?.payloads
