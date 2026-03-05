@@ -198,12 +198,6 @@ export async function runOpenClawChatInContainer(
 
   await execFileAsync('docker', ['start', containerName]).catch(() => {});
 
-  const ensureGatewayCmd = `su - openclaw -c ${JSON.stringify(
-    "pgrep -f 'openclaw gateway run' >/dev/null || (nohup openclaw gateway run --auth none --bind loopback --port 18789 > /home/openclaw/.openclaw/gateway.log 2>&1 &)"
-  )}`;
-
-  await dockerExec(containerName, ensureGatewayCmd).catch(() => {});
-
   // Check if openclaw is installed yet (bootstrap may still be running for new containers)
   const checkCmd =
     "su - openclaw -c 'which openclaw 2>/dev/null && echo ready || echo not_ready'";
@@ -220,7 +214,7 @@ export async function runOpenClawChatInContainer(
   }
 
   const cmd = `su - openclaw -c ${JSON.stringify(
-    `openclaw agent --agent main --message ${JSON.stringify(message)} --thinking off --json`
+    `openclaw agent --local --agent main --message ${JSON.stringify(message)} --thinking off --json`
   )}`;
 
   try {
