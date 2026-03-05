@@ -252,9 +252,6 @@ export default function BotPage() {
     );
   }
 
-  const modelLabel =
-    models.find((m) => m.id === selectedModel)?.label || selectedModel;
-
   return (
     <main className="flex flex-col h-screen bg-slate-950 text-white">
       {/* ── Header ── */}
@@ -298,7 +295,7 @@ export default function BotPage() {
             </p>
             <p className="text-xs mt-1">
               Send a message to get started. Using{' '}
-              <span className="text-indigo-400">{modelLabel}</span>.
+              <p className="text-xs mt-1">Send a message to get started.</p>
             </p>
           </div>
         )}
@@ -324,12 +321,6 @@ export default function BotPage() {
                 <span className="text-[10px] text-slate-600">
                   {formatTime(msg.timestamp)}
                 </span>
-                {msg.model && msg.role === 'assistant' && (
-                  <span className="text-[10px] text-slate-600">
-                    {models.find((m) => m.id === msg.model)?.label ||
-                      msg.model.split('/').pop()}
-                  </span>
-                )}
                 <button
                   type="button"
                   onClick={() => onDeleteMessage(msg.id)}
@@ -414,8 +405,7 @@ export default function BotPage() {
           </button>
         </div>
         <p className="text-[10px] text-slate-600 text-center mt-2">
-          Using <span className="text-slate-500">{modelLabel}</span> · Press
-          Enter to send
+          Press Enter to send
         </p>
       </div>
     </main>
