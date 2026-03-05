@@ -214,36 +214,36 @@
       "subtitle": "Answers to your questions about My Claw Go",
       "items": {
         "item-1": {
-          "question": "What is My Claw Go and how does it work?",
-          "answer": "My Claw Go is an AI-powered tool that automatically converts any webpage into a professional video. Simply paste a URL, and our AI analyzes the content, creates a storyboard, generates assets, and produces a complete video in minutes."
+          "question": "Do I need to buy a VPS or configure any servers?",
+          "answer": "No. My Claw Go is designed exactly for users who do not want to deal with servers or infrastructure. Sign up, choose a plan, and your private AI workspace is ready immediately."
         },
         "item-2": {
-          "question": "Is My Claw Go free to use?",
-          "answer": "My Claw Go requires credits to generate videos. Due to the high computing costs of AI video generation, payment is required. We offer flexible pricing plans to suit different needs."
+          "question": "Do I need to provide my own API keys?",
+          "answer": "No. My Claw Go manages all API keys for you. AI model access is included in your plan via our platform keys. You can optionally add your own keys for advanced use."
         },
         "item-3": {
-          "question": "How long does My Claw Go take to generate?",
-          "answer": "The My Claw Go process typically takes 2-5 minutes depending on the complexity of the webpage and selected video settings. Our AI works as fast as possible while maintaining high quality."
+          "question": "What is a credit and how is it charged?",
+          "answer": "Credits are consumed based on actual AI model usage — input and output tokens. 1 credit = $0.001. Different models have different costs per token. Your subscription includes a monthly credit allocation."
         },
         "item-4": {
-          "question": "What types of URLs work with My Claw Go?",
-          "answer": "My Claw Go works with most public web pages including product pages, blog articles, landing pages, portfolio sites, news articles, and documentation pages. The AI adapts to different content types automatically."
+          "question": "What can my AI workspace actually do?",
+          "answer": "Your workspace runs a full OpenClaw agent with memory, skills, and tools. It can execute commands, read and write files, browse the web, set reminders, send messages, and remember things across conversations — far beyond a simple chatbot."
         },
         "item-5": {
-          "question": "Can I use My Claw Go for commercial purposes?",
-          "answer": "Yes, videos generated with My Claw Go on paid plans come with full commercial usage rights. You can use them for marketing, advertising, social media, and business presentations."
+          "question": "Is my workspace private and isolated?",
+          "answer": "Yes. Every user gets their own isolated Docker container with their own file system, memory, and runtime. Your data is completely separate from other users."
         },
         "item-6": {
-          "question": "What video formats and resolutions does My Claw Go support?",
-          "answer": "My Claw Go generates MP4 videos in multiple resolutions (480p, 720p, 1080p) and aspect ratios (16:9, 9:16, 1:1, 4:3) to suit different platforms like YouTube, TikTok, and Instagram."
+          "question": "Can I cancel my subscription at any time?",
+          "answer": "Yes. You can cancel at any time from your account settings. Your workspace remains active until the end of the billing period."
         },
         "item-7": {
-          "question": "Does My Claw Go include narration or voiceover?",
-          "answer": "Yes, My Claw Go automatically generates AI narration based on the webpage content. The voiceover is synced with the visual scenes for a professional presentation."
+          "question": "Which AI models are available?",
+          "answer": "We support a range of top models including Minimax M2.5, DeepSeek V3, Gemini 2.0 Flash, Claude 3.5/3.7 Sonnet, GPT-4o, Llama 3.3 70B, and more. The default model is optimized for speed and cost."
         },
         "item-8": {
-          "question": "How is my data handled with My Claw Go?",
-          "answer": "My Claw Go only accesses public webpage content. Your generated videos are stored temporarily for download and are automatically deleted after 24 hours for security."
+          "question": "What happens to my data if I cancel?",
+          "answer": "Your workspace data is retained for a grace period after cancellation, then permanently deleted. You can export your workspace files before cancellation."
         }
       }
     },
@@ -671,14 +671,14 @@
     "title": "About Us",
     "description": "Learn more about My Claw Go and our team",
     "authorName": "My Claw Go Team",
-    "authorBio": "We develop innovative AI tools for video production",
-    "introduction": "Welcome to My Claw Go. We help you run your own OpenClaw workspace without infrastructure setup, so you can focus on outcomes.",
+    "authorBio": "We build tools that make AI genuinely useful — starting with My Claw Go, a hosted OpenClaw workspace for everyone.",
+    "introduction": "Welcome to My Claw Go. We believe powerful AI should be accessible to everyone, not just those who can configure servers and manage API keys. My Claw Go gives you a private, hosted OpenClaw workspace — ready in minutes.",
     "talkWithMe": "Get in touch"
   },
   "ChangelogPage": {
     "title": "Changelog",
-    "description": "All updates and improvements to our AI Video Tool",
-    "subtitle": "Track all updates and improvements of GenProduct Video"
+    "description": "All updates and improvements to My Claw Go",
+    "subtitle": "Track all updates and improvements to My Claw Go"
   },
   "ContactPage": {
     "title": "Contact",
