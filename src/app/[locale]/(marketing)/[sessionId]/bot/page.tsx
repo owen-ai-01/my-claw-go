@@ -104,6 +104,17 @@ export default function BotPage() {
     if (guardReady) loadHistory(1);
   }, [guardReady, loadHistory]);
 
+  // Mobile: re-fetch latest messages when page becomes visible again (browser tab restore)
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === 'visible' && guardReady) {
+        loadHistory(1);
+      }
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [guardReady, loadHistory]);
+
   // Scroll to bottom on new messages
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });

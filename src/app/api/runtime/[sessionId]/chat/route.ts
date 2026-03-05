@@ -169,6 +169,11 @@ export async function POST(
     });
   }
 
+  // Save user message first (before agent call, so it's never lost)
+  await appendMessage(sessionId, { role: 'user', text: message }).catch(
+    () => {}
+  );
+
   const result = await runOpenClawChatInContainer(runtimeSession, message);
   if (!result.ok) {
     const ownerEmail = authSession?.user?.email;
@@ -181,22 +186,19 @@ export async function POST(
     );
   }
 
-  // Save messages to chat history
-  await Promise.all([
-    appendMessage(sessionId, { role: 'user', text: message }),
-    appendMessage(sessionId, {
-      role: 'assistant',
-      text: result.reply,
-      model: result.model,
-      tokens: result.usage
-        ? {
-            input: result.usage.inputTokens,
-            output: result.usage.outputTokens,
-            total: result.usage.totalTokens,
-          }
-        : undefined,
-    }),
-  ]).catch(() => {}); // non-blocking
+  // Save assistant reply
+  await appendMessage(sessionId, {
+    role: 'assistant',
+    text: result.reply,
+    model: result.model,
+    tokens: result.usage
+      ? {
+          input: result.usage.inputTokens,
+          output: result.usage.outputTokens,
+          total: result.usage.totalTokens,
+        }
+      : undefined,
+  }).catch(() => {});
 
   // Credit deduction only when session owner is authenticated and calling their own bot route
   let creditsLeft: number | null = null;
