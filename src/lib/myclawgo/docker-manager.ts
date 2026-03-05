@@ -192,8 +192,7 @@ export async function ensureUserContainer(session: UserSession) {
 
 export async function runOpenClawChatInContainer(
   session: UserSession,
-  message: string,
-  model?: string
+  message: string
 ) {
   const containerName = safeName(session.containerName);
 

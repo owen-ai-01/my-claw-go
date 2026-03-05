@@ -11,7 +11,7 @@ import {
   runWhitelistedCommandInContainer,
 } from '@/lib/myclawgo/docker-manager';
 import { getSession, touchSession } from '@/lib/myclawgo/session-store';
-import { appendMessage, readUserPrefs } from '@/lib/myclawgo/user-data';
+import { appendMessage } from '@/lib/myclawgo/user-data';
 import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 

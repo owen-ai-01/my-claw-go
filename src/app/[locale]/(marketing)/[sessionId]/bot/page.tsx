@@ -15,8 +15,6 @@ type Message = {
   timestamp: string;
 };
 
-type Model = { id: string; label: string };
-
 function formatTime(ts: string) {
   try {
     return new Date(ts).toLocaleTimeString('en-US', {
@@ -45,8 +43,6 @@ export default function BotPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [models, setModels] = useState<Model[]>([]);
-  const [selectedModel, setSelectedModel] = useState('');
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const [loadingHistory, setLoadingHistory] = useState(false);
@@ -84,18 +80,6 @@ export default function BotPage() {
     };
   }, [router, sessionId]);
 
-  // Load prefs + models
-  useEffect(() => {
-    if (!guardReady) return;
-    fetch(`/api/runtime/${sessionId}/prefs`)
-      .then((r) => r.json())
-      .then((d) => {
-        if (d.models) setModels(d.models);
-        if (d.prefs?.model) setSelectedModel(d.prefs.model);
-      })
-      .catch(() => {});
-  }, [guardReady, sessionId]);
-
   // Load initial history
   const loadHistory = useCallback(
     async (p: number, prepend = false) => {
@@ -124,16 +108,6 @@ export default function BotPage() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
-
-  // Model change
-  async function onModelChange(modelId: string) {
-    setSelectedModel(modelId);
-    await fetch(`/api/runtime/${sessionId}/prefs`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: modelId }),
-    }).catch(() => {});
-  }
 
   // Load more (older messages)
   async function loadMore() {
@@ -290,20 +264,6 @@ export default function BotPage() {
           <span className="text-xs text-slate-500">Workspace</span>
         </div>
         <div className="flex items-center gap-3">
-          {/* Model selector */}
-          {models.length > 0 && (
-            <select
-              value={selectedModel}
-              onChange={(e) => onModelChange(e.target.value)}
-              className="text-xs bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer"
-            >
-              {models.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.label}
-                </option>
-              ))}
-            </select>
-          )}
           <button
             type="button"
             onClick={onClearAll}
