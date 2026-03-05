@@ -1,85 +1,77 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SRC_DIR="${SRC_DIR:-/home/openclaw/project/my-claw-go}"
-TARGET_DIR="${TARGET_DIR:-/home/openclaw/project/my-claw-go-online}"
-BRANCH="${BRANCH:-main}"
-APP_NAME="${APP_NAME:-my-claw-go-online}"
-PORT="${PORT:-3020}"
+# ── Config ────────────────────────────────────────────────────────────────────
+PROD_DIR="/home/openclaw/project/my-claw-go-online"
+SRC_DIR="/home/openclaw/project/my-claw-go"
+APP_NAME="my-claw-go-online"
+PORT_BLUE=3020   # current live
+PORT_GREEN=3021  # new build
+NGINX_UPSTREAM="/etc/nginx/conf.d/myclawgo-upstream.conf"
+LOG="$PROD_DIR/deploy.log"
 
-log() { echo "[deploy-online] $*"; }
+log() { echo "[$(date -u +%H:%M:%S)] $*" | tee -a "$LOG"; }
 
-require_cmd() {
-  command -v "$1" >/dev/null 2>&1 || {
-    echo "Missing command: $1" >&2
-    exit 1
-  }
-}
+# ── Step 1: Sync code ─────────────────────────────────────────────────────────
+log "▶ Syncing code to production dir..."
+cd "$PROD_DIR"
+git fetch origin main
+git reset --hard origin/main
+pnpm install --frozen-lockfile 2>&1 | tail -3
 
-require_cmd git
-require_cmd npm
-
-if [[ ! -d "$SRC_DIR/.git" ]]; then
-  echo "Source repo not found: $SRC_DIR" >&2
+# ── Step 2: Build ─────────────────────────────────────────────────────────────
+log "▶ Building..."
+if ! npm run build >> "$LOG" 2>&1; then
+  log "✗ Build FAILED — production untouched. Aborting."
   exit 1
 fi
+log "✓ Build succeeded"
 
-log "source: $SRC_DIR"
-log "target: $TARGET_DIR"
-log "branch: $BRANCH"
-log "app: $APP_NAME"
-log "port: $PORT"
+# ── Step 3: Start green instance ─────────────────────────────────────────────
+log "▶ Starting green instance on port $PORT_GREEN..."
+sg docker -c "cd '$PROD_DIR' && PORT=$PORT_GREEN pm2 start npm \
+  --name ${APP_NAME}-green \
+  --update-env \
+  -- run start -- --port $PORT_GREEN" >> "$LOG" 2>&1
 
-if [[ ! -d "$TARGET_DIR/.git" ]]; then
-  log "target missing; cloning from source repo"
-  git clone "$SRC_DIR" "$TARGET_DIR"
-fi
-
-cd "$TARGET_DIR"
-
-log "updating code"
-# Keep untracked files (e.g. .env) intact; only reset tracked code files.
-git fetch origin "$BRANCH"
-git checkout "$BRANCH"
-git reset --hard "origin/$BRANCH"
-
-if [[ ! -f "$TARGET_DIR/.env" ]]; then
-  echo "Missing $TARGET_DIR/.env (prod env file). Create it first, then rerun." >&2
-  exit 1
-fi
-
-log "install dependencies"
-if [[ -f "pnpm-lock.yaml" ]] && command -v pnpm >/dev/null 2>&1; then
-  pnpm install --frozen-lockfile
-elif [[ -f "package-lock.json" ]]; then
-  npm ci --no-audit --no-fund
-else
-  npm install --no-audit --no-fund
-fi
-
-log "build"
-npm run build
-
-log "restart via pm2 (with docker group)"
-if sg docker -c "pm2 describe '$APP_NAME'" >/dev/null 2>&1; then
-  sg docker -c "cd '$TARGET_DIR' && pm2 restart '$APP_NAME' --update-env"
-else
-  sg docker -c "cd '$TARGET_DIR' && PORT=$PORT pm2 start npm --name '$APP_NAME' -- run start -- --port $PORT"
-fi
-sg docker -c "pm2 save" >/dev/null 2>&1 || true
-
-log "health check"
-set +e
-for i in {1..20}; do
-  code=$(curl -sS -o /dev/null -w "%{http_code}" "http://127.0.0.1:$PORT" --max-time 3 2>/dev/null)
-  if [[ "$code" == "200" || "$code" == "307" || "$code" == "308" ]]; then
-    log "ok (http $code)"
-    set -e
-    exit 0
+# ── Step 4: Health check green ────────────────────────────────────────────────
+log "▶ Health checking green (port $PORT_GREEN)..."
+HEALTHY=false
+for i in $(seq 1 15); do
+  sleep 2
+  CODE=$(curl -sS -o /dev/null -w "%{http_code}" "http://127.0.0.1:$PORT_GREEN" --max-time 5 2>/dev/null || echo "000")
+  if [ "$CODE" = "200" ]; then
+    HEALTHY=true
+    log "✓ Green healthy after ${i}×2s (HTTP $CODE)"
+    break
   fi
-  sleep 1
+  log "  … waiting ($i/15, HTTP $CODE)"
 done
-set -e
 
-echo "Health check failed on port $PORT" >&2
-exit 1
+if [ "$HEALTHY" != "true" ]; then
+  log "✗ Green health check FAILED — rolling back"
+  sg docker -c "pm2 delete ${APP_NAME}-green" >> "$LOG" 2>&1 || true
+  exit 1
+fi
+
+# ── Step 5: Switch Nginx upstream ────────────────────────────────────────────
+log "▶ Switching Nginx upstream to port $PORT_GREEN..."
+sudo tee "$NGINX_UPSTREAM" > /dev/null << EOF
+upstream myclawgo_backend {
+    server 127.0.0.1:$PORT_GREEN;
+}
+EOF
+sudo nginx -t >> "$LOG" 2>&1 && sudo nginx -s reload
+log "✓ Nginx now pointing to green ($PORT_GREEN)"
+
+# ── Step 6: Stop old blue ─────────────────────────────────────────────────────
+log "▶ Stopping old blue instance..."
+sg docker -c "pm2 delete ${APP_NAME}-blue 2>/dev/null || pm2 delete $APP_NAME 2>/dev/null || true" >> "$LOG" 2>&1
+
+# ── Step 7: Rename green → blue (canonical) ───────────────────────────────────
+sg docker -c "pm2 restart ${APP_NAME}-green --name $APP_NAME 2>/dev/null || true" >> "$LOG" 2>&1
+
+# Update upstream to canonical port name (keep green port for now, will be blue next deploy)
+sg docker -c "pm2 save" >> "$LOG" 2>&1
+
+log "✅ Deployment complete — live on port $PORT_GREEN (blue next cycle: $PORT_BLUE↔$PORT_GREEN swap)"
