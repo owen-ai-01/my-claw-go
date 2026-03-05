@@ -12,6 +12,8 @@ export type UserSession = {
   lastActiveAt: string;
 };
 
+const CONTAINER_PREFIX = process.env.MYCLAWGO_CONTAINER_PREFIX || 'myclawgo';
+
 const BASE_DIR =
   process.env.MYCLAWGO_DATA_DIR ||
   '/home/openclaw/project/my-claw-go/.runtime-data';
@@ -49,7 +51,7 @@ export async function createSession(initialPrompt: string) {
     id,
     initialPrompt,
     credits: 100,
-    containerName: `myclawgo-${id}`,
+    containerName: `${CONTAINER_PREFIX}-${id}`,
     userDataDir,
     createdAt: now,
     lastActiveAt: now,
@@ -77,7 +79,7 @@ export async function ensureSessionById(
     id,
     initialPrompt,
     credits: 0,
-    containerName: `myclawgo-${id}`,
+    containerName: `${CONTAINER_PREFIX}-${id}`,
     userDataDir,
     createdAt: now,
     lastActiveAt: now,
