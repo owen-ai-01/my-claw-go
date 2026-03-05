@@ -14,6 +14,19 @@ import { getSession, touchSession } from '@/lib/myclawgo/session-store';
 import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 
+// Owner email - receives full error details for debugging
+const OWNER_EMAIL =
+  process.env.MYCLAWGO_OWNER_EMAIL || 'ouyanghuiping@gmail.com';
+
+function isOwner(email?: string | null) {
+  return email === OWNER_EMAIL;
+}
+
+function safeError(rawError: string, ownerEmail?: string | null): string {
+  if (isOwner(ownerEmail)) return rawError;
+  return 'Sorry, a server error occurred. Please try again in a moment.';
+}
+
 type Intent =
   | { kind: 'install-skill'; command: string; skill: string }
   | { kind: 'list-skills'; command: string }
@@ -110,8 +123,15 @@ export async function POST(
   // Ensure container exists for this user session (covers old users without pre-created runtime)
   const ensured = await ensureUserContainer(runtimeSession);
   if (!ensured.ok) {
+    const ownerEmail = authSession?.user?.email;
     return NextResponse.json(
-      { ok: false, error: ensured.error || 'Failed to prepare user runtime' },
+      {
+        ok: false,
+        error: safeError(
+          ensured.error || 'Failed to prepare user runtime',
+          ownerEmail
+        ),
+      },
       { status: 500 }
     );
   }
@@ -123,8 +143,12 @@ export async function POST(
       intent.command
     );
     if (!result.ok) {
+      const ownerEmail = authSession?.user?.email;
       return NextResponse.json(
-        { ok: false, error: result.error },
+        {
+          ok: false,
+          error: safeError(result.error || 'Command failed', ownerEmail),
+        },
         { status: 500 }
       );
     }
@@ -146,8 +170,12 @@ export async function POST(
 
   const result = await runOpenClawChatInContainer(runtimeSession, message);
   if (!result.ok) {
+    const ownerEmail = authSession?.user?.email;
     return NextResponse.json(
-      { ok: false, error: result.error },
+      {
+        ok: false,
+        error: safeError(result.error || 'Runtime error', ownerEmail),
+      },
       { status: 500 }
     );
   }
