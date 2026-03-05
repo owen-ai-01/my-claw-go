@@ -60,19 +60,13 @@ fi
 log "build"
 npm run build
 
-if command -v pm2 >/dev/null 2>&1; then
-  log "restart via pm2"
-  if pm2 describe "$APP_NAME" >/dev/null 2>&1; then
-    pm2 restart "$APP_NAME" --update-env
-  else
-    pm2 start npm --name "$APP_NAME" -- run start -- --port "$PORT"
-  fi
-  pm2 save >/dev/null 2>&1 || true
+log "restart via pm2 (with docker group)"
+if sg docker -c "pm2 describe '$APP_NAME'" >/dev/null 2>&1; then
+  sg docker -c "cd '$TARGET_DIR' && pm2 restart '$APP_NAME' --update-env"
 else
-  log "pm2 not found; fallback to nohup"
-  pkill -f "next start --port $PORT" >/dev/null 2>&1 || true
-  nohup env PORT="$PORT" npm run start -- --port "$PORT" > "$TARGET_DIR/.next-online.log" 2>&1 &
+  sg docker -c "cd '$TARGET_DIR' && PORT=$PORT pm2 start npm --name '$APP_NAME' -- run start -- --port $PORT"
 fi
+sg docker -c "pm2 save" >/dev/null 2>&1 || true
 
 log "health check"
 set +e
