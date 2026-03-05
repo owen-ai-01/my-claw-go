@@ -220,7 +220,7 @@ export async function runOpenClawChatInContainer(
   }
 
   const cmd = `su - openclaw -c ${JSON.stringify(
-    `openclaw models set ${DEFAULT_RUNTIME_MODEL} >/dev/null 2>&1 || true; openclaw agent --agent main --message ${JSON.stringify(message)} --thinking off --json`
+    `openclaw agent --agent main --message ${JSON.stringify(message)} --thinking off --json`
   )}`;
 
   try {
