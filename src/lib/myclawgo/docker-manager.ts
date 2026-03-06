@@ -3,6 +3,10 @@ import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { promisify } from 'node:util';
+import { getDb } from '@/db';
+import { payment } from '@/db/schema';
+import { PaymentTypes } from '@/payment/types';
+import { and, desc, eq, or } from 'drizzle-orm';
 import { getCommandTimeoutMs, isSafeCommandInput } from './command-policy';
 import type { UserSession } from './session-store';
 
@@ -19,6 +23,64 @@ const HOST_PW_DIR =
   process.env.MYCLAWGO_PW_DIR || '/home/openclaw/docker-openclaw-pw';
 const DEFAULT_RUNTIME_MODEL =
   process.env.MYCLAWGO_RUNTIME_MODEL || 'openrouter/minimax/minimax-m2.5';
+
+type RuntimeTier = 'pro' | 'premium' | 'ultra';
+
+type ContainerLimits = {
+  cpus: string;
+  memory: string;
+  disk: string;
+};
+
+const RUNTIME_LIMITS_BY_TIER: Record<RuntimeTier, ContainerLimits> = {
+  pro: { cpus: '0.5', memory: '1g', disk: '10g' },
+  premium: { cpus: '1', memory: '2g', disk: '20g' },
+  ultra: { cpus: '4', memory: '8g', disk: '50g' },
+};
+
+function priceIdTier(priceId: string | null | undefined): RuntimeTier {
+  if (!priceId) return 'pro';
+
+  const premiumIds = [
+    process.env.NEXT_PUBLIC_STRIPE_PRICE_PREMIUM_MONTHLY,
+    process.env.NEXT_PUBLIC_STRIPE_PRICE_PREMIUM_YEARLY,
+  ].filter(Boolean);
+  if (premiumIds.includes(priceId)) return 'premium';
+
+  const ultraIds = [
+    process.env.NEXT_PUBLIC_STRIPE_PRICE_ULTRA_MONTHLY,
+    process.env.NEXT_PUBLIC_STRIPE_PRICE_ULTRA_YEARLY,
+  ].filter(Boolean);
+  if (ultraIds.includes(priceId)) return 'ultra';
+
+  return 'pro';
+}
+
+async function getContainerLimitsForUser(
+  userId: string
+): Promise<ContainerLimits> {
+  try {
+    const db = await getDb();
+    const sub = await db
+      .select({ priceId: payment.priceId })
+      .from(payment)
+      .where(
+        and(
+          eq(payment.userId, userId),
+          eq(payment.type, PaymentTypes.SUBSCRIPTION),
+          eq(payment.paid, true),
+          or(eq(payment.status, 'active'), eq(payment.status, 'trialing'))
+        )
+      )
+      .orderBy(desc(payment.createdAt))
+      .limit(1);
+
+    const tier = priceIdTier(sub[0]?.priceId);
+    return RUNTIME_LIMITS_BY_TIER[tier];
+  } catch {
+    return RUNTIME_LIMITS_BY_TIER.pro;
+  }
+}
 
 function safeName(value: string) {
   return value.replace(/[^a-zA-Z0-9_.-]/g, '');
@@ -195,11 +257,20 @@ export async function ensureUserContainer(session: UserSession) {
     .map((k) => ({ key: k, value: process.env[k] }))
     .filter((e) => Boolean(e.value));
 
+  const limits = await getContainerLimitsForUser(session.id);
   const args = [
     'run',
     '-d',
     '--name',
     containerName,
+    '--cpus',
+    limits.cpus,
+    '--memory',
+    limits.memory,
+    '--memory-swap',
+    limits.memory,
+    '--storage-opt',
+    `size=${limits.disk}`,
     '-v',
     `${session.userDataDir}:/home/openclaw/.openclaw`,
     '-v',
@@ -218,6 +289,29 @@ export async function ensureUserContainer(session: UserSession) {
 
   try {
     await execFileAsync('docker', args);
+  } catch (error: unknown) {
+    const message =
+      error instanceof Error ? error.message : 'Unknown docker error';
+    // Some hosts (overlay2 on extfs) do not support --storage-opt size=...
+    // In that case, keep CPU/RAM limits and continue without hard disk cap.
+    if (
+      message.includes('--storage-opt is supported only for overlay over xfs')
+    ) {
+      const argsWithoutDisk = args.filter((_, idx) => {
+        if (args[idx] === '--storage-opt') return false;
+        if (idx > 0 && args[idx - 1] === '--storage-opt') return false;
+        return true;
+      });
+      await execFileAsync('docker', argsWithoutDisk);
+    } else {
+      return {
+        ok: false as const,
+        error: message,
+      };
+    }
+  }
+
+  try {
     await bootstrapOpenClaw(containerName);
     return { ok: true as const, mode: 'created' as const };
   } catch (error: unknown) {
