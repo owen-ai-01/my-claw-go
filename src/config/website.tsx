@@ -119,7 +119,7 @@ export const websiteConfig: WebsiteConfig = {
         popular: false,
         credits: {
           enable: true,
-          amount: 2000,
+          amount: 6000,
           expireDays: 30, // 1 month
         },
         capacity: {
@@ -143,7 +143,7 @@ export const websiteConfig: WebsiteConfig = {
         popular: false,
         credits: {
           enable: true,
-          amount: 24000,
+          amount: 72000,
           expireDays: 365, // 1 year
         },
         capacity: {
@@ -167,7 +167,7 @@ export const websiteConfig: WebsiteConfig = {
         popular: true,
         credits: {
           enable: true,
-          amount: 8000,
+          amount: 14000,
           expireDays: 30, // 1 month
         },
         capacity: {
@@ -191,7 +191,7 @@ export const websiteConfig: WebsiteConfig = {
         popular: true,
         credits: {
           enable: true,
-          amount: 96000,
+          amount: 168000,
           expireDays: 365, // 1 year
         },
         capacity: {
@@ -216,7 +216,7 @@ export const websiteConfig: WebsiteConfig = {
         popular: false,
         credits: {
           enable: true,
-          amount: 40000,
+          amount: 90000,
           expireDays: 30, // 1 month
         },
         capacity: {
@@ -240,7 +240,7 @@ export const websiteConfig: WebsiteConfig = {
         popular: false,
         credits: {
           enable: true,
-          amount: 480000,
+          amount: 1080000,
           expireDays: 365, // 1 year
         },
         capacity: {

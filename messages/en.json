@@ -230,8 +230,8 @@
           "answer": "Your workspace runs a full OpenClaw agent with memory, skills, and tools. It can execute commands, read and write files, browse the web, set reminders, send messages, and remember things across conversations — far beyond a simple chatbot."
         },
         "item-5": {
-          "question": "Is my workspace private and isolated?",
-          "answer": "Yes. Every user gets their own isolated Docker container with their own file system, memory, and runtime. Your data is completely separate from other users."
+          "question": "What server resources does my workspace get?",
+          "answer": "Each plan includes a dedicated private workspace with real server resources:\n• Pro: 0.5 vCPU / 1 GB RAM / 10 GB disk\n• Premium: 1 vCPU / 2 GB RAM / 20 GB disk\n• Ultra: 4 vCPU / 8 GB RAM / 50 GB disk\n\nYou get a real isolated cloud environment — no sharing with other users."
         },
         "item-6": {
           "question": "Can I cancel my subscription at any time?",
@@ -1217,74 +1217,74 @@
     },
     "pro_monthly": {
       "name": "Pro (Monthly)",
-      "description": "For professionals",
+      "description": "Your own private AI workspace",
       "features": {
-        "feature-1": "4,000 Credits monthly",
-        "feature-2": "Access to all models",
-        "feature-3": "Commercial License",
-        "feature-4": "Priority Support",
-        "feature-5": "Credits management dashboard",
-        "feature-6": "Credits valid for 1 month"
+        "feature-1": "6,000 Credits / month",
+        "feature-2": "Private workspace: 0.5 vCPU / 1 GB RAM / 10 GB disk",
+        "feature-3": "Access to all AI models",
+        "feature-4": "No VPS or API key setup needed",
+        "feature-5": "Credits valid for 1 month",
+        "feature-6": "Standard support"
       }
     },
     "pro_yearly": {
       "name": "Pro (Yearly)",
-      "description": "Save 20% with yearly payment",
+      "description": "Your own private AI workspace — save 20%",
       "features": {
-        "feature-1": "48,000 Credits yearly",
-        "feature-2": "Access to all models",
-        "feature-3": "Commercial License",
-        "feature-4": "Priority Support",
-        "feature-5": "Credits management dashboard",
-        "feature-6": "Credits valid for 1 year"
+        "feature-1": "72,000 Credits / year",
+        "feature-2": "Private workspace: 0.5 vCPU / 1 GB RAM / 10 GB disk",
+        "feature-3": "Access to all AI models",
+        "feature-4": "No VPS or API key setup needed",
+        "feature-5": "Credits valid for 1 year",
+        "feature-6": "Standard support"
       }
     },
     "premium_monthly": {
       "name": "Premium (Monthly)",
-      "description": "For power users and teams",
+      "description": "More power, more credits",
       "features": {
-        "feature-1": "8,000 Credits monthly",
-        "feature-2": "Access to all models",
-        "feature-3": "Commercial License+ (Teams)",
-        "feature-4": "VIP Support 24/7",
-        "feature-5": "Priority runtime performance",
-        "feature-6": "Credits valid for 1 month"
+        "feature-1": "14,000 Credits / month",
+        "feature-2": "Private workspace: 1 vCPU / 2 GB RAM / 20 GB disk",
+        "feature-3": "Access to all AI models",
+        "feature-4": "No VPS or API key setup needed",
+        "feature-5": "Credits valid for 1 month",
+        "feature-6": "Priority support"
       }
     },
     "premium_yearly": {
       "name": "Premium (Yearly)",
-      "description": "Save 20% with yearly payment",
+      "description": "More power, more credits — save 20%",
       "features": {
-        "feature-1": "96,000 Credits yearly",
-        "feature-2": "Access to all models",
-        "feature-3": "Commercial License+ (Teams)",
-        "feature-4": "VIP Support 24/7",
-        "feature-5": "Priority runtime performance",
-        "feature-6": "Credits valid for 1 year"
+        "feature-1": "168,000 Credits / year",
+        "feature-2": "Private workspace: 1 vCPU / 2 GB RAM / 20 GB disk",
+        "feature-3": "Access to all AI models",
+        "feature-4": "No VPS or API key setup needed",
+        "feature-5": "Credits valid for 1 year",
+        "feature-6": "Priority support"
       }
     },
     "ultra_monthly": {
       "name": "Ultra",
-      "description": "For power users and teams that need high monthly credits and priority performance.",
+      "description": "Maximum power for heavy users",
       "features": {
-        "feature-1": "40,000 Credits monthly",
-        "feature-2": "Your own private OpenClaw workspace",
-        "feature-3": "No VPS or key setup needed",
-        "feature-4": "Faster queue priority",
-        "feature-5": "Advanced runtime operations",
-        "feature-6": "Priority support"
+        "feature-1": "90,000 Credits / month",
+        "feature-2": "Private workspace: 4 vCPU / 8 GB RAM / 50 GB disk",
+        "feature-3": "Access to all AI models",
+        "feature-4": "No VPS or API key setup needed",
+        "feature-5": "Credits valid for 1 month",
+        "feature-6": "VIP support 24/7"
       }
     },
     "ultra_yearly": {
       "name": "Ultra",
-      "description": "Save 20% with yearly payment",
+      "description": "Maximum power for heavy users — save 20%",
       "features": {
-        "feature-1": "480,000 Credits yearly",
-        "feature-2": "Your own private OpenClaw workspace",
-        "feature-3": "No VPS or key setup needed",
-        "feature-4": "Faster queue priority",
-        "feature-5": "Advanced runtime operations",
-        "feature-6": "Priority support"
+        "feature-1": "1,080,000 Credits / year",
+        "feature-2": "Private workspace: 4 vCPU / 8 GB RAM / 50 GB disk",
+        "feature-3": "Access to all AI models",
+        "feature-4": "No VPS or API key setup needed",
+        "feature-5": "Credits valid for 1 year",
+        "feature-6": "VIP support 24/7"
       }
     }
   },
