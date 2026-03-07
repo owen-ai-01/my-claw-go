@@ -163,7 +163,6 @@ export default function BotPage() {
 
     let timeoutMs = 25_000;
     let timeout: ReturnType<typeof setTimeout> | null = null;
-    const controller = new AbortController();
 
     try {
       const explicitCmd = /^\/cmd(?:\s|$)/i.test(text);
@@ -173,7 +172,10 @@ export default function BotPage() {
       const isCommand = explicitCmd || isSafeCommandInput(text);
 
       timeoutMs = getClientTimeoutMs(isCommand, rawCommand);
-      timeout = setTimeout(() => controller.abort(), timeoutMs);
+      const controller = isCommand ? new AbortController() : null;
+      if (controller) {
+        timeout = setTimeout(() => controller.abort(), timeoutMs);
+      }
 
       const payload = isCommand
         ? { message: rawCommand, isCommand: true }
@@ -187,7 +189,7 @@ export default function BotPage() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
-          signal: controller.signal,
+          signal: controller?.signal,
         }
       );
 
