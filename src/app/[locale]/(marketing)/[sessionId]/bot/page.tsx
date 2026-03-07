@@ -171,43 +171,71 @@ export default function BotPage() {
         : text;
       const isCommand = explicitCmd || isSafeCommandInput(text);
 
-      timeoutMs = getClientTimeoutMs(isCommand, rawCommand);
-      const controller = isCommand ? new AbortController() : null;
-      if (controller) {
+      if (isCommand) {
+        timeoutMs = getClientTimeoutMs(isCommand, rawCommand);
+        const controller = new AbortController();
         timeout = setTimeout(() => controller.abort(), timeoutMs);
-      }
 
-      const payload = isCommand
-        ? { message: rawCommand, isCommand: true }
-        : { message: text };
-
-      const res = await fetch(
-        isCommand
-          ? `/api/runtime/${sessionId}/exec`
-          : `/api/runtime/${sessionId}/chat`,
-        {
+        const res = await fetch(`/api/runtime/${sessionId}/exec`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-          signal: controller?.signal,
-        }
-      );
+          body: JSON.stringify({ message: rawCommand, isCommand: true }),
+          signal: controller.signal,
+        });
 
-      const rawBody = await res.text();
-      let data: Record<string, unknown> = {};
-      if (rawBody) {
-        try {
-          data = JSON.parse(rawBody) as Record<string, unknown>;
-        } catch {
-          data = { error: rawBody.slice(0, 500) };
+        const rawBody = await res.text();
+        let data: Record<string, unknown> = {};
+        if (rawBody) {
+          try {
+            data = JSON.parse(rawBody) as Record<string, unknown>;
+          } catch {
+            data = { error: rawBody.slice(0, 500) };
+          }
         }
+
+        if (!res.ok || !data?.ok) {
+          if (data?.code === 'INSUFFICIENT_CREDITS' || res.status === 402)
+            setLowCredits(true);
+          const rawError = String(
+            data?.error || `Request failed (HTTP ${res.status})`
+          );
+          const botMsg: Message = {
+            id: crypto.randomUUID(),
+            role: 'assistant',
+            text: `⚠️ ${normalizeError(rawError)}`,
+            timestamp: new Date().toISOString(),
+          };
+          setMessages((m) => [...m, botMsg]);
+          return;
+        }
+
+        const replyText = `🛠️ [${String(data?.container || 'container')}]
+${String(data?.output || '(no output)')}`;
+
+        const botMsg: Message = {
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          text: replyText,
+          model: data?.model as string | undefined,
+          timestamp: new Date().toISOString(),
+        };
+        setMessages((m) => [...m, botMsg]);
+        return;
       }
 
-      if (!res.ok || !data?.ok) {
-        if (data?.code === 'INSUFFICIENT_CREDITS' || res.status === 402)
-          setLowCredits(true);
+      const createRes = await fetch(`/api/runtime/${sessionId}/tasks`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text }),
+      });
+
+      const createData = (await createRes.json().catch(() => ({}))) as Record<
+        string,
+        unknown
+      >;
+      if (!createRes.ok || !createData?.ok || !createData?.taskId) {
         const rawError = String(
-          data?.error || `Request failed (HTTP ${res.status})`
+          createData?.error || `Request failed (HTTP ${createRes.status})`
         );
         const botMsg: Message = {
           id: crypto.randomUUID(),
@@ -219,15 +247,58 @@ export default function BotPage() {
         return;
       }
 
-      const replyText = isCommand
-        ? `🛠️ [${String(data?.container || 'container')}]\n${String(data?.output || '(no output)')}`
-        : String(data?.reply || 'No reply');
+      const taskId = String(createData.taskId);
+      const startMs = Date.now();
+
+      while (Date.now() - startMs < 10 * 60 * 1000) {
+        await new Promise((resolve) => setTimeout(resolve, 1200));
+
+        const statusRes = await fetch(`/api/runtime/${sessionId}/tasks/${taskId}`);
+        const statusData =
+          (await statusRes.json().catch(() => ({}))) as Record<string, unknown>;
+
+        if (!statusRes.ok || !statusData?.ok) {
+          const rawError = String(
+            statusData?.error || `Task status failed (HTTP ${statusRes.status})`
+          );
+          const botMsg: Message = {
+            id: crypto.randomUUID(),
+            role: 'assistant',
+            text: `⚠️ ${normalizeError(rawError)}`,
+            timestamp: new Date().toISOString(),
+          };
+          setMessages((m) => [...m, botMsg]);
+          return;
+        }
+
+        const status = String(statusData.status || 'queued');
+        if (status === 'done') {
+          const botMsg: Message = {
+            id: crypto.randomUUID(),
+            role: 'assistant',
+            text: String(statusData.reply || 'No reply'),
+            timestamp: new Date().toISOString(),
+          };
+          setMessages((m) => [...m, botMsg]);
+          return;
+        }
+
+        if (status === 'failed') {
+          const botMsg: Message = {
+            id: crypto.randomUUID(),
+            role: 'assistant',
+            text: `⚠️ ${normalizeError(String(statusData.error || 'Task failed'))}`,
+            timestamp: new Date().toISOString(),
+          };
+          setMessages((m) => [...m, botMsg]);
+          return;
+        }
+      }
 
       const botMsg: Message = {
         id: crypto.randomUUID(),
         role: 'assistant',
-        text: replyText,
-        model: data?.model as string | undefined,
+        text: '⚠️ Task is still running. Please wait a bit and retry.',
         timestamp: new Date().toISOString(),
       };
       setMessages((m) => [...m, botMsg]);
