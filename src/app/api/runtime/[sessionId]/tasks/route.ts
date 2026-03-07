@@ -6,6 +6,7 @@ import {
   estimateUsdCostByModel,
 } from '@/lib/myclawgo/billing';
 import { createRuntimeTask } from '@/lib/myclawgo/runtime-task-queue';
+import { isSafeCommandInput } from '@/lib/myclawgo/command-policy';
 import {
   ensureUserContainer,
   runOpenClawChatInContainer,
@@ -70,7 +71,8 @@ async function runTaskMessage(
   sessionId: string,
   message: string,
   currentUserId: string,
-  ownerEmail?: string | null
+  ownerEmail?: string | null,
+  isCommand?: boolean
 ) {
   const runtimeSession = await getSession(sessionId);
   if (!runtimeSession) throw new Error('Session not found');
@@ -82,6 +84,24 @@ async function runTaskMessage(
     throw new Error(
       safeError(ensured.error || 'Failed to prepare user runtime', ownerEmail)
     );
+  }
+
+
+  if (isCommand) {
+    if (!isSafeCommandInput(message)) {
+      throw new Error('Command is not allowed.');
+    }
+    const cmdResult = await runWhitelistedCommandInContainer(runtimeSession, message);
+    if (!cmdResult.ok) {
+      throw new Error(safeError(cmdResult.error || 'Command failed', ownerEmail));
+    }
+    const cmdReply = `🛠️ [${runtimeSession.containerName}]
+${cmdResult.output || '(no output)'}`;
+    await appendMessage(sessionId, {
+      role: 'assistant',
+      text: cmdReply,
+    }).catch(() => {});
+    return { reply: cmdReply };
   }
 
   const intent = parseNaturalLanguageIntent(message);
@@ -164,6 +184,7 @@ export async function POST(
   const { sessionId } = await params;
   const body = await req.json().catch(() => ({}));
   const message = String(body?.message || '').trim();
+  const isCommand = Boolean(body?.isCommand);
 
   if (!message) {
     return NextResponse.json(
@@ -187,7 +208,7 @@ export async function POST(
   await appendMessage(sessionId, { role: 'user', text: message }).catch(() => {});
 
   const task = createRuntimeTask(sessionId, message, () =>
-    runTaskMessage(sessionId, message, currentUserId, authSession?.user?.email)
+    runTaskMessage(sessionId, message, currentUserId, authSession?.user?.email, isCommand)
   );
 
   return NextResponse.json({

@@ -226,7 +226,7 @@ ${String(data?.output || '(no output)')}`;
       const createRes = await fetch(`/api/runtime/${sessionId}/tasks`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text }),
+        body: JSON.stringify({ message: isCommand ? rawCommand : text, isCommand }),
       });
 
       const createData = (await createRes.json().catch(() => ({}))) as Record<
@@ -303,15 +303,10 @@ ${String(data?.output || '(no output)')}`;
       };
       setMessages((m) => [...m, botMsg]);
     } catch (error) {
-      const aborted = error instanceof Error && error.name === 'AbortError';
       const botMsg: Message = {
         id: crypto.randomUUID(),
         role: 'assistant',
-        text: aborted
-          ? timeoutMs >= 60_000
-            ? `⚠️ Request timed out after ${Math.floor(timeoutMs / 1000)}s. This command may need longer; please retry once.`
-            : `⚠️ Request timed out after ${Math.floor(timeoutMs / 1000)}s. Please retry once.`
-          : '⚠️ Network request failed. Please retry.',
+        text: '⚠️ Network request failed. Please retry.',
         timestamp: new Date().toISOString(),
       };
       setMessages((m) => [...m, botMsg]);
