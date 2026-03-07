@@ -223,7 +223,7 @@
         },
         "item-3": {
           "question": "What is a credit and how is it charged?",
-          "answer": "Credits are consumed based on actual AI model usage — input and output tokens. 1 credit = $0.001. Different models have different costs per token. Your subscription includes a monthly credit allocation."
+          "answer": "Credits are consumed based on actual AI model usage — input and output tokens. Different models have different usage rates. Your subscription includes a monthly credit allocation."
         },
         "item-4": {
           "question": "What can my AI workspace actually do?",
