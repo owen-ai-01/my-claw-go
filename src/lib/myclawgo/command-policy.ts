@@ -31,7 +31,7 @@ export function getCommandTimeoutMs(command: string) {
 }
 
 export function getClientTimeoutMs(isCommand: boolean, command?: string) {
-  if (!isCommand) return 25_000;
+  if (!isCommand) return 60_000;
   const base = getCommandTimeoutMs(command || '');
   return base + 10_000;
 }
