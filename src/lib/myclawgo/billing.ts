@@ -70,7 +70,6 @@ export function estimateUsdCostByModel(params: {
 }
 
 export function creditsFromUsd(usdCost: number) {
-  // Internal cost-side conversion used for deduction
   const usdPerCredit = Number(
     process.env.MYCLAWGO_USD_PER_CREDIT_COST ||
       process.env.MYCLAWGO_USD_PER_CREDIT ||
