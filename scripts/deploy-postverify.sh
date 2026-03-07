@@ -15,6 +15,32 @@ require_cmd() {
   command -v "$1" >/dev/null 2>&1 || fail "Missing required command: $1"
 }
 
+http_code_with_retry() {
+  local url="$1"
+  local timeout_s="${2:-10}"
+  local retries="${3:-3}"
+  local sleep_s="${4:-2}"
+
+  local i code
+  for i in $(seq 1 "$retries"); do
+    code=$(curl -sS -o /dev/null -w "%{http_code}" "$url" --max-time "$timeout_s" 2>/dev/null || true)
+    # keep only 3 digits if curl produced unexpected mixed output
+    code=$(printf '%s' "$code" | grep -Eo '[0-9]{3}' | tail -n1 || true)
+
+    if [ "$code" = "200" ] || [ "$code" = "301" ] || [ "$code" = "302" ]; then
+      echo "$code"
+      return 0
+    fi
+
+    if [ "$i" -lt "$retries" ]; then
+      sleep "$sleep_s"
+    fi
+  done
+
+  echo "${code:-000}"
+  return 1
+}
+
 for c in pm2 curl grep awk sudo nginx; do
   require_cmd "$c"
 done
@@ -34,20 +60,22 @@ ACTIVE_PORT=$(grep -oP '(?<=server 127\.0\.0\.1:)\d+' "$NGINX_UPSTREAM" 2>/dev/n
 [ -n "$ACTIVE_PORT" ] || fail "Failed to parse active upstream port"
 ok "Active upstream port: $ACTIVE_PORT"
 
-step "Check local upstream health"
-LOCAL_CODE=$(curl -sS -o /dev/null -w "%{http_code}" "http://127.0.0.1:$ACTIVE_PORT" --max-time 5 2>/dev/null || echo "000")
-if [ "$LOCAL_CODE" = "200" ] || [ "$LOCAL_CODE" = "301" ] || [ "$LOCAL_CODE" = "302" ]; then
+step "Check local upstream health (with retries)"
+if LOCAL_CODE=$(http_code_with_retry "http://127.0.0.1:$ACTIVE_PORT" 5 3 2); then
   ok "Local upstream healthy (HTTP $LOCAL_CODE)"
 else
-  fail "Local upstream health failed (HTTP $LOCAL_CODE)"
+  warn "Local upstream health failed after retries (HTTP $LOCAL_CODE)"
+  warn "Recent logs from $APP_NAME:"
+  pm2 logs "$APP_NAME" --lines 80 --nostream 2>&1 | tail -n 80 || true
+  fail "Local upstream verification failed"
 fi
 
-step "Check public domain health"
-PUBLIC_CODE=$(curl -sS -o /dev/null -w "%{http_code}" "$PUBLIC_URL" --max-time 10 2>/dev/null || echo "000")
-if [ "$PUBLIC_CODE" = "200" ] || [ "$PUBLIC_CODE" = "301" ] || [ "$PUBLIC_CODE" = "302" ]; then
+step "Check public domain health (with retries)"
+if PUBLIC_CODE=$(http_code_with_retry "$PUBLIC_URL" 10 3 2); then
   ok "Public URL healthy: $PUBLIC_URL (HTTP $PUBLIC_CODE)"
 else
-  fail "Public URL health failed: $PUBLIC_URL (HTTP $PUBLIC_CODE)"
+  warn "Public URL health failed after retries (HTTP $PUBLIC_CODE)"
+  fail "Public domain verification failed"
 fi
 
 step "Check for obvious runtime errors in recent logs"
