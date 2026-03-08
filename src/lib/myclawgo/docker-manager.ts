@@ -322,6 +322,57 @@ export async function ensureUserContainer(session: UserSession) {
   }
 }
 
+
+function parseAgentJsonOutput(stdout: string) {
+  const rawParsed = extractJsonObjectFromStdout(stdout) as {
+    payloads?: Array<{ text?: string }>;
+    meta?: {
+      agentMeta?: {
+        model?: string;
+        usage?: { input?: number; output?: number; total?: number };
+        lastCallUsage?: { input?: number; output?: number; total?: number };
+      };
+    };
+    result?: {
+      payloads?: Array<{ text?: string }>;
+      meta?: {
+        agentMeta?: {
+          model?: string;
+          usage?: { input?: number; output?: number; total?: number };
+          lastCallUsage?: { input?: number; output?: number; total?: number };
+        };
+      };
+    };
+  } | null;
+
+  const parsed =
+    (rawParsed as { result?: typeof rawParsed })?.result ?? rawParsed;
+
+  const payloadText =
+    parsed?.payloads
+      ?.map((p) => p?.text || '')
+      .filter(Boolean)
+      .join('\n\n')
+      .trim() || '';
+
+  const model = parsed?.meta?.agentMeta?.model || DEFAULT_RUNTIME_MODEL;
+  const usageSource =
+    parsed?.meta?.agentMeta?.lastCallUsage || parsed?.meta?.agentMeta?.usage;
+
+  return {
+    payloadText,
+    rawText: stdout.trim(),
+    model,
+    usage: usageSource
+      ? {
+          inputTokens: Math.max(0, Number(usageSource.input || 0)),
+          outputTokens: Math.max(0, Number(usageSource.output || 0)),
+          totalTokens: Math.max(0, Number(usageSource.total || 0)),
+        }
+      : undefined,
+  };
+}
+
 export async function runOpenClawChatInContainer(
   session: UserSession,
   message: string
@@ -363,58 +414,26 @@ export async function runOpenClawChatInContainer(
 
   try {
     const { stdout } = await dockerExec(containerName, cmd, 90_000);
+    let parsed = parseAgentJsonOutput(stdout);
 
-    const rawParsed = extractJsonObjectFromStdout(stdout) as {
-      // --local format: { payloads, meta }
-      payloads?: Array<{ text?: string }>;
-      meta?: {
-        agentMeta?: {
-          model?: string;
-          usage?: { input?: number; output?: number; total?: number };
-          lastCallUsage?: { input?: number; output?: number; total?: number };
-        };
+    if (!parsed.payloadText && !parsed.rawText) {
+      await new Promise((resolve) => setTimeout(resolve, 1200));
+      const retry = await dockerExec(containerName, cmd, 90_000);
+      parsed = parseAgentJsonOutput(retry.stdout);
+    }
+
+    if (!parsed.payloadText && !parsed.rawText) {
+      return {
+        ok: false as const,
+        error: 'Runtime returned empty response. Please retry your message.',
       };
-      // gateway format: { runId, status, result: { payloads, meta } }
-      result?: {
-        payloads?: Array<{ text?: string }>;
-        meta?: {
-          agentMeta?: {
-            model?: string;
-            usage?: { input?: number; output?: number; total?: number };
-            lastCallUsage?: { input?: number; output?: number; total?: number };
-          };
-        };
-      };
-    } | null;
-
-    // Normalise: gateway wraps everything in result{}
-    const parsed =
-      (rawParsed as { result?: typeof rawParsed })?.result ?? rawParsed;
-
-    const payloadText =
-      parsed?.payloads
-        ?.map((p) => p?.text || '')
-        .filter(Boolean)
-        .join('\n\n')
-        .trim() || '';
-
-    const reply =
-      payloadText || stdout.trim() || 'OpenClaw returned empty output.';
-    const model = parsed?.meta?.agentMeta?.model || DEFAULT_RUNTIME_MODEL;
-    const usageSource =
-      parsed?.meta?.agentMeta?.lastCallUsage || parsed?.meta?.agentMeta?.usage;
+    }
 
     return {
       ok: true as const,
-      reply,
-      model,
-      usage: usageSource
-        ? {
-            inputTokens: Math.max(0, Number(usageSource.input || 0)),
-            outputTokens: Math.max(0, Number(usageSource.output || 0)),
-            totalTokens: Math.max(0, Number(usageSource.total || 0)),
-          }
-        : undefined,
+      reply: parsed.payloadText || parsed.rawText,
+      model: parsed.model,
+      usage: parsed.usage,
     };
   } catch (error: unknown) {
     return {
