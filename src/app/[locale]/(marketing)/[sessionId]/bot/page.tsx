@@ -104,11 +104,6 @@ export default function BotPage() {
     if (guardReady) loadHistory(1);
   }, [guardReady, loadHistory]);
 
-  // Lock body scroll for Telegram-style full-screen chat
-  useEffect(() => {
-    document.body.classList.add('bot-page-active');
-    return () => { document.body.classList.remove('bot-page-active'); };
-  }, []);
 
   // Mobile: re-fetch latest messages when page becomes visible again (browser tab restore)
   useEffect(() => {
@@ -345,9 +340,9 @@ ${String(data?.output || '(no output)')}`;
      * - messages: flex-1, overflow-y-auto, only this area scrolls
      * - input: sticks to bottom, auto-grows, no inner scrollbar
      */
-    <div className="flex flex-col bg-slate-950 text-white" style={{ position: 'fixed', inset: 0 }}>
+    <div className="flex flex-col min-h-screen bg-slate-950 text-white">
       {/* ── Header ── */}
-      <header className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-slate-900 z-10">
+      <header className="sticky top-0 z-10 flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-slate-900">
         <div className="flex items-center gap-2">
           <span className="text-base font-semibold">MyClawGo</span>
           <span className="text-xs text-slate-500">Workspace</span>
@@ -362,7 +357,7 @@ ${String(data?.output || '(no output)')}`;
       </header>
 
       {/* ── Messages ── Telegram-style: only this scrolls */}
-      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 py-3 space-y-1">
+      <div className="flex-1 px-3 py-3 space-y-1">
         {hasMore && (
           <div className="flex justify-center mb-3">
             <button
@@ -438,7 +433,7 @@ ${String(data?.output || '(no output)')}`;
       </div>
 
       {/* ── Input bar ── Telegram-style: fixed at bottom, grows with content */}
-      <div className="flex-shrink-0 border-t border-slate-800 bg-slate-900 px-3 py-2">
+      <div className="sticky bottom-0 border-t border-slate-800 bg-slate-900 px-3 py-2">
         <div className="flex items-end gap-2 max-w-3xl mx-auto">
           <textarea
             ref={textareaRef}
