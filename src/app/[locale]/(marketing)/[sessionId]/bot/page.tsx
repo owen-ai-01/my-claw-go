@@ -384,9 +384,9 @@ ${String(data?.output || '(no output)')}`;
             key={msg.id}
             className={`flex group ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
           >
-            <div className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'} max-w-[78%] sm:max-w-[68%]`}>
+            <div className={`flex flex-col w-full max-w-[78%] sm:max-w-[68%] ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
               <div
-                className={`px-3 py-2 text-sm leading-relaxed break-words [overflow-wrap:anywhere] ${
+                className={`px-3 py-2 text-sm leading-relaxed whitespace-pre-wrap break-words [overflow-wrap:anywhere] min-w-0 w-full ${
                   msg.role === 'user'
                     ? 'bg-indigo-600 text-white rounded-2xl rounded-br-[4px]'
                     : 'bg-slate-800 text-slate-100 rounded-2xl rounded-bl-[4px]'
