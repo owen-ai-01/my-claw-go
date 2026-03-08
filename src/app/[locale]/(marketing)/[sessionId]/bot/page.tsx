@@ -357,7 +357,7 @@ ${String(data?.output || '(no output)')}`;
       </header>
 
       {/* ── Messages ── Telegram-style: only this scrolls */}
-      <div className="flex-1 px-3 py-3 space-y-1">
+      <div className="flex-1 px-4 py-4 space-y-2 max-w-3xl mx-auto w-full">
         {hasMore && (
           <div className="flex justify-center mb-3">
             <button
@@ -384,7 +384,7 @@ ${String(data?.output || '(no output)')}`;
             key={msg.id}
             className={`flex group ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
           >
-            <div className={`flex flex-col w-full max-w-[78%] sm:max-w-[68%] ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+            <div className={`flex flex-col w-full max-w-[70%] sm:max-w-[58%] ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
               <div
                 className={`px-3 py-2 text-sm leading-relaxed whitespace-pre-wrap break-words [overflow-wrap:anywhere] min-w-0 w-full ${
                   msg.role === 'user'
@@ -434,7 +434,7 @@ ${String(data?.output || '(no output)')}`;
 
       {/* ── Input bar ── Telegram-style: fixed at bottom, grows with content */}
       <div className="sticky bottom-0 border-t border-slate-800 bg-slate-900 px-3 py-2">
-        <div className="flex items-end gap-2 max-w-3xl mx-auto">
+        <div className="flex items-end gap-2 max-w-3xl mx-auto w-full">
           <textarea
             ref={textareaRef}
             rows={1}
