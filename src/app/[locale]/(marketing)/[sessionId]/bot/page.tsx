@@ -104,6 +104,12 @@ export default function BotPage() {
     if (guardReady) loadHistory(1);
   }, [guardReady, loadHistory]);
 
+  // Lock body scroll for Telegram-style full-screen chat
+  useEffect(() => {
+    document.body.classList.add('bot-page-active');
+    return () => { document.body.classList.remove('bot-page-active'); };
+  }, []);
+
   // Mobile: re-fetch latest messages when page becomes visible again (browser tab restore)
   useEffect(() => {
     const onVisible = () => {
@@ -339,7 +345,7 @@ ${String(data?.output || '(no output)')}`;
      * - messages: flex-1, overflow-y-auto, only this area scrolls
      * - input: sticks to bottom, auto-grows, no inner scrollbar
      */
-    <div className="flex flex-col bg-slate-950 text-white" style={{ height: '100dvh' }}>
+    <div className="flex flex-col bg-slate-950 text-white" style={{ position: 'fixed', inset: 0 }}>
       {/* ── Header ── */}
       <header className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-slate-900 z-10">
         <div className="flex items-center gap-2">
@@ -442,7 +448,7 @@ ${String(data?.output || '(no output)')}`;
             onKeyDown={onKeyDown}
             placeholder={lowCredits ? 'Insufficient credits…' : 'Message…'}
             disabled={loading || lowCredits}
-            className="flex-1 resize-none bg-slate-800 border border-slate-700 rounded-2xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:opacity-50 overflow-hidden"
+            className="flex-1 resize-none bg-slate-800 border border-slate-700 rounded-2xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:opacity-50 overflow-y-auto"
             style={{ minHeight: '40px', maxHeight: '160px' }}
             onInput={(e) => {
               const el = e.currentTarget;

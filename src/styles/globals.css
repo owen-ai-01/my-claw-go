@@ -376,3 +376,9 @@ div[class*="border-t"][class*="bg-fd-secondary"]:not(:has(*)):not(
 [class*="fd-secondary"]:empty:not([data-banner-content]) {
   display: none !important;
 }
+
+/* Bot chat page: prevent body scroll so only the message area scrolls */
+body.bot-page-active {
+  overflow: hidden;
+  height: 100dvh;
+}
