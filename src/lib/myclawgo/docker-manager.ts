@@ -24,6 +24,8 @@ const HOST_PW_DIR =
 const DEFAULT_RUNTIME_MODEL =
   process.env.MYCLAWGO_RUNTIME_MODEL || 'openrouter/minimax/minimax-m2.5';
 
+const ensureContainerLocks = new Map<string, Promise<{ ok: true; mode: 'started-existing' | 'created' } | { ok: false; error: string }>>();
+
 type RuntimeTier = 'pro' | 'premium' | 'ultra';
 
 type ContainerLimits = {
@@ -243,82 +245,100 @@ async function ensureGatewayForContainer(containerName: string) {
 export async function ensureUserContainer(session: UserSession) {
   const containerName = safeName(session.containerName);
 
-  console.log(
-    `[MyClawGo] Ensuring container ${containerName} for user ${session.id}`
-  );
-  try {
-    await execFileAsync('docker', ['start', containerName]);
-    return { ok: true as const, mode: 'started-existing' as const };
-  } catch {
-    // continue and create
+  const existing = ensureContainerLocks.get(containerName);
+  if (existing) {
+    return existing;
   }
 
-  const envs = ['OPENROUTER_API_KEY']
-    .map((k) => ({ key: k, value: process.env[k] }))
-    .filter((e) => Boolean(e.value));
+  const run = (async () => {
+    console.log(
+      `[MyClawGo] Ensuring container ${containerName} for user ${session.id}`
+    );
+    try {
+      await execFileAsync('docker', ['start', containerName]);
+      return { ok: true as const, mode: 'started-existing' as const };
+    } catch {
+      // continue and create
+    }
 
-  const limits = await getContainerLimitsForUser(session.id);
-  const args = [
-    'run',
-    '-d',
-    '--name',
-    containerName,
-    '--cpus',
-    limits.cpus,
-    '--memory',
-    limits.memory,
-    '--memory-swap',
-    limits.memory,
-    '--storage-opt',
-    `size=${limits.disk}`,
-    '-v',
-    `${session.userDataDir}:/home/openclaw/.openclaw`,
-    '-v',
-    `${HOST_OPENCLAW_CONFIG}:/seed/openclaw.json:ro`,
-    '-v',
-    `${HOST_AUTH_PROFILES}:/seed/auth-profiles.json:ro`,
-    '-w',
-    '/root',
-  ];
+    const envs = ['OPENROUTER_API_KEY']
+      .map((k) => ({ key: k, value: process.env[k] }))
+      .filter((e) => Boolean(e.value));
 
-  for (const env of envs) {
-    args.push('-e', `${env.key}=${env.value}`);
-  }
+    const limits = await getContainerLimitsForUser(session.id);
+    const args = [
+      'run',
+      '-d',
+      '--name',
+      containerName,
+      '--cpus',
+      limits.cpus,
+      '--memory',
+      limits.memory,
+      '--memory-swap',
+      limits.memory,
+      '--storage-opt',
+      `size=${limits.disk}`,
+      '-v',
+      `${session.userDataDir}:/home/openclaw/.openclaw`,
+      '-v',
+      `${HOST_OPENCLAW_CONFIG}:/seed/openclaw.json:ro`,
+      '-v',
+      `${HOST_AUTH_PROFILES}:/seed/auth-profiles.json:ro`,
+      '-w',
+      '/root',
+    ];
 
-  args.push(OPENCLAW_IMAGE, 'sh', '-c', 'sleep infinity');
+    for (const env of envs) {
+      args.push('-e', `${env.key}=${env.value}`);
+    }
 
-  try {
-    await execFileAsync('docker', args);
-  } catch (error: unknown) {
-    const message =
-      error instanceof Error ? error.message : 'Unknown docker error';
-    // Some hosts (overlay2 on extfs) do not support --storage-opt size=...
-    // In that case, keep CPU/RAM limits and continue without hard disk cap.
-    if (
-      message.includes('--storage-opt is supported only for overlay over xfs')
-    ) {
-      const argsWithoutDisk = args.filter((_, idx) => {
-        if (args[idx] === '--storage-opt') return false;
-        if (idx > 0 && args[idx - 1] === '--storage-opt') return false;
-        return true;
-      });
-      await execFileAsync('docker', argsWithoutDisk);
-    } else {
+    args.push(OPENCLAW_IMAGE, 'sh', '-c', 'sleep infinity');
+
+    try {
+      await execFileAsync('docker', args);
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : 'Unknown docker error';
+      if (
+        message.includes('--storage-opt is supported only for overlay over xfs')
+      ) {
+        const argsWithoutDisk = args.filter((_, idx) => {
+          if (args[idx] === '--storage-opt') return false;
+          if (idx > 0 && args[idx - 1] === '--storage-opt') return false;
+          return true;
+        });
+        await execFileAsync('docker', argsWithoutDisk);
+      } else if (
+        message.includes('is already in use by container') ||
+        message.includes('Conflict. The container name')
+      ) {
+        await execFileAsync('docker', ['start', containerName]).catch(() => {});
+        return { ok: true as const, mode: 'started-existing' as const };
+      } else {
+        return {
+          ok: false as const,
+          error: message,
+        };
+      }
+    }
+
+    try {
+      await bootstrapOpenClaw(containerName);
+      return { ok: true as const, mode: 'created' as const };
+    } catch (error: unknown) {
       return {
         ok: false as const,
-        error: message,
+        error: error instanceof Error ? error.message : 'Unknown docker error',
       };
     }
-  }
+  })();
 
+  ensureContainerLocks.set(containerName, run);
   try {
-    await bootstrapOpenClaw(containerName);
-    return { ok: true as const, mode: 'created' as const };
-  } catch (error: unknown) {
-    return {
-      ok: false as const,
-      error: error instanceof Error ? error.message : 'Unknown docker error',
-    };
+    return await run;
+  } finally {
+    ensureContainerLocks.delete(containerName);
   }
 }
 
@@ -352,7 +372,7 @@ function parseAgentJsonOutput(stdout: string) {
     parsed?.payloads
       ?.map((p) => p?.text || '')
       .filter(Boolean)
-      .join('\n\n')
+      .join('\\n\\n')
       .trim() || '';
 
   const model = parsed?.meta?.agentMeta?.model || DEFAULT_RUNTIME_MODEL;
