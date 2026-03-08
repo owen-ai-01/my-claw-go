@@ -50,6 +50,8 @@ export default function BotPage() {
   const topSentinelRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const isLoadingMoreRef = useRef(false);
+  const isPrependRef = useRef(false);
+  const prevScrollHeightRef = useRef(0);
 
   // Guard check
   useEffect(() => {
@@ -118,9 +120,17 @@ export default function BotPage() {
     return () => document.removeEventListener('visibilitychange', onVisible);
   }, [guardReady, loadHistory]);
 
-  // Scroll to bottom on new messages
+  // Scroll to bottom only for new messages; preserve position when prepending
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (isPrependRef.current) {
+      // Restore scroll position after prepend so user stays where they were
+      const newScrollHeight = document.documentElement.scrollHeight;
+      const added = newScrollHeight - prevScrollHeightRef.current;
+      window.scrollBy({ top: added, behavior: 'instant' });
+      isPrependRef.current = false;
+    } else {
+      bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
   }, [messages]);
 
   // Auto-load more when user scrolls to the top sentinel
@@ -130,6 +140,8 @@ export default function BotPage() {
       async (entries) => {
         if (entries[0].isIntersecting && hasMore && !loadingHistory && !isLoadingMoreRef.current) {
           isLoadingMoreRef.current = true;
+          isPrependRef.current = true;
+          prevScrollHeightRef.current = document.documentElement.scrollHeight;
           const nextPage = page + 1;
           setPage(nextPage);
           await loadHistory(nextPage, true);
