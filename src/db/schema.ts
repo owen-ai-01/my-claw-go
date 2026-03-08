@@ -123,3 +123,22 @@ export const creditTransaction = pgTable("credit_transaction", {
 	creditTransactionUserIdIdx: index("credit_transaction_user_id_idx").on(table.userId),
 	creditTransactionTypeIdx: index("credit_transaction_type_idx").on(table.type),
 }));
+
+export const runtimeTask = pgTable("runtime_tasks", {
+  id:          text("id").primaryKey(),
+  sessionId:   text("session_id").notNull(),
+  message:     text("message").notNull(),
+  isCommand:   boolean("is_command").notNull().default(false),
+  status:      text("status").notNull().default("queued"),
+  reply:       text("reply"),
+  error:       text("error"),
+  retryCount:  integer("retry_count").notNull().default(0),
+  createdAt:   timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt:   timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  startedAt:   timestamp("started_at", { withTimezone: true }),
+  finishedAt:  timestamp("finished_at", { withTimezone: true }),
+}, (table) => ({
+  runtimeTaskSessionIdx:   index("runtime_task_session_idx").on(table.sessionId),
+  runtimeTaskStatusIdx:    index("runtime_task_status_idx").on(table.status),
+  runtimeTaskCreatedAtIdx: index("runtime_task_created_at_idx").on(table.createdAt),
+}));

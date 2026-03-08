@@ -1,62 +1,103 @@
 import crypto from 'node:crypto';
+import { getDb } from '@/db';
+import { runtimeTask } from '@/db/schema';
+import { eq, and, lt, inArray } from 'drizzle-orm';
 
-type TaskStatus = 'queued' | 'running' | 'done' | 'failed';
+export type TaskStatus = 'queued' | 'running' | 'done' | 'failed';
 
-export type RuntimeTask = {
-  id: string;
-  sessionId: string;
-  message: string;
-  status: TaskStatus;
-  reply?: string;
-  error?: string;
-  createdAt: string;
-  updatedAt: string;
-};
+const CLEANUP_INTERVAL_MS = 6 * 60 * 60 * 1000; // every 6 hours
+const KEEP_FINISHED_DAYS = 7;
 
-const tasks = new Map<string, RuntimeTask>();
+let lastCleanupAt = 0;
 
-function nowIso() {
-  return new Date().toISOString();
+async function maybeCleanup() {
+  const now = Date.now();
+  if (now - lastCleanupAt < CLEANUP_INTERVAL_MS) return;
+  lastCleanupAt = now;
+  try {
+    const db = await getDb();
+    const cutoff = new Date(now - KEEP_FINISHED_DAYS * 24 * 60 * 60 * 1000);
+    await db
+      .delete(runtimeTask)
+      .where(
+        and(
+          inArray(runtimeTask.status, ['done', 'failed']),
+          lt(runtimeTask.finishedAt, cutoff)
+        )
+      );
+  } catch {
+    // non-blocking
+  }
 }
 
-function patchTask(id: string, patch: Partial<RuntimeTask>) {
-  const current = tasks.get(id);
-  if (!current) return;
-  tasks.set(id, { ...current, ...patch, updatedAt: nowIso() });
-}
-
-export function createRuntimeTask(
+export async function createRuntimeTask(
   sessionId: string,
   message: string,
+  isCommand: boolean,
   runner: () => Promise<{ reply: string }>
 ) {
+  const db = await getDb();
   const id = crypto.randomUUID();
-  const task: RuntimeTask = {
+  const now = new Date();
+
+  await db.insert(runtimeTask).values({
     id,
     sessionId,
     message,
+    isCommand,
     status: 'queued',
-    createdAt: nowIso(),
-    updatedAt: nowIso(),
-  };
-  tasks.set(id, task);
+    createdAt: now,
+    updatedAt: now,
+  });
 
-  setTimeout(async () => {
-    patchTask(id, { status: 'running' });
+  // Run async (fire-and-forget)
+  setImmediate(async () => {
     try {
-      const result = await runner();
-      patchTask(id, { status: 'done', reply: result.reply });
-    } catch (error: unknown) {
-      patchTask(id, {
-        status: 'failed',
-        error: error instanceof Error ? error.message : 'Task failed',
-      });
-    }
-  }, 0);
+      await db
+        .update(runtimeTask)
+        .set({ status: 'running', startedAt: new Date(), updatedAt: new Date() })
+        .where(eq(runtimeTask.id, id));
 
-  return task;
+      const result = await runner();
+
+      await db
+        .update(runtimeTask)
+        .set({
+          status: 'done',
+          reply: result.reply,
+          finishedAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .where(eq(runtimeTask.id, id));
+    } catch (error: unknown) {
+      await db
+        .update(runtimeTask)
+        .set({
+          status: 'failed',
+          error: error instanceof Error ? error.message : 'Task failed',
+          finishedAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .where(eq(runtimeTask.id, id))
+        .catch(() => {});
+    }
+
+    maybeCleanup().catch(() => {});
+  });
+
+  return { id, status: 'queued' as TaskStatus };
 }
 
-export function getRuntimeTask(taskId: string) {
-  return tasks.get(taskId) || null;
+export async function getRuntimeTask(taskId: string) {
+  try {
+    const db = await getDb();
+    const rows = await db
+      .select()
+      .from(runtimeTask)
+      .where(eq(runtimeTask.id, taskId))
+      .limit(1);
+    return rows[0] ?? null;
+  } catch {
+    return null;
+  }
 }

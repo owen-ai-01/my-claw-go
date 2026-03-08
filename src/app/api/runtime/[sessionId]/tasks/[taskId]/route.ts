@@ -25,7 +25,7 @@ export async function GET(
     );
   }
 
-  const task = getRuntimeTask(taskId);
+  const task = await getRuntimeTask(taskId);
   if (!task || task.sessionId !== sessionId) {
     return NextResponse.json({ ok: false, error: 'Task not found' }, { status: 404 });
   }
