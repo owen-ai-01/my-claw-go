@@ -13,7 +13,7 @@ import {
   runWhitelistedCommandInContainer,
 } from '@/lib/myclawgo/docker-manager';
 import { getSession, touchSession } from '@/lib/myclawgo/session-store';
-import { appendMessage } from '@/lib/myclawgo/user-data';
+import { appendMessage, readChatHistory } from '@/lib/myclawgo/user-data';
 import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 
@@ -22,6 +22,15 @@ const OWNER_EMAIL =
 
 function isOwner(email?: string | null) {
   return email === OWNER_EMAIL;
+}
+
+
+function firstQuestionErrorHint(
+  isFirstQuestion: boolean,
+  fallbackError: string
+): string {
+  if (!isFirstQuestion) return fallbackError;
+  return 'Your first message may take longer while we create and initialize your runtime server. If it errors, please wait about 1 minute and try again.';
 }
 
 function safeError(rawError: string, ownerEmail?: string | null): string {
@@ -81,7 +90,8 @@ async function runTaskMessage(
   message: string,
   currentUserId: string,
   ownerEmail?: string | null,
-  isCommand?: boolean
+  isCommand?: boolean,
+  isFirstQuestion?: boolean
 ) {
   const runtimeSession = await getSession(sessionId);
   if (!runtimeSession) throw new Error('Session not found');
@@ -91,7 +101,10 @@ async function runTaskMessage(
   const ensured = await ensureUserContainer(runtimeSession);
   if (!ensured.ok) {
     throw new Error(
-      safeError(ensured.error || 'Failed to prepare user runtime', ownerEmail)
+      firstQuestionErrorHint(
+        Boolean(isFirstQuestion),
+        safeError(ensured.error || 'Failed to prepare user runtime', ownerEmail)
+      )
     );
   }
 
@@ -102,7 +115,12 @@ async function runTaskMessage(
     }
     const cmdResult = await runWhitelistedCommandInContainer(runtimeSession, message);
     if (!cmdResult.ok) {
-      throw new Error(safeError(cmdResult.error || 'Command failed', ownerEmail));
+      throw new Error(
+        firstQuestionErrorHint(
+          Boolean(isFirstQuestion),
+          safeError(cmdResult.error || 'Command failed', ownerEmail)
+        )
+      );
     }
     const cmdReply = `🛠️ [${runtimeSession.containerName}]
 ${cmdResult.output || '(no output)'}`;
@@ -141,7 +159,12 @@ ${cmdResult.output || '(no output)'}`;
 
   const result = await runOpenClawChatInContainer(runtimeSession, message);
   if (!result.ok) {
-    throw new Error(safeError(result.error || 'Runtime error', ownerEmail));
+    throw new Error(
+      firstQuestionErrorHint(
+        Boolean(isFirstQuestion),
+        safeError(result.error || 'Runtime error', ownerEmail)
+      )
+    );
   }
 
   await appendMessage(sessionId, {
@@ -214,10 +237,20 @@ export async function POST(
     );
   }
 
+  const existingHistory = await readChatHistory(sessionId).catch(() => []);
+  const isFirstQuestion = existingHistory.length === 0;
+
   await appendMessage(sessionId, { role: 'user', text: message }).catch(() => {});
 
   const task = await createRuntimeTask(sessionId, message, isCommand, () =>
-    runTaskMessage(sessionId, message, currentUserId, authSession?.user?.email, isCommand)
+    runTaskMessage(
+      sessionId,
+      message,
+      currentUserId,
+      authSession?.user?.email,
+      isCommand,
+      isFirstQuestion
+    )
   );
 
   return NextResponse.json({
