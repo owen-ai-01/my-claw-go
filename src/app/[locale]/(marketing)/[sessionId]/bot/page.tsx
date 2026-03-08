@@ -332,29 +332,33 @@ ${String(data?.output || '(no output)')}`;
   }
 
   return (
-    <main className="flex flex-col h-screen overflow-hidden bg-slate-950 text-white">
+    /*
+     * Telegram-style layout:
+     * - html/body must be 100dvh with no outer scroll
+     * - header: fixed at top
+     * - messages: flex-1, overflow-y-auto, only this area scrolls
+     * - input: sticks to bottom, auto-grows, no inner scrollbar
+     */
+    <div className="flex flex-col bg-slate-950 text-white" style={{ height: '100dvh' }}>
       {/* ── Header ── */}
-      <header className="flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-slate-900">
+      <header className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-slate-900 z-10">
         <div className="flex items-center gap-2">
-          <span className="text-lg font-semibold">MyClawGo</span>
+          <span className="text-base font-semibold">MyClawGo</span>
           <span className="text-xs text-slate-500">Workspace</span>
         </div>
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={onClearAll}
-            className="text-xs text-slate-500 hover:text-red-400 transition px-2 py-1 rounded"
-          >
-            Clear
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={onClearAll}
+          className="text-xs text-slate-500 hover:text-red-400 transition px-2 py-1 rounded"
+        >
+          Clear
+        </button>
       </header>
 
-      {/* ── Messages ── */}
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 space-y-2">
-        {/* Load more */}
+      {/* ── Messages ── Telegram-style: only this scrolls */}
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 py-3 space-y-1">
         {hasMore && (
-          <div className="flex justify-center mb-2">
+          <div className="flex justify-center mb-3">
             <button
               type="button"
               onClick={loadMore}
@@ -367,15 +371,10 @@ ${String(data?.output || '(no output)')}`;
         )}
 
         {messages.length === 0 && !loadingHistory && (
-          <div className="flex flex-col items-center justify-center h-full text-center text-slate-500 py-20">
+          <div className="flex flex-col items-center justify-center h-full text-center py-20">
             <div className="text-4xl mb-3">🦞</div>
-            <p className="text-sm font-medium text-slate-400">
-              Your OpenClaw workspace is ready.
-            </p>
-            <p className="text-xs mt-1">
-              Send a message to get started. Using{' '}
-              <p className="text-xs mt-1">Send a message to get started.</p>
-            </p>
+            <p className="text-sm font-medium text-slate-400">Your OpenClaw workspace is ready.</p>
+            <p className="text-xs mt-1 text-slate-500">Send a message to get started.</p>
           </div>
         )}
 
@@ -384,22 +383,18 @@ ${String(data?.output || '(no output)')}`;
             key={msg.id}
             className={`flex group ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
           >
-            <div
-              className={`relative max-w-[75%] ${msg.role === 'user' ? 'items-end' : 'items-start'} flex flex-col`}
-            >
+            <div className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'} max-w-[78%] sm:max-w-[68%]`}>
               <div
-                className={`rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap break-words [overflow-wrap:anywhere] ${
+                className={`px-3 py-2 text-sm leading-relaxed break-words [overflow-wrap:anywhere] ${
                   msg.role === 'user'
-                    ? 'bg-indigo-600 text-white rounded-br-sm'
-                    : 'bg-slate-800 text-slate-100 rounded-bl-sm'
+                    ? 'bg-indigo-600 text-white rounded-2xl rounded-br-[4px]'
+                    : 'bg-slate-800 text-slate-100 rounded-2xl rounded-bl-[4px]'
                 }`}
               >
                 {msg.text}
               </div>
-              <div className="flex items-center gap-2 mt-1 px-1">
-                <span className="text-[10px] text-slate-600">
-                  {formatTime(msg.timestamp)}
-                </span>
+              <div className="flex items-center gap-2 mt-0.5 px-1">
+                <span className="text-[10px] text-slate-600">{formatTime(msg.timestamp)}</span>
                 <button
                   type="button"
                   onClick={() => onDeleteMessage(msg.id)}
@@ -414,7 +409,7 @@ ${String(data?.output || '(no output)')}`;
 
         {loading && (
           <div className="flex justify-start">
-            <div className="bg-slate-800 rounded-2xl rounded-bl-sm px-4 py-3">
+            <div className="bg-slate-800 rounded-2xl rounded-bl-[4px] px-4 py-3">
               <span className="flex gap-1">
                 <span className="w-1.5 h-1.5 bg-slate-500 rounded-full animate-bounce [animation-delay:0ms]" />
                 <span className="w-1.5 h-1.5 bg-slate-500 rounded-full animate-bounce [animation-delay:150ms]" />
@@ -425,12 +420,9 @@ ${String(data?.output || '(no output)')}`;
         )}
 
         {lowCredits && (
-          <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200 text-center">
+          <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200 text-center mt-2">
             Credits are running low.{' '}
-            <a
-              href="/settings/credits"
-              className="underline hover:text-amber-100"
-            >
+            <a href="/settings/credits" className="underline hover:text-amber-100">
               Top up credits
             </a>
           </div>
@@ -439,23 +431,19 @@ ${String(data?.output || '(no output)')}`;
         <div ref={bottomRef} />
       </div>
 
-      {/* ── Input ── */}
-      <div className="border-t border-slate-800 bg-slate-900 px-4 py-3">
-        <div className="flex items-end gap-2 max-w-4xl mx-auto">
+      {/* ── Input bar ── Telegram-style: fixed at bottom, grows with content */}
+      <div className="flex-shrink-0 border-t border-slate-800 bg-slate-900 px-3 py-2">
+        <div className="flex items-end gap-2 max-w-3xl mx-auto">
           <textarea
             ref={textareaRef}
             rows={1}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={onKeyDown}
-            placeholder={
-              lowCredits
-                ? 'Insufficient credits…'
-                : 'Message your workspace… (Shift+Enter for newline)'
-            }
+            placeholder={lowCredits ? 'Insufficient credits…' : 'Message…'}
             disabled={loading || lowCredits}
-            className="flex-1 resize-none bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:opacity-50 max-h-40 overflow-y-hidden"
-            style={{ minHeight: '48px' }}
+            className="flex-1 resize-none bg-slate-800 border border-slate-700 rounded-2xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:opacity-50 overflow-hidden"
+            style={{ minHeight: '40px', maxHeight: '160px' }}
             onInput={(e) => {
               const el = e.currentTarget;
               el.style.height = 'auto';
@@ -466,27 +454,14 @@ ${String(data?.output || '(no output)')}`;
             type="button"
             onClick={onSend}
             disabled={loading || !input.trim() || lowCredits}
-            className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed transition"
+            className="flex-shrink-0 w-9 h-9 flex items-center justify-center rounded-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed transition mb-0.5"
           >
-            <svg
-              className="w-4 h-4 text-white"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path
-                d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
+            <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+              <path d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </button>
         </div>
-        <p className="text-[10px] text-slate-600 text-center mt-2">
-          Press Enter to send
-        </p>
       </div>
-    </main>
+    </div>
   );
 }
