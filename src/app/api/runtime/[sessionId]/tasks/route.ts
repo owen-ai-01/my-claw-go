@@ -26,6 +26,15 @@ function isOwner(email?: string | null) {
 
 function safeError(rawError: string, ownerEmail?: string | null): string {
   if (isOwner(ownerEmail)) return rawError;
+  const msg = String(rawError || '');
+  if (
+    msg.includes('initializing') ||
+    msg.includes('Runtime returned empty response') ||
+    msg.includes('Credits are insufficient') ||
+    msg.includes('Please retry your message')
+  ) {
+    return msg;
+  }
   return 'Sorry, a server error occurred. Please try again in a moment.';
 }
 

@@ -256,6 +256,15 @@ export async function ensureUserContainer(session: UserSession) {
     );
     try {
       await execFileAsync('docker', ['start', containerName]);
+      const checkCmd =
+        "su - openclaw -c 'which openclaw 2>/dev/null && echo ready || echo not_ready'";
+      const { stdout: checkOut } = await dockerExec(containerName, checkCmd).catch(
+        () => ({ stdout: 'not_ready' })
+      );
+      if (!checkOut.includes('ready')) {
+        await bootstrapOpenClaw(containerName);
+        return { ok: true as const, mode: 'created' as const };
+      }
       return { ok: true as const, mode: 'started-existing' as const };
     } catch {
       // continue and create
