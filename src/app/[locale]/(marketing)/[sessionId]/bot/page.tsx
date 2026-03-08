@@ -39,6 +39,8 @@ export default function BotPage() {
   const router = useRouter();
 
   const [guardReady, setGuardReady] = useState(false);
+  const [runtimeReady, setRuntimeReady] = useState(false);
+  const [runtimeStatusText, setRuntimeStatusText] = useState('Preparing your workspace…');
   const [lowCredits, setLowCredits] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -84,6 +86,43 @@ export default function BotPage() {
     };
   }, [router, sessionId]);
 
+
+  // Wait until user runtime is ready before showing the chat UI
+  useEffect(() => {
+    if (!guardReady) return;
+    let stopped = false;
+
+    const waitRuntimeReady = async () => {
+      for (let i = 0; i < 40; i += 1) {
+        const res = await fetch(`/api/runtime/${sessionId}/ready`).catch(() => null);
+        const data = await res?.json().catch(() => ({}));
+
+        if (stopped) return;
+        if (data?.ready) {
+          setRuntimeReady(true);
+          return;
+        }
+
+        setRuntimeStatusText(
+          String(
+            data?.message ||
+              'Creating your workspace. This may take about 1 minute on first launch…'
+          )
+        );
+        await new Promise((r) => setTimeout(r, 3000));
+      }
+
+      setRuntimeStatusText(
+        'Workspace is still preparing. Please wait a little longer…'
+      );
+    };
+
+    waitRuntimeReady();
+    return () => {
+      stopped = true;
+    };
+  }, [guardReady, sessionId]);
+
   // Load initial history
   const loadHistory = useCallback(
     async (p: number, prepend = false) => {
@@ -105,20 +144,20 @@ export default function BotPage() {
   );
 
   useEffect(() => {
-    if (guardReady) loadHistory(1);
-  }, [guardReady, loadHistory]);
+    if (guardReady && runtimeReady) loadHistory(1);
+  }, [guardReady, runtimeReady, loadHistory]);
 
 
   // Mobile: re-fetch latest messages when page becomes visible again (browser tab restore)
   useEffect(() => {
     const onVisible = () => {
-      if (document.visibilityState === 'visible' && guardReady) {
+      if (document.visibilityState === 'visible' && guardReady && runtimeReady) {
         loadHistory(1);
       }
     };
     document.addEventListener('visibilitychange', onVisible);
     return () => document.removeEventListener('visibilitychange', onVisible);
-  }, [guardReady, loadHistory]);
+  }, [guardReady, runtimeReady, loadHistory]);
 
   // Scroll to bottom only for new messages; preserve position when prepending
   useEffect(() => {
@@ -355,6 +394,18 @@ ${String(data?.output || '(no output)')}`;
     return (
       <main className="flex min-h-screen items-center justify-center bg-slate-950 text-slate-400 text-sm">
         Checking workspace access…
+      </main>
+    );
+  }
+
+  if (!runtimeReady) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-slate-950 text-slate-300">
+        <div className="text-center px-6">
+          <div className="text-3xl mb-3">🛠️</div>
+          <p className="text-sm font-medium">Creating your workspace…</p>
+          <p className="text-xs text-slate-500 mt-2">{runtimeStatusText}</p>
+        </div>
       </main>
     );
   }

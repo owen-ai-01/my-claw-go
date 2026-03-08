@@ -402,6 +402,38 @@ function parseAgentJsonOutput(stdout: string) {
   };
 }
 
+
+export async function checkUserContainerReady(session: UserSession) {
+  const containerName = safeName(session.containerName);
+
+  try {
+    await execFileAsync('docker', ['start', containerName]);
+  } catch {
+    return { ready: false as const, phase: 'container-missing' as const };
+  }
+
+  const checkCmd =
+    "su - openclaw -c 'which openclaw 2>/dev/null && echo ready || echo not_ready'";
+  const { stdout: checkOut } = await dockerExec(containerName, checkCmd).catch(
+    () => ({ stdout: 'not_ready' })
+  );
+  if (!checkOut.includes('ready')) {
+    return { ready: false as const, phase: 'runtime-installing' as const };
+  }
+
+  const { stdout: healthOut } = await dockerExec(
+    containerName,
+    "su - openclaw -c 'openclaw gateway call health --json 2>/dev/null | head -1'",
+    5000
+  ).catch(() => ({ stdout: '' }));
+
+  if (!healthOut.includes('{')) {
+    return { ready: false as const, phase: 'gateway-starting' as const };
+  }
+
+  return { ready: true as const, phase: 'ready' as const };
+}
+
 export async function runOpenClawChatInContainer(
   session: UserSession,
   message: string
