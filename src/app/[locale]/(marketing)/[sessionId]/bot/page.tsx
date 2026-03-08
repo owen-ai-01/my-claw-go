@@ -47,7 +47,9 @@ export default function BotPage() {
   const [hasMore, setHasMore] = useState(false);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const topSentinelRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const isLoadingMoreRef = useRef(false);
 
   // Guard check
   useEffect(() => {
@@ -121,13 +123,26 @@ export default function BotPage() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Load more (older messages)
-  async function loadMore() {
-    const nextPage = page + 1;
-    setPage(nextPage);
-    await loadHistory(nextPage, true);
-  }
+  // Auto-load more when user scrolls to the top sentinel
+  useEffect(() => {
+    if (!topSentinelRef.current) return;
+    const observer = new IntersectionObserver(
+      async (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loadingHistory && !isLoadingMoreRef.current) {
+          isLoadingMoreRef.current = true;
+          const nextPage = page + 1;
+          setPage(nextPage);
+          await loadHistory(nextPage, true);
+          isLoadingMoreRef.current = false;
+        }
+      },
+      { threshold: 0.1 }
+    );
+    observer.observe(topSentinelRef.current);
+    return () => observer.disconnect();
+  }, [hasMore, loadingHistory, page, loadHistory]);
 
+  // Load more (older messages)
   // Delete single message
   async function onDeleteMessage(msgId: string) {
     await fetch(`/api/runtime/${sessionId}/messages`, {
@@ -358,16 +373,11 @@ ${String(data?.output || '(no output)')}`;
 
       {/* ── Messages ── Telegram-style: only this scrolls */}
       <div className="flex-1 px-4 py-4 space-y-2 max-w-3xl mx-auto w-full">
-        {hasMore && (
-          <div className="flex justify-center mb-3">
-            <button
-              type="button"
-              onClick={loadMore}
-              disabled={loadingHistory}
-              className="text-xs text-slate-400 hover:text-white border border-slate-700 rounded-full px-4 py-1.5 transition"
-            >
-              {loadingHistory ? 'Loading…' : 'Load earlier messages'}
-            </button>
+        {/* Top sentinel — triggers auto-load when scrolled into view */}
+        <div ref={topSentinelRef} className="h-1" />
+        {loadingHistory && (
+          <div className="flex justify-center py-2">
+            <span className="text-xs text-slate-500">Loading…</span>
           </div>
         )}
 

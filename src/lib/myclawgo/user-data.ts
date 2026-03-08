@@ -6,7 +6,7 @@ const BASE_DIR =
   process.env.MYCLAWGO_DATA_DIR ||
   '/home/openclaw/project/my-claw-go/.runtime-data';
 
-const PAGE_SIZE = 50;
+const PAGE_SIZE = 10;
 
 export type ChatMessage = {
   id: string;
