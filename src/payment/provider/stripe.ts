@@ -16,6 +16,7 @@ import {
 } from '@/lib/constants';
 import { findPlanByPlanId, findPriceInPlan } from '@/lib/price-plan';
 import { sendNotification } from '@/notification/notification';
+import { warmupRuntimeForUser } from '@/lib/myclawgo/runtime-warmup';
 import { desc, eq } from 'drizzle-orm';
 import { Stripe } from 'stripe';
 import {
@@ -813,6 +814,9 @@ export class StripeProvider implements PaymentProvider {
 
       // Process subscription benefits
       await this.processSubscriptionPurchase(userId, priceId);
+
+      // Non-blocking runtime warmup after successful payment
+      warmupRuntimeForUser(userId, 'subscription-paid');
     } catch (error) {
       console.error('<< Update subscription payment error:', error);
       throw error;
@@ -880,9 +884,11 @@ export class StripeProvider implements PaymentProvider {
         if (isCreditPurchase) {
           // Process credit purchase
           await this.processCreditPurchase(invoice, paymentRecord, metadata);
+          warmupRuntimeForUser(paymentRecord.userId, 'credit-paid');
         } else {
           // Process lifetime plan purchase
           await this.processLifetimePlanPurchase(invoice, paymentRecord);
+          warmupRuntimeForUser(paymentRecord.userId, 'lifetime-paid');
         }
       }
     } catch (error) {
