@@ -23,6 +23,7 @@ const HOST_PW_DIR =
   process.env.MYCLAWGO_PW_DIR || '/home/openclaw/docker-openclaw-pw';
 const DEFAULT_RUNTIME_MODEL =
   process.env.MYCLAWGO_RUNTIME_MODEL || 'openrouter/minimax/minimax-m2.5';
+const OPENCLAW_NPM_SPEC = process.env.MYCLAWGO_OPENCLAW_NPM_SPEC || 'latest';
 
 const ensureContainerLocks = new Map<string, Promise<{ ok: true; mode: 'started-existing' | 'created' } | { ok: false; error: string }>>();
 
@@ -190,7 +191,7 @@ async function bootstrapOpenClaw(containerName: string) {
     'if [ -f /seed/auth-profiles.json ] && [ ! -f /home/openclaw/.openclaw/agents/main/agent/auth-profiles.json ]; then cp /seed/auth-profiles.json /home/openclaw/.openclaw/agents/main/agent/auth-profiles.json; fi',
     'chown -R openclaw:openclaw /home/openclaw/.openclaw',
     'su - openclaw -c "if ! command -v node >/dev/null 2>&1; then curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash - && sudo apt-get install -y nodejs; fi"',
-    "su - openclaw -c 'if ! command -v openclaw >/dev/null 2>&1; then sudo npm install -g openclaw@latest; fi'",
+    `su - openclaw -c 'if ! command -v openclaw >/dev/null 2>&1; then sudo npm install -g openclaw@${OPENCLAW_NPM_SPEC}; fi'`,
     "su - openclaw -c 'openclaw models set openrouter/minimax/minimax-m2.5 || true'",
     'su - openclaw -c \'pgrep -f "openclaw gateway run" >/dev/null || nohup openclaw gateway run --auth none --bind loopback --port 18789 > /home/openclaw/.openclaw/gateway.log 2>&1 &\'',
   ].join('; ');
