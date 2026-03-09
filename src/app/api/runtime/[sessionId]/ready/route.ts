@@ -1,6 +1,5 @@
 import { auth } from '@/lib/auth';
-import { checkUserContainerReady } from '@/lib/myclawgo/docker-manager';
-import { warmupRuntimeForUser } from '@/lib/myclawgo/runtime-warmup';
+import { ensureUserContainer } from '@/lib/myclawgo/docker-manager';
 import { ensureSessionById } from '@/lib/myclawgo/session-store';
 import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
@@ -21,19 +20,17 @@ export async function GET(
   }
 
   const runtimeSession = await ensureSessionById(userId, 'ready-check');
-  const status = await checkUserContainerReady(runtimeSession);
+  const ensured = await ensureUserContainer(runtimeSession);
 
-  if (status.ready) {
-    return NextResponse.json({ ok: true, ready: true, phase: 'ready' });
+  if (!ensured.ok) {
+    return NextResponse.json({
+      ok: true,
+      ready: false,
+      phase: 'preparing',
+      message:
+        'Creating your workspace. Please wait about 1 minute, then chat will be ready automatically.',
+    });
   }
 
-  warmupRuntimeForUser(userId, `ready:${status.phase}`);
-
-  return NextResponse.json({
-    ok: true,
-    ready: false,
-    phase: status.phase,
-    message:
-      'Creating your workspace. Please wait about 1 minute, then chat will be ready automatically.',
-  });
+  return NextResponse.json({ ok: true, ready: true, phase: 'ready' });
 }

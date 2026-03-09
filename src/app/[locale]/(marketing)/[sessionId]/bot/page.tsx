@@ -40,7 +40,9 @@ export default function BotPage() {
 
   const [guardReady, setGuardReady] = useState(false);
   const [runtimeReady, setRuntimeReady] = useState(false);
-  const [runtimeStatusText, setRuntimeStatusText] = useState('Preparing your workspace…');
+  const [runtimeStatusText, setRuntimeStatusText] = useState(
+    'Preparing your workspace…'
+  );
   const [lowCredits, setLowCredits] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -86,15 +88,18 @@ export default function BotPage() {
     };
   }, [router, sessionId]);
 
-
   // Wait until user runtime is ready before showing the chat UI
   useEffect(() => {
     if (!guardReady) return;
     let stopped = false;
 
     const waitRuntimeReady = async () => {
-      for (let i = 0; i < 40; i += 1) {
-        const res = await fetch(`/api/runtime/${sessionId}/ready`).catch(() => null);
+      // Keep polling until runtime is ready. First launches can exceed 2 minutes
+      // depending on package installation and network conditions.
+      while (!stopped) {
+        const res = await fetch(`/api/runtime/${sessionId}/ready`).catch(
+          () => null
+        );
         const data = await res?.json().catch(() => ({}));
 
         if (stopped) return;
@@ -106,15 +111,11 @@ export default function BotPage() {
         setRuntimeStatusText(
           String(
             data?.message ||
-              'Creating your workspace. This may take about 1 minute on first launch…'
+              'Creating your workspace. Please keep this page open — we will enter chat automatically once ready.'
           )
         );
         await new Promise((r) => setTimeout(r, 3000));
       }
-
-      setRuntimeStatusText(
-        'Workspace is still preparing. Please wait a little longer…'
-      );
     };
 
     waitRuntimeReady();
@@ -147,11 +148,14 @@ export default function BotPage() {
     if (guardReady && runtimeReady) loadHistory(1);
   }, [guardReady, runtimeReady, loadHistory]);
 
-
   // Mobile: re-fetch latest messages when page becomes visible again (browser tab restore)
   useEffect(() => {
     const onVisible = () => {
-      if (document.visibilityState === 'visible' && guardReady && runtimeReady) {
+      if (
+        document.visibilityState === 'visible' &&
+        guardReady &&
+        runtimeReady
+      ) {
         loadHistory(1);
       }
     };
@@ -177,7 +181,12 @@ export default function BotPage() {
     if (!topSentinelRef.current) return;
     const observer = new IntersectionObserver(
       async (entries) => {
-        if (entries[0].isIntersecting && hasMore && !loadingHistory && !isLoadingMoreRef.current) {
+        if (
+          entries[0].isIntersecting &&
+          hasMore &&
+          !loadingHistory &&
+          !isLoadingMoreRef.current
+        ) {
           isLoadingMoreRef.current = true;
           isPrependRef.current = true;
           prevScrollHeightRef.current = document.documentElement.scrollHeight;
@@ -293,7 +302,10 @@ ${String(data?.output || '(no output)')}`;
       const createRes = await fetch(`/api/runtime/${sessionId}/tasks`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: isCommand ? rawCommand : text, isCommand }),
+        body: JSON.stringify({
+          message: isCommand ? rawCommand : text,
+          isCommand,
+        }),
       });
 
       const createData = (await createRes.json().catch(() => ({}))) as Record<
@@ -320,9 +332,13 @@ ${String(data?.output || '(no output)')}`;
       while (Date.now() - startMs < 10 * 60 * 1000) {
         await new Promise((resolve) => setTimeout(resolve, 1200));
 
-        const statusRes = await fetch(`/api/runtime/${sessionId}/tasks/${taskId}`);
-        const statusData =
-          (await statusRes.json().catch(() => ({}))) as Record<string, unknown>;
+        const statusRes = await fetch(
+          `/api/runtime/${sessionId}/tasks/${taskId}`
+        );
+        const statusData = (await statusRes.json().catch(() => ({}))) as Record<
+          string,
+          unknown
+        >;
 
         if (!statusRes.ok || !statusData?.ok) {
           const rawError = String(
@@ -447,8 +463,12 @@ ${String(data?.output || '(no output)')}`;
         {messages.length === 0 && !loadingHistory && (
           <div className="flex flex-col items-center justify-center h-full text-center py-20">
             <div className="text-4xl mb-3">🦞</div>
-            <p className="text-sm font-medium text-slate-400">Your OpenClaw workspace is ready.</p>
-            <p className="text-xs mt-1 text-slate-500">Send a message to get started.</p>
+            <p className="text-sm font-medium text-slate-400">
+              Your OpenClaw workspace is ready.
+            </p>
+            <p className="text-xs mt-1 text-slate-500">
+              Send a message to get started.
+            </p>
           </div>
         )}
 
@@ -457,7 +477,9 @@ ${String(data?.output || '(no output)')}`;
             key={msg.id}
             className={`flex group ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
           >
-            <div className={`flex flex-col w-full max-w-[70%] sm:max-w-[58%] ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+            <div
+              className={`flex flex-col w-full max-w-[70%] sm:max-w-[58%] ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
+            >
               <div
                 className={`px-3 py-2 text-sm leading-relaxed whitespace-pre-wrap break-words [overflow-wrap:anywhere] min-w-0 w-full ${
                   msg.role === 'user'
@@ -468,7 +490,9 @@ ${String(data?.output || '(no output)')}`;
                 {msg.text}
               </div>
               <div className="flex items-center gap-2 mt-0.5 px-1">
-                <span className="text-[10px] text-slate-600">{formatTime(msg.timestamp)}</span>
+                <span className="text-[10px] text-slate-600">
+                  {formatTime(msg.timestamp)}
+                </span>
                 <button
                   type="button"
                   onClick={() => onDeleteMessage(msg.id)}
@@ -496,7 +520,10 @@ ${String(data?.output || '(no output)')}`;
         {lowCredits && (
           <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200 text-center mt-2">
             Credits are running low.{' '}
-            <a href="/settings/credits" className="underline hover:text-amber-100">
+            <a
+              href="/settings/credits"
+              className="underline hover:text-amber-100"
+            >
               Top up credits
             </a>
           </div>
@@ -530,8 +557,18 @@ ${String(data?.output || '(no output)')}`;
             disabled={loading || !input.trim() || lowCredits}
             className="flex-shrink-0 w-9 h-9 flex items-center justify-center rounded-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed transition mb-0.5"
           >
-            <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-              <path d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13" strokeLinecap="round" strokeLinejoin="round" />
+            <svg
+              className="w-4 h-4 text-white"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
             </svg>
           </button>
         </div>

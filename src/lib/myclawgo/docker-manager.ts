@@ -421,16 +421,9 @@ export async function checkUserContainerReady(session: UserSession) {
     return { ready: false as const, phase: 'runtime-installing' as const };
   }
 
-  const { stdout: healthOut } = await dockerExec(
-    containerName,
-    "su - openclaw -c 'openclaw gateway call health --json 2>/dev/null | head -1'",
-    5000
-  ).catch(() => ({ stdout: '' }));
-
-  if (!healthOut.includes('{')) {
-    return { ready: false as const, phase: 'gateway-starting' as const };
-  }
-
+  // Gateway may still be starting; chat route can fall back to --local mode.
+  // So treat runtime as ready once openclaw is installed.
+  await ensureGatewayForContainer(containerName).catch(() => {});
   return { ready: true as const, phase: 'ready' as const };
 }
 
