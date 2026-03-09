@@ -34,7 +34,8 @@ export async function createRuntimeTask(
   sessionId: string,
   message: string,
   isCommand: boolean,
-  runner: () => Promise<{ reply: string }>
+  runner: () => Promise<{ reply: string }>,
+  onError?: (errorMessage: string) => Promise<void> | void
 ) {
   const db = await getDb();
   const id = crypto.randomUUID();
@@ -70,16 +71,18 @@ export async function createRuntimeTask(
         })
         .where(eq(runtimeTask.id, id));
     } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Task failed';
       await db
         .update(runtimeTask)
         .set({
           status: 'failed',
-          error: error instanceof Error ? error.message : 'Task failed',
+          error: errorMessage,
           finishedAt: new Date(),
           updatedAt: new Date(),
         })
         .where(eq(runtimeTask.id, id))
         .catch(() => {});
+      await Promise.resolve(onError?.(errorMessage)).catch(() => {});
     }
 
     maybeCleanup().catch(() => {});

@@ -242,15 +242,25 @@ export async function POST(
 
   await appendMessage(sessionId, { role: 'user', text: message }).catch(() => {});
 
-  const task = await createRuntimeTask(sessionId, message, isCommand, () =>
-    runTaskMessage(
-      sessionId,
-      message,
-      currentUserId,
-      authSession?.user?.email,
-      isCommand,
-      isFirstQuestion
-    )
+  const task = await createRuntimeTask(
+    sessionId,
+    message,
+    isCommand,
+    () =>
+      runTaskMessage(
+        sessionId,
+        message,
+        currentUserId,
+        authSession?.user?.email,
+        isCommand,
+        isFirstQuestion
+      ),
+    async (errorMessage) => {
+      await appendMessage(sessionId, {
+        role: 'assistant',
+        text: `⚠️ ${errorMessage}`,
+      }).catch(() => {});
+    }
   );
 
   return NextResponse.json({
