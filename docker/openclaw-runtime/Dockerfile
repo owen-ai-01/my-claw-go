@@ -1,4 +1,4 @@
-FROM node:20-bookworm
+FROM node:22-bookworm
 
 ENV DEBIAN_FRONTEND=noninteractive \
     OPENCLAW_VERSION=2026.3.8 \
