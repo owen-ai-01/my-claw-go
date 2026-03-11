@@ -33,6 +33,32 @@ function normalizeError(raw: string): string {
   return raw.length > 200 ? `${raw.slice(0, 200)}…` : raw;
 }
 
+function phaseMeta(phase: string) {
+  switch (phase) {
+    case 'container-missing':
+    case 'preparing':
+      return {
+        title: 'Creating your workspace…',
+        subtitle: 'We are preparing your private OpenClaw runtime.',
+      };
+    case 'runtime-installing':
+      return {
+        title: 'Installing runtime…',
+        subtitle: 'OpenClaw tools are being prepared inside your container.',
+      };
+    case 'gateway-starting':
+      return {
+        title: 'Starting the gateway…',
+        subtitle: 'Your workspace is almost ready. Final service checks are running.',
+      };
+    default:
+      return {
+        title: 'Preparing your workspace…',
+        subtitle: 'Please keep this page open — we will enter chat automatically once ready.',
+      };
+  }
+}
+
 export default function BotPage() {
   const params = useParams<{ sessionId: string; locale?: string }>();
   const sessionId = params.sessionId;
@@ -43,6 +69,7 @@ export default function BotPage() {
   const [runtimeStatusText, setRuntimeStatusText] = useState(
     'Preparing your workspace…'
   );
+  const [runtimePhase, setRuntimePhase] = useState('preparing');
   const [lowCredits, setLowCredits] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -108,6 +135,7 @@ export default function BotPage() {
           return;
         }
 
+        setRuntimePhase(String(data?.phase || 'preparing'));
         setRuntimeStatusText(
           String(
             data?.message ||
@@ -408,19 +436,39 @@ ${String(data?.output || '(no output)')}`;
 
   if (!guardReady) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-slate-950 text-slate-400 text-sm">
-        Checking workspace access…
+      <main className="flex min-h-screen items-center justify-center bg-slate-950 text-slate-300 px-6">
+        <div className="w-full max-w-sm rounded-2xl border border-slate-800 bg-slate-900/70 p-6 text-center shadow-2xl">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-slate-800">
+            <div className="flex gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-cyan-400 animate-bounce [animation-delay:0ms]" />
+              <span className="h-2 w-2 rounded-full bg-cyan-400 animate-bounce [animation-delay:150ms]" />
+              <span className="h-2 w-2 rounded-full bg-cyan-400 animate-bounce [animation-delay:300ms]" />
+            </div>
+          </div>
+          <p className="text-sm font-semibold text-white">Checking workspace access…</p>
+          <p className="mt-2 text-xs text-slate-500">Verifying your session and access permissions.</p>
+        </div>
       </main>
     );
   }
 
   if (!runtimeReady) {
+    const meta = phaseMeta(runtimePhase);
     return (
-      <main className="flex min-h-screen items-center justify-center bg-slate-950 text-slate-300">
-        <div className="text-center px-6">
-          <div className="text-3xl mb-3">🛠️</div>
-          <p className="text-sm font-medium">Creating your workspace…</p>
-          <p className="text-xs text-slate-500 mt-2">{runtimeStatusText}</p>
+      <main className="flex min-h-screen items-center justify-center bg-slate-950 text-slate-300 px-6">
+        <div className="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900/70 p-6 text-center shadow-2xl">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-slate-800 ring-1 ring-slate-700">
+            <div className="relative h-8 w-8">
+              <div className="absolute inset-0 rounded-full border-2 border-slate-700" />
+              <div className="absolute inset-0 animate-spin rounded-full border-2 border-transparent border-t-cyan-400 border-r-cyan-400" />
+            </div>
+          </div>
+          <p className="text-base font-semibold text-white">{meta.title}</p>
+          <p className="mt-2 text-sm text-slate-400">{meta.subtitle}</p>
+          <div className="mt-5 overflow-hidden rounded-full bg-slate-800">
+            <div className="h-2 w-2/3 animate-pulse rounded-full bg-gradient-to-r from-cyan-500 via-indigo-500 to-cyan-500" />
+          </div>
+          <p className="mt-4 text-xs text-slate-500">{runtimeStatusText}</p>
         </div>
       </main>
     );
