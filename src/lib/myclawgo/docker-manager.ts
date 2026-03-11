@@ -12,7 +12,8 @@ import type { UserSession } from './session-store';
 
 const execFileAsync = promisify(execFile);
 
-const OPENCLAW_IMAGE = process.env.MYCLAWGO_OPENCLAW_IMAGE || 'ubuntu:24.04';
+const OPENCLAW_IMAGE =
+  process.env.MYCLAWGO_OPENCLAW_IMAGE || 'myclawgo-openclaw:2026.3.8';
 const HOST_OPENCLAW_CONFIG =
   process.env.MYCLAWGO_SEED_CONFIG_PATH ||
   '/home/openclaw/docker-openclaw-seed/openclaw.json';
@@ -24,6 +25,8 @@ const HOST_PW_DIR =
 const DEFAULT_RUNTIME_MODEL =
   process.env.MYCLAWGO_RUNTIME_MODEL || 'openrouter/minimax/minimax-m2.5';
 const OPENCLAW_NPM_SPEC = process.env.MYCLAWGO_OPENCLAW_NPM_SPEC || 'latest';
+const ALLOW_LEGACY_BOOTSTRAP =
+  process.env.MYCLAWGO_ALLOW_LEGACY_BOOTSTRAP === 'true';
 
 const ensureContainerLocks = new Map<string, Promise<{ ok: true; mode: 'started-existing' | 'created' } | { ok: false; error: string }>>();
 
@@ -172,6 +175,22 @@ async function ensureSessionPassword(containerName: string) {
   return password;
 }
 
+async function prepareSeededRuntime(containerName: string) {
+  const sessionPassword = await ensureSessionPassword(containerName);
+
+  const script = [
+    'set -e',
+    'mkdir -p /home/openclaw/.openclaw /home/openclaw/.openclaw/agents/main/agent',
+    `echo 'openclaw:${sessionPassword}' | chpasswd`,
+    'if [ -f /seed/openclaw.json ] && [ ! -f /home/openclaw/.openclaw/openclaw.json ]; then cp /seed/openclaw.json /home/openclaw/.openclaw/openclaw.json; fi',
+    'if [ -f /seed/auth-profiles.json ] && [ ! -f /home/openclaw/.openclaw/agents/main/agent/auth-profiles.json ]; then cp /seed/auth-profiles.json /home/openclaw/.openclaw/agents/main/agent/auth-profiles.json; fi',
+    'chown -R openclaw:openclaw /home/openclaw/.openclaw',
+    "su - openclaw -c 'openclaw models set openrouter/minimax/minimax-m2.5 || true'",
+  ].join('; ');
+
+  await dockerExec(containerName, script);
+}
+
 async function bootstrapOpenClaw(containerName: string) {
   const sessionPassword = await ensureSessionPassword(containerName);
 
@@ -263,9 +282,18 @@ export async function ensureUserContainer(session: UserSession) {
         () => ({ stdout: 'not_ready' })
       );
       if (!checkOut.includes('ready')) {
+        if (!ALLOW_LEGACY_BOOTSTRAP) {
+          return {
+            ok: false as const,
+            error:
+              'Container exists but runtime is missing. Legacy online bootstrap is disabled; recreate this container from the prebuilt runtime image.',
+          };
+        }
         await bootstrapOpenClaw(containerName);
         return { ok: true as const, mode: 'created' as const };
       }
+      await prepareSeededRuntime(containerName);
+      await ensureGatewayForContainer(containerName).catch(() => {});
       return { ok: true as const, mode: 'started-existing' as const };
     } catch {
       // continue and create
@@ -303,7 +331,7 @@ export async function ensureUserContainer(session: UserSession) {
       args.push('-e', `${env.key}=${env.value}`);
     }
 
-    args.push(OPENCLAW_IMAGE, 'sh', '-c', 'sleep infinity');
+    args.push(OPENCLAW_IMAGE, 'sleep-infinity');
 
     try {
       await execFileAsync('docker', args);
@@ -334,7 +362,8 @@ export async function ensureUserContainer(session: UserSession) {
     }
 
     try {
-      await bootstrapOpenClaw(containerName);
+      await prepareSeededRuntime(containerName);
+      await ensureGatewayForContainer(containerName).catch(() => {});
       return { ok: true as const, mode: 'created' as const };
     } catch (error: unknown) {
       return {
