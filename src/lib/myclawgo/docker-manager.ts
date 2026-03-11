@@ -160,6 +160,10 @@ function generateStrongPassword(length = 24) {
   return `${raw}A1!`;
 }
 
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 async function ensureSessionPassword(containerName: string) {
   await fs.mkdir(HOST_PW_DIR, { recursive: true });
   const pwFile = path.join(HOST_PW_DIR, containerName);
@@ -451,9 +455,18 @@ export async function checkUserContainerReady(session: UserSession) {
     return { ready: false as const, phase: 'runtime-installing' as const };
   }
 
-  // Gateway may still be starting; chat route can fall back to --local mode.
-  // So treat runtime as ready once openclaw is installed.
   await ensureGatewayForContainer(containerName).catch(() => {});
+
+  const { stdout: healthOut } = await dockerExec(
+    containerName,
+    "su - openclaw -c 'openclaw gateway call health --json 2>/dev/null | head -1'",
+    5_000
+  ).catch(() => ({ stdout: '' }));
+
+  if (!healthOut.includes('{')) {
+    return { ready: false as const, phase: 'gateway-starting' as const };
+  }
+
   return { ready: true as const, phase: 'ready' as const };
 }
 
@@ -465,13 +478,22 @@ export async function runOpenClawChatInContainer(
 
   await execFileAsync('docker', ['start', containerName]).catch(() => {});
 
-  // Check if openclaw is installed yet (bootstrap may still be running for new containers)
   const checkCmd =
     "su - openclaw -c 'which openclaw 2>/dev/null && echo ready || echo not_ready'";
-  const { stdout: checkOut } = await dockerExec(containerName, checkCmd).catch(
-    () => ({ stdout: 'not_ready' })
-  );
-  if (!checkOut.includes('ready')) {
+
+  let runtimeReady = false;
+  for (let attempt = 0; attempt < 6; attempt++) {
+    const { stdout: checkOut } = await dockerExec(containerName, checkCmd).catch(
+      () => ({ stdout: 'not_ready' })
+    );
+    if (checkOut.includes('ready')) {
+      runtimeReady = true;
+      break;
+    }
+    await sleep(2000);
+  }
+
+  if (!runtimeReady) {
     return {
       ok: false as const,
       error:
@@ -480,13 +502,21 @@ export async function runOpenClawChatInContainer(
     };
   }
 
-  // Quick gateway health check — if up use gateway (session memory), else --local fallback
-  const { stdout: healthOut } = await dockerExec(
-    containerName,
-    "su - openclaw -c 'openclaw gateway call health --json 2>/dev/null | head -1'",
-    5_000
-  ).catch(() => ({ stdout: '' }));
-  const gatewayReady = healthOut.includes('{');
+  await ensureGatewayForContainer(containerName).catch(() => {});
+
+  let gatewayReady = false;
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const { stdout: healthOut } = await dockerExec(
+      containerName,
+      "su - openclaw -c 'openclaw gateway call health --json 2>/dev/null | head -1'",
+      5_000
+    ).catch(() => ({ stdout: '' }));
+    if (healthOut.includes('{')) {
+      gatewayReady = true;
+      break;
+    }
+    await sleep(1500);
+  }
 
   const cmd = gatewayReady
     ? `su - openclaw -c ${JSON.stringify(
@@ -501,7 +531,7 @@ export async function runOpenClawChatInContainer(
     let parsed = parseAgentJsonOutput(stdout);
 
     if (!parsed.payloadText && !parsed.rawText) {
-      await new Promise((resolve) => setTimeout(resolve, 1200));
+      await sleep(1200);
       const retry = await dockerExec(containerName, cmd, 90_000);
       parsed = parseAgentJsonOutput(retry.stdout);
     }

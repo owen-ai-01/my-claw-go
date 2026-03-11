@@ -1,5 +1,8 @@
 import { auth } from '@/lib/auth';
-import { ensureUserContainer } from '@/lib/myclawgo/docker-manager';
+import {
+  checkUserContainerReady,
+  ensureUserContainer,
+} from '@/lib/myclawgo/docker-manager';
 import { ensureSessionById } from '@/lib/myclawgo/session-store';
 import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
@@ -29,6 +32,19 @@ export async function GET(
       phase: 'preparing',
       message:
         'Creating your workspace. Please wait about 1 minute, then chat will be ready automatically.',
+    });
+  }
+
+  const ready = await checkUserContainerReady(runtimeSession);
+  if (!ready.ready) {
+    return NextResponse.json({
+      ok: true,
+      ready: false,
+      phase: ready.phase,
+      message:
+        ready.phase === 'gateway-starting'
+          ? 'Your runtime is almost ready. Starting the gateway now...'
+          : 'Creating your workspace. Please wait about 1 minute, then chat will be ready automatically.',
     });
   }
 
