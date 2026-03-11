@@ -21,8 +21,8 @@ RUN apt-get update && apt-get install -y \
     adduser \
   && rm -rf /var/lib/apt/lists/*
 
-RUN id -u openclaw >/dev/null 2>&1 || useradd -m -s /bin/bash openclaw \
-  && usermod -aG sudo openclaw \
+RUN id -u openclaw >/dev/null 2>&1 || adduser --disabled-password --gecos '' openclaw \
+  && adduser openclaw sudo \
   && echo 'openclaw ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/openclaw \
   && chmod 0440 /etc/sudoers.d/openclaw \
   && mkdir -p /home/openclaw/.openclaw /home/openclaw/.openclaw/agents/main/agent /seed \
