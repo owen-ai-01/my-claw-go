@@ -1,4 +1,4 @@
-FROM ubuntu:24.04
+FROM node:20-bookworm
 
 ENV DEBIAN_FRONTEND=noninteractive \
     OPENCLAW_VERSION=2026.3.8 \
@@ -15,8 +15,6 @@ RUN apt-get update && apt-get install -y \
     nano \
     bash \
     python3 \
-    nodejs \
-    npm \
     passwd \
     adduser \
   && rm -rf /var/lib/apt/lists/*
