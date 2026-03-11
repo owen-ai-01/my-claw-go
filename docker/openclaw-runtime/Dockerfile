@@ -17,6 +17,8 @@ RUN apt-get update && apt-get install -y \
     python3 \
     nodejs \
     npm \
+    passwd \
+    adduser \
   && rm -rf /var/lib/apt/lists/*
 
 RUN id -u openclaw >/dev/null 2>&1 || useradd -m -s /bin/bash openclaw \
