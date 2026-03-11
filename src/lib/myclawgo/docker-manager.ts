@@ -223,7 +223,7 @@ async function ensureGatewayForContainer(containerName: string) {
   const scriptContent = [
     '#!/bin/bash',
     'while true; do',
-    '  openclaw gateway run --auth none --bind loopback --port 18789 >> /home/openclaw/.openclaw/gateway.log 2>&1',
+    '  openclaw gateway run --allow-unconfigured --auth none --bind loopback --port 18789 >> /home/openclaw/.openclaw/gateway.log 2>&1',
     '  sleep 2',
     'done',
   ].join('\n');

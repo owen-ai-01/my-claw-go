@@ -18,7 +18,7 @@ cat > /home/openclaw/.openclaw/keep-gateway.sh <<'EOS'
 #!/usr/bin/env bash
 set -euo pipefail
 while true; do
-  openclaw gateway run --auth none --bind loopback --port 18789 >> /home/openclaw/.openclaw/gateway.log 2>&1 || true
+  openclaw gateway run --allow-unconfigured --auth none --bind loopback --port 18789 >> /home/openclaw/.openclaw/gateway.log 2>&1 || true
   sleep 2
 done
 EOS
