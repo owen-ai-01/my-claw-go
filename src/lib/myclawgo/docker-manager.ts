@@ -457,17 +457,17 @@ export async function checkUserContainerReady(session: UserSession) {
 
   await ensureGatewayForContainer(containerName).catch(() => {});
 
-  const { stdout: healthOut } = await dockerExec(
+  const { stdout: gatewayState } = await dockerExec(
     containerName,
-    "su - openclaw -c 'openclaw gateway call health --json 2>/dev/null | head -1'",
+    "sh -lc \"pgrep -f 'keep-gateway.sh|openclaw gateway run' >/dev/null 2>&1 && echo running || echo starting; if grep -q '\\[gateway\\] listening on ws://127.0.0.1:18789' /home/openclaw/.openclaw/gateway.log 2>/dev/null; then echo listening; fi\"",
     5_000
   ).catch(() => ({ stdout: '' }));
 
-  if (!healthOut.includes('{')) {
-    return { ready: false as const, phase: 'gateway-starting' as const };
+  if (gatewayState.includes('listening') || gatewayState.includes('running')) {
+    return { ready: true as const, phase: 'ready' as const };
   }
 
-  return { ready: true as const, phase: 'ready' as const };
+  return { ready: false as const, phase: 'gateway-starting' as const };
 }
 
 export async function runOpenClawChatInContainer(
