@@ -7,6 +7,7 @@ import {
   BellIcon,
   BotIcon,
   CircleUserRoundIcon,
+  MessageSquareTextIcon,
   CoinsIcon,
   CreditCardIcon,
   LayoutDashboardIcon,
@@ -39,6 +40,12 @@ export function useSidebarLinks(): NestedMenuItem[] {
       title: t('dashboard.title'),
       icon: <LayoutDashboardIcon className="size-4 shrink-0" />,
       href: Routes.Dashboard,
+      external: false,
+    },
+    {
+      title: 'Chat',
+      icon: <MessageSquareTextIcon className="size-4 shrink-0" />,
+      href: Routes.Chat,
       external: false,
     },
     {
