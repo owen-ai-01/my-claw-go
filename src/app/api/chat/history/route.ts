@@ -1,5 +1,5 @@
 import { auth } from '@/lib/auth';
-import { readChatHistory } from '@/lib/myclawgo/user-data';
+import { loadGatewayChatHistory } from '@/lib/myclawgo/gateway-chat';
 import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 
@@ -10,6 +10,6 @@ export async function GET() {
     return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
   }
 
-  const messages = await readChatHistory(userId).catch(() => []);
+  const messages = await loadGatewayChatHistory(userId).catch(() => []);
   return NextResponse.json({ ok: true, messages });
 }

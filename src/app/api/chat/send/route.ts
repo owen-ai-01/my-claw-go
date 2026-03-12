@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
+import { sendGatewayChatMessage } from '@/lib/myclawgo/gateway-chat';
 import { NextResponse } from 'next/server';
 
 export async function POST(req: Request) {
@@ -15,17 +16,16 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: 'Message is required' }, { status: 400 });
   }
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://127.0.0.1:3000';
-  const res = await fetch(`${baseUrl}/api/runtime/${userId}/chat`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      cookie: (await headers()).get('cookie') || '',
-    },
-    body: JSON.stringify({ message }),
-    cache: 'no-store',
-  });
-
-  const data = await res.json().catch(() => ({}));
-  return NextResponse.json(data, { status: res.status });
+  try {
+    const data = await sendGatewayChatMessage(userId, message);
+    return NextResponse.json({ ok: true, reply: data.reply, sessionKey: data.sessionKey });
+  } catch (error) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: error instanceof Error ? error.message : 'Failed to send gateway chat message',
+      },
+      { status: 500 }
+    );
+  }
 }
