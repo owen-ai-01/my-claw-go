@@ -254,6 +254,7 @@ export default function BotPage() {
   async function onSend() {
     const text = input.trim();
     if (!text || loading) return;
+    const isFirstMessage = messages.length === 0;
 
     const userMsg: Message = {
       id: crypto.randomUUID(),
@@ -321,6 +322,43 @@ ${String(data?.output || '(no output)')}`;
           role: 'assistant',
           text: replyText,
           model: data?.model as string | undefined,
+          timestamp: new Date().toISOString(),
+        };
+        setMessages((m) => [...m, botMsg]);
+        return;
+      }
+
+      if (isFirstMessage) {
+        const controller = new AbortController();
+        timeout = setTimeout(() => controller.abort(), 90_000);
+        const firstRes = await fetch(`/api/runtime/${sessionId}/chat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: text }),
+          signal: controller.signal,
+        });
+        const firstData = (await firstRes.json().catch(() => ({}))) as Record<
+          string,
+          unknown
+        >;
+        if (!firstRes.ok || !firstData?.ok) {
+          const rawError = String(
+            firstData?.error || `Request failed (HTTP ${firstRes.status})`
+          );
+          const botMsg: Message = {
+            id: crypto.randomUUID(),
+            role: 'assistant',
+            text: `⚠️ ${normalizeError(rawError)}`,
+            timestamp: new Date().toISOString(),
+          };
+          setMessages((m) => [...m, botMsg]);
+          return;
+        }
+
+        const botMsg: Message = {
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          text: String(firstData.reply || 'No reply'),
           timestamp: new Date().toISOString(),
         };
         setMessages((m) => [...m, botMsg]);
