@@ -90,8 +90,6 @@ export async function applyMainAgentTelegramConfigToRuntime(userId: string) {
           defaultAccount: accountId,
           dmPolicy: 'open',
           allowFrom: ['*'],
-          webhookPath: bot.webhookPath || `/telegram-webhook/${accountId}`,
-          webhookSecret: bot.webhookSecret || crypto.randomBytes(24).toString('hex'),
           accounts: {
             [accountId]: {
               enabled: true,
@@ -108,7 +106,6 @@ export async function applyMainAgentTelegramConfigToRuntime(userId: string) {
           match: {
             channel: 'telegram',
             accountId,
-            peer: { kind: 'direct' },
           },
         },
       ],

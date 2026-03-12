@@ -56,7 +56,6 @@ export async function GET() {
           status: bot.status,
           botUsername: bot.botUsername,
           botTelegramId: bot.botTelegramId,
-          webhookPath: bot.webhookPath,
           lastVerifiedAt: bot.lastVerifiedAt,
           lastError: bot.lastError,
           configured: Boolean(bot.botTokenEncrypted),
@@ -84,8 +83,6 @@ export async function POST(req: Request) {
     const { mainAgent, bot } = await getMainAgentTelegramBot(userId);
     const now = new Date();
     const encryptedToken = encryptConfigValue(botToken);
-    const webhookSecret = crypto.randomBytes(24).toString('hex');
-    const webhookPath = `/api/webhooks/telegram/${userId}/${mainAgent.id}`;
 
     if (bot) {
       await db
@@ -95,8 +92,8 @@ export async function POST(req: Request) {
           botTokenEncrypted: encryptedToken,
           botUsername: verified.botUsername,
           botTelegramId: verified.botTelegramId,
-          webhookPath,
-          webhookSecret,
+          webhookPath: null,
+          webhookSecret: null,
           lastVerifiedAt: now,
           lastError: null,
           updatedAt: now,
@@ -111,8 +108,6 @@ export async function POST(req: Request) {
         botTokenEncrypted: encryptedToken,
         botUsername: verified.botUsername,
         botTelegramId: verified.botTelegramId,
-        webhookPath,
-        webhookSecret,
         lastVerifiedAt: now,
         lastError: null,
         createdAt: now,
@@ -133,7 +128,6 @@ export async function POST(req: Request) {
       telegramBot: {
         botUsername: verified.botUsername,
         botTelegramId: verified.botTelegramId,
-        webhookPath,
         verifiedAt: now.toISOString(),
       },
       runtimeSync: syncResult,
