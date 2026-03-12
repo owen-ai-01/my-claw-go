@@ -7,6 +7,7 @@ import {
   getMainAgentTelegramBot,
 } from '@/lib/myclawgo/agent-config';
 import { eq } from 'drizzle-orm';
+import { applyMainAgentTelegramConfigToRuntime } from '@/lib/myclawgo/runtime-agent-sync';
 import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 
@@ -119,6 +120,8 @@ export async function POST(req: Request) {
       });
     }
 
+    const syncResult = await applyMainAgentTelegramConfigToRuntime(userId);
+
     return NextResponse.json({
       ok: true,
       message: 'Telegram bot configuration saved',
@@ -133,6 +136,7 @@ export async function POST(req: Request) {
         webhookPath,
         verifiedAt: now.toISOString(),
       },
+      runtimeSync: syncResult,
     });
   } catch (error) {
     return NextResponse.json(

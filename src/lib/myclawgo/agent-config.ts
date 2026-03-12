@@ -24,6 +24,21 @@ export function encryptConfigValue(value: string) {
   return Buffer.concat([iv, tag, encrypted]).toString('base64');
 }
 
+export function decryptConfigValue(payload: string) {
+  const secret = crypto
+    .createHash('sha256')
+    .update(getEncryptionSecret())
+    .digest();
+  const data = Buffer.from(payload, 'base64');
+  const iv = data.subarray(0, 12);
+  const tag = data.subarray(12, 28);
+  const encrypted = data.subarray(28);
+  const decipher = crypto.createDecipheriv('aes-256-gcm', secret, iv);
+  decipher.setAuthTag(tag);
+  const decrypted = Buffer.concat([decipher.update(encrypted), decipher.final()]);
+  return decrypted.toString('utf8');
+}
+
 export async function ensureMainAgent(userId: string) {
   const db = await getDb();
   const existing = await db
