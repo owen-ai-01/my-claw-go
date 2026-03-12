@@ -1,4 +1,4 @@
-import { boolean, integer, pgTable, text, timestamp, index } from "drizzle-orm/pg-core";
+import { boolean, integer, jsonb, pgTable, text, timestamp, index } from "drizzle-orm/pg-core";
 
 export const user = pgTable("user", {
 	id: text("id").primaryKey(),
@@ -141,4 +141,73 @@ export const runtimeTask = pgTable("runtime_tasks", {
   runtimeTaskSessionIdx:   index("runtime_task_session_idx").on(table.sessionId),
   runtimeTaskStatusIdx:    index("runtime_task_status_idx").on(table.status),
   runtimeTaskCreatedAtIdx: index("runtime_task_created_at_idx").on(table.createdAt),
+}));
+
+export const userAgent = pgTable("user_agent", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => user.id, { onDelete: 'cascade' }),
+  agentKey: text("agent_key").notNull(),
+  name: text("name").notNull(),
+  slug: text("slug").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("active"),
+  isDefault: boolean("is_default").notNull().default(false),
+  runtimeAgentId: text("runtime_agent_id").notNull(),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  userAgentUserIdx: index("user_agent_user_idx").on(table.userId),
+  userAgentUserAgentKeyIdx: index("user_agent_user_agent_key_idx").on(table.userId, table.agentKey),
+  userAgentUserSlugIdx: index("user_agent_user_slug_idx").on(table.userId, table.slug),
+  userAgentUserDefaultIdx: index("user_agent_user_default_idx").on(table.userId, table.isDefault),
+}));
+
+export const userAgentTelegramBot = pgTable("user_agent_telegram_bot", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => user.id, { onDelete: 'cascade' }),
+  userAgentId: text("user_agent_id").notNull().references(() => userAgent.id, { onDelete: 'cascade' }),
+  status: text("status").notNull().default("pending"),
+  botTokenEncrypted: text("bot_token_encrypted"),
+  botUsername: text("bot_username"),
+  botTelegramId: text("bot_telegram_id"),
+  webhookPath: text("webhook_path"),
+  webhookSecret: text("webhook_secret"),
+  lastVerifiedAt: timestamp("last_verified_at", { withTimezone: true }),
+  lastError: text("last_error"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  userAgentTelegramBotUserIdx: index("user_agent_telegram_bot_user_idx").on(table.userId),
+  userAgentTelegramBotAgentIdx: index("user_agent_telegram_bot_agent_idx").on(table.userAgentId),
+  userAgentTelegramBotStatusIdx: index("user_agent_telegram_bot_status_idx").on(table.status),
+  userAgentTelegramBotWebhookPathIdx: index("user_agent_telegram_bot_webhook_path_idx").on(table.webhookPath),
+}));
+
+export const userChannelBinding = pgTable("user_channel_binding", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => user.id, { onDelete: 'cascade' }),
+  userAgentId: text("user_agent_id").notNull().references(() => userAgent.id, { onDelete: 'cascade' }),
+  telegramBotId: text("telegram_bot_id").references(() => userAgentTelegramBot.id, { onDelete: 'cascade' }),
+  channel: text("channel").notNull().default("telegram"),
+  status: text("status").notNull().default("pending"),
+  externalChatId: text("external_chat_id"),
+  externalUserId: text("external_user_id"),
+  externalUsername: text("external_username"),
+  externalDisplayName: text("external_display_name"),
+  bindCode: text("bind_code"),
+  bindCodeExpiresAt: timestamp("bind_code_expires_at", { withTimezone: true }),
+  connectedAt: timestamp("connected_at", { withTimezone: true }),
+  lastActiveAt: timestamp("last_active_at", { withTimezone: true }),
+  metadataJson: jsonb("metadata_json"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  userChannelBindingUserIdx: index("user_channel_binding_user_idx").on(table.userId),
+  userChannelBindingAgentIdx: index("user_channel_binding_agent_idx").on(table.userAgentId),
+  userChannelBindingBotIdx: index("user_channel_binding_bot_idx").on(table.telegramBotId),
+  userChannelBindingChannelIdx: index("user_channel_binding_channel_idx").on(table.channel),
+  userChannelBindingStatusIdx: index("user_channel_binding_status_idx").on(table.status),
+  userChannelBindingChatIdx: index("user_channel_binding_chat_idx").on(table.externalChatId),
+  userChannelBindingBindCodeIdx: index("user_channel_binding_bind_code_idx").on(table.bindCode),
 }));
