@@ -9,6 +9,7 @@ type RuntimeStatus =
 
 export function ChatShell() {
   const [status, setStatus] = useState<RuntimeStatus | null>(null);
+  const [creating, setCreating] = useState(false);
 
   useEffect(() => {
     let stopped = false;
@@ -27,6 +28,30 @@ export function ChatShell() {
       stopped = true;
     };
   }, []);
+
+  async function onCreate() {
+    if (creating) return;
+    setCreating(true);
+    try {
+      const res = await fetch('/api/chat/create', { method: 'POST' });
+      const data = (await res.json().catch(() => ({}))) as
+        | (RuntimeStatus & { mode?: string })
+        | { ok?: boolean; error?: string; mode?: string; containerName?: string };
+      if (!res.ok || !data || data.ok !== true) {
+        const error = 'error' in (data || {}) ? (data as { error?: string }).error : undefined;
+        setStatus({ ok: false, error: error || 'Failed to create MyClawGo' });
+        return;
+      }
+      setStatus({
+        ok: true,
+        state: 'ready',
+        reason: 'runtime-created',
+        containerName: data.containerName,
+      });
+    } finally {
+      setCreating(false);
+    }
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -53,14 +78,12 @@ export function ChatShell() {
             </p>
             <button
               type="button"
-              disabled
-              className="mt-6 rounded-xl bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground opacity-80"
+              onClick={onCreate}
+              disabled={creating}
+              className="mt-6 rounded-xl bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground"
             >
-              Create MyClawGo
+              {creating ? 'Creating…' : 'Create MyClawGo'}
             </button>
-            <p className="mt-4 text-xs text-muted-foreground">
-              Step 2: real create flow will be connected next.
-            </p>
           </div>
         </div>
       ) : null}
