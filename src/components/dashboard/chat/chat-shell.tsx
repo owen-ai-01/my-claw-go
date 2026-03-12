@@ -7,6 +7,78 @@ type RuntimeStatus =
   | { ok: true; state: 'ready'; reason: string; containerName?: string }
   | { ok: false; error: string };
 
+function ReadyChatLayout({ containerName }: { containerName?: string }) {
+  return (
+    <div className="grid min-h-[72vh] grid-cols-1 gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
+      <aside className="rounded-2xl border bg-card p-5 shadow-sm">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold">MyClawGo Chat</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              This area will become the OpenClaw-style direct chat entry.
+            </p>
+          </div>
+          <span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-600">
+            Ready
+          </span>
+        </div>
+
+        <div className="mt-5 rounded-xl border p-4">
+          <p className="text-xs text-muted-foreground">Runtime container</p>
+          <p className="mt-1 break-all text-sm font-medium">
+            {containerName || 'unknown'}
+          </p>
+        </div>
+
+        <div className="mt-4 rounded-xl border p-4">
+          <p className="text-xs text-muted-foreground">Goal</p>
+          <p className="mt-1 text-sm">
+            Replace the old long task-chain chat with a direct OpenClaw-like chat path.
+          </p>
+        </div>
+      </aside>
+
+      <section className="flex min-h-[72vh] flex-col rounded-2xl border bg-card shadow-sm">
+        <div className="border-b px-6 py-4">
+          <h2 className="text-lg font-semibold">Chat</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Next step: wire this panel directly to the user runtime in an OpenClaw-style flow.
+          </p>
+        </div>
+
+        <div className="flex flex-1 flex-col justify-between">
+          <div className="flex flex-1 items-center justify-center px-6 py-10">
+            <div className="max-w-xl text-center">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted text-2xl">
+                💬
+              </div>
+              <h3 className="text-xl font-semibold">Direct chat layout ready</h3>
+              <p className="mt-3 text-sm text-muted-foreground">
+                We now have a dedicated chat surface separated from runtime creation.
+                The next step is to connect this directly to the user Docker OpenClaw,
+                following the same short-chain idea as OpenClaw&apos;s own /chat.
+              </p>
+            </div>
+          </div>
+
+          <div className="border-t px-6 py-4">
+            <div className="flex items-center gap-3 rounded-2xl border bg-background px-4 py-3 text-sm text-muted-foreground">
+              <div className="flex-1 text-left">Chat input will be connected in the next step.</div>
+              <button
+                type="button"
+                disabled
+                className="rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground opacity-80"
+              >
+                Send
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
+
 export function ChatShell() {
   const [status, setStatus] = useState<RuntimeStatus | null>(null);
   const [creating, setCreating] = useState(false);
@@ -89,18 +161,7 @@ export function ChatShell() {
       ) : null}
 
       {status?.ok && status.state === 'ready' ? (
-        <div className="rounded-2xl border bg-card p-8 shadow-sm">
-          <div className="mx-auto flex max-w-2xl flex-col items-center text-center">
-            <h2 className="text-xl font-semibold">Chat ready</h2>
-            <p className="mt-3 text-sm text-muted-foreground">
-              Your runtime already exists. Next step is to replace this placeholder with
-              the direct OpenClaw-style chat experience.
-            </p>
-            <p className="mt-4 text-xs text-muted-foreground">
-              Container: {status.containerName || 'unknown'}
-            </p>
-          </div>
-        </div>
+        <ReadyChatLayout containerName={status.containerName} />
       ) : null}
 
       {status && !status.ok ? (
