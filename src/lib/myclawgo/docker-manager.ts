@@ -470,6 +470,11 @@ export async function checkUserContainerReady(session: UserSession) {
   return { ready: false as const, phase: 'gateway-starting' as const };
 }
 
+async function cleanupStaleSessionLocks(containerName: string) {
+  const script = String.raw`sh -lc 'find /home/openclaw/.openclaw/agents -path "*/sessions/*.jsonl.lock" -type f 2>/dev/null | while read -r f; do pid=$(sed -n "s/.*"pid"[[:space:]]*:[[:space:]]*\([0-9][0-9]*\).*//p" "$f" | head -n1); if [ -n "$pid" ] && [ -d "/proc/$pid" ]; then continue; fi; rm -f "$f"; done'`;
+  await dockerExec(containerName, script, 10_000).catch(() => {});
+}
+
 export async function runOpenClawChatInContainer(
   session: UserSession,
   message: string
@@ -503,6 +508,7 @@ export async function runOpenClawChatInContainer(
   }
 
   await ensureGatewayForContainer(containerName).catch(() => {});
+  await cleanupStaleSessionLocks(containerName);
 
   let gatewayReady = false;
   for (let attempt = 0; attempt < 10; attempt++) {
