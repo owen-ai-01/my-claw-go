@@ -1,13 +1,77 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 type RuntimeStatus =
   | { ok: true; state: 'not_created'; reason: string; containerName?: string }
   | { ok: true; state: 'ready'; reason: string; containerName?: string }
   | { ok: false; error: string };
 
+type ChatMessage = {
+  id?: string;
+  role: 'user' | 'assistant';
+  text: string;
+  timestamp?: string;
+};
+
 function ReadyChatLayout({ containerName }: { containerName?: string }) {
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [input, setInput] = useState('');
+  const [sending, setSending] = useState(false);
+
+  useEffect(() => {
+    let stopped = false;
+    const run = async () => {
+      const res = await fetch('/api/chat/history').catch(() => null);
+      const data = (await res?.json().catch(() => ({}))) as {
+        ok?: boolean;
+        messages?: ChatMessage[];
+      };
+      if (stopped) return;
+      setMessages(Array.isArray(data?.messages) ? data.messages : []);
+    };
+    run();
+    return () => {
+      stopped = true;
+    };
+  }, []);
+
+  const placeholder = useMemo(() => 'Send a message to your MyClawGo…', []);
+
+  async function onSend() {
+    const text = input.trim();
+    if (!text || sending) return;
+    const optimisticUser: ChatMessage = { role: 'user', text };
+    setMessages((m) => [...m, optimisticUser]);
+    setInput('');
+    setSending(true);
+    try {
+      const res = await fetch('/api/chat/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text }),
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        ok?: boolean;
+        reply?: string;
+        error?: string;
+      };
+      if (!res.ok || !data?.ok) {
+        setMessages((m) => [
+          ...m,
+          {
+            role: 'assistant',
+            text: `⚠️ ${data?.error || 'Failed to send message'}`,
+          },
+        ]);
+        return;
+      }
+      setMessages((m) => [...m, { role: 'assistant', text: String(data.reply || '') }]);
+    } finally {
+      setSending(false);
+    }
+  }
+
   return (
     <div className="grid min-h-[72vh] grid-cols-1 gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
       <aside className="rounded-2xl border bg-card p-5 shadow-sm">
@@ -15,7 +79,7 @@ function ReadyChatLayout({ containerName }: { containerName?: string }) {
           <div>
             <h2 className="text-lg font-semibold">MyClawGo Chat</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              This area will become the OpenClaw-style direct chat entry.
+              Direct chat surface for your personal OpenClaw runtime.
             </p>
           </div>
           <span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-600">
@@ -29,47 +93,62 @@ function ReadyChatLayout({ containerName }: { containerName?: string }) {
             {containerName || 'unknown'}
           </p>
         </div>
-
-        <div className="mt-4 rounded-xl border p-4">
-          <p className="text-xs text-muted-foreground">Goal</p>
-          <p className="mt-1 text-sm">
-            Replace the old long task-chain chat with a direct OpenClaw-like chat path.
-          </p>
-        </div>
       </aside>
 
       <section className="flex min-h-[72vh] flex-col rounded-2xl border bg-card shadow-sm">
         <div className="border-b px-6 py-4">
           <h2 className="text-lg font-semibold">Chat</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Next step: wire this panel directly to the user runtime in an OpenClaw-style flow.
+            Transitional short-path chat. Next step is Gateway WebSocket alignment with OpenClaw /chat.
           </p>
         </div>
 
         <div className="flex flex-1 flex-col justify-between">
-          <div className="flex flex-1 items-center justify-center px-6 py-10">
-            <div className="max-w-xl text-center">
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted text-2xl">
-                💬
+          <div className="flex flex-1 flex-col gap-4 overflow-y-auto px-6 py-6">
+            {messages.length === 0 ? (
+              <div className="m-auto max-w-xl text-center text-sm text-muted-foreground">
+                Start chatting with your MyClawGo runtime.
               </div>
-              <h3 className="text-xl font-semibold">Direct chat layout ready</h3>
-              <p className="mt-3 text-sm text-muted-foreground">
-                We now have a dedicated chat surface separated from runtime creation.
-                The next step is to connect this directly to the user Docker OpenClaw,
-                following the same short-chain idea as OpenClaw&apos;s own /chat.
-              </p>
-            </div>
+            ) : null}
+            {messages.map((msg, idx) => (
+              <div
+                key={`${msg.role}-${idx}-${msg.timestamp || ''}`}
+                className={msg.role === 'user' ? 'ml-auto max-w-[80%]' : 'mr-auto max-w-[80%]'}
+              >
+                <div
+                  className={
+                    msg.role === 'user'
+                      ? 'rounded-2xl bg-primary px-4 py-3 text-sm text-primary-foreground'
+                      : 'rounded-2xl bg-muted px-4 py-3 text-sm text-foreground'
+                  }
+                >
+                  {msg.text}
+                </div>
+              </div>
+            ))}
           </div>
 
           <div className="border-t px-6 py-4">
-            <div className="flex items-center gap-3 rounded-2xl border bg-background px-4 py-3 text-sm text-muted-foreground">
-              <div className="flex-1 text-left">Chat input will be connected in the next step.</div>
+            <div className="flex items-center gap-3 rounded-2xl border bg-background px-4 py-3">
+              <input
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    onSend();
+                  }
+                }}
+                placeholder={placeholder}
+                className="flex-1 bg-transparent text-sm outline-none"
+              />
               <button
                 type="button"
-                disabled
-                className="rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground opacity-80"
+                onClick={onSend}
+                disabled={sending}
+                className="rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
               >
-                Send
+                {sending ? 'Sending…' : 'Send'}
               </button>
             </div>
           </div>
