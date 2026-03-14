@@ -1,4 +1,5 @@
 import { auth } from '@/lib/auth';
+import { issueChatProxyToken } from '@/lib/myclawgo/chat-proxy-token';
 import { getSession } from '@/lib/myclawgo/session-store';
 import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
@@ -23,8 +24,13 @@ export async function GET() {
   }
 
   const baseUrl = inferBaseUrl(reqHeaders);
-  const httpUrl = `${baseUrl}/api/chat/gateway-proxy/${userId}`;
-  const wsUrl = httpUrl.replace(/^http/, 'ws');
+  const wsBaseUrl =
+    process.env.MYCLAWGO_CHAT_PROXY_WS_BASE_URL ||
+    baseUrl.replace(/^http/, 'ws');
+
+  const token = issueChatProxyToken(userId);
+  const wsUrl = `${wsBaseUrl}/api/chat/gateway-proxy?token=${encodeURIComponent(token)}`;
+  const httpUrl = wsUrl.replace(/^ws/, 'http');
 
   return NextResponse.json({
     ok: true,
@@ -35,7 +41,7 @@ export async function GET() {
       wsUrl,
       httpUrl,
       sessionKey: 'agent:main:main',
-      note: 'Proxy target for the user Docker OpenClaw gateway. WebSocket proxy route will be connected next.',
+      note: 'WebSocket proxy target for the user Docker OpenClaw gateway.',
     },
   });
 }
