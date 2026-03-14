@@ -10,8 +10,54 @@ const execFileAsync = promisify(execFile);
 const PORT = Number(process.env.MYCLAWGO_CHAT_PROXY_PORT || 3020);
 const PATHNAME = process.env.MYCLAWGO_CHAT_PROXY_PATH || '/api/chat/gateway-proxy';
 
+async function ensureGatewayForContainer(containerName: string) {
+  const scriptContent = [
+    '#!/bin/bash',
+    'while true; do',
+    '  openclaw gateway run --allow-unconfigured --auth none --bind loopback --port 18789 >> /home/openclaw/.openclaw/gateway.log 2>&1',
+    '  sleep 2',
+    'done',
+  ].join('\n');
+
+  await execFileAsync('docker', [
+    'exec',
+    '--user',
+    'openclaw',
+    containerName,
+    'bash',
+    '-c',
+    `[ -f /home/openclaw/.openclaw/keep-gateway.sh ] || printf '%s' ${JSON.stringify(scriptContent)} > /home/openclaw/.openclaw/keep-gateway.sh && chmod +x /home/openclaw/.openclaw/keep-gateway.sh`,
+  ]).catch(() => null);
+
+  const running = await execFileAsync('docker', [
+    'exec',
+    '--user',
+    'openclaw',
+    containerName,
+    'bash',
+    '-c',
+    'pgrep -f keep-gateway.sh >/dev/null 2>&1 && echo yes || echo no',
+  ])
+    .then(({ stdout }) => stdout.trim() === 'yes')
+    .catch(() => false);
+
+  if (!running) {
+    await execFileAsync('docker', [
+      'exec',
+      '-d',
+      '--user',
+      'openclaw',
+      containerName,
+      'bash',
+      '/home/openclaw/.openclaw/keep-gateway.sh',
+    ]).catch(() => null);
+  }
+}
+
 async function getContainerGatewayWsUrl(containerName: string) {
   await execFileAsync('docker', ['start', containerName]).catch(() => null);
+  await ensureGatewayForContainer(containerName).catch(() => null);
+
   const { stdout } = await execFileAsync('docker', [
     'inspect',
     '-f',
@@ -23,6 +69,33 @@ async function getContainerGatewayWsUrl(containerName: string) {
     throw new Error(`Container ${containerName} has no bridge IP`);
   }
   return `ws://${ip}:18789`;
+}
+
+async function waitForGatewayWs(upstreamUrl: string, attempts = 8) {
+  for (let i = 0; i < attempts; i++) {
+    const ok = await new Promise<boolean>((resolve) => {
+      const probe = new WebSocket(upstreamUrl);
+      const timer = setTimeout(() => {
+        probe.terminate();
+        resolve(false);
+      }, 1200);
+
+      probe.once('open', () => {
+        clearTimeout(timer);
+        probe.close();
+        resolve(true);
+      });
+
+      probe.once('error', () => {
+        clearTimeout(timer);
+        resolve(false);
+      });
+    });
+
+    if (ok) return true;
+    await new Promise((resolve) => setTimeout(resolve, 600));
+  }
+  return false;
 }
 
 const server = createServer((req, res) => {
@@ -87,6 +160,13 @@ server.on('upgrade', async (req, socket, head) => {
     }
 
     const upstreamUrl = await getContainerGatewayWsUrl(runtimeSession.containerName);
+    const ready = await waitForGatewayWs(upstreamUrl, 8);
+    if (!ready) {
+      socket.write('HTTP/1.1 503 Service Unavailable\r\n\r\n');
+      socket.destroy();
+      return;
+    }
+
     const upstreamWs = new WebSocket(upstreamUrl);
 
     upstreamWs.once('open', () => {
