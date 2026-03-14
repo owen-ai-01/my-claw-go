@@ -95,11 +95,15 @@ server.on('upgrade', async (req, socket, head) => {
       });
     });
 
-    upstreamWs.once('error', () => {
+    upstreamWs.once('error', (error) => {
+      // eslint-disable-next-line no-console
+      console.error('[chat-gateway-proxy] upstream websocket error', error);
       socket.write('HTTP/1.1 502 Bad Gateway\r\n\r\n');
       socket.destroy();
     });
-  } catch {
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.error('[chat-gateway-proxy] upgrade error', error);
     socket.write('HTTP/1.1 500 Internal Server Error\r\n\r\n');
     socket.destroy();
   }
