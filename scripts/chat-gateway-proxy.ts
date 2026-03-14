@@ -131,6 +131,8 @@ wss.on('connection', (clientWs: WebSocket, _req: IncomingMessage, ctx: { upstrea
 
 server.on('upgrade', async (req, socket, head) => {
   try {
+    // eslint-disable-next-line no-console
+    console.log('[chat-gateway-proxy] upgrade request', req.url || '');
     const url = new URL(req.url || '', `http://${req.headers.host || 'localhost'}`);
     if (url.pathname !== PATHNAME) {
       socket.destroy();
@@ -144,6 +146,9 @@ server.on('upgrade', async (req, socket, head) => {
       socket.destroy();
       return;
     }
+
+    // eslint-disable-next-line no-console
+    console.log('[chat-gateway-proxy] token ok for user', tokenPayload.userId);
 
     const runtimeSession = await getSession(tokenPayload.userId);
     if (!runtimeSession?.containerName) {
@@ -163,6 +168,8 @@ server.on('upgrade', async (req, socket, head) => {
     const upstreamWs = new WebSocket(upstreamUrl);
 
     upstreamWs.once('open', () => {
+      // eslint-disable-next-line no-console
+      console.log('[chat-gateway-proxy] upstream connected for user', tokenPayload.userId);
       wss.handleUpgrade(req, socket, head, (clientWs) => {
         wss.emit('connection', clientWs, req, { upstreamWs });
       });
