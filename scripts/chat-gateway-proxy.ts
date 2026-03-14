@@ -71,29 +71,22 @@ async function getContainerGatewayWsUrl(containerName: string) {
   return `ws://${ip}:18789`;
 }
 
-async function waitForGatewayWs(upstreamUrl: string, attempts = 8) {
+async function waitForGatewayHealth(containerName: string, attempts = 12) {
   for (let i = 0; i < attempts; i++) {
-    const ok = await new Promise<boolean>((resolve) => {
-      const probe = new WebSocket(upstreamUrl);
-      const timer = setTimeout(() => {
-        probe.terminate();
-        resolve(false);
-      }, 1200);
+    const healthy = await execFileAsync('docker', [
+      'exec',
+      '--user',
+      'openclaw',
+      containerName,
+      'bash',
+      '-lc',
+      "openclaw gateway call health --json 2>/dev/null | head -1",
+    ])
+      .then(({ stdout }) => stdout.includes('{'))
+      .catch(() => false);
 
-      probe.once('open', () => {
-        clearTimeout(timer);
-        probe.close();
-        resolve(true);
-      });
-
-      probe.once('error', () => {
-        clearTimeout(timer);
-        resolve(false);
-      });
-    });
-
-    if (ok) return true;
-    await new Promise((resolve) => setTimeout(resolve, 600));
+    if (healthy) return true;
+    await new Promise((resolve) => setTimeout(resolve, 1000));
   }
   return false;
 }
@@ -159,14 +152,14 @@ server.on('upgrade', async (req, socket, head) => {
       return;
     }
 
-    const upstreamUrl = await getContainerGatewayWsUrl(runtimeSession.containerName);
-    const ready = await waitForGatewayWs(upstreamUrl, 8);
-    if (!ready) {
+    const upstreamReady = await waitForGatewayHealth(runtimeSession.containerName, 12);
+    if (!upstreamReady) {
       socket.write('HTTP/1.1 503 Service Unavailable\r\n\r\n');
       socket.destroy();
       return;
     }
 
+    const upstreamUrl = await getContainerGatewayWsUrl(runtimeSession.containerName);
     const upstreamWs = new WebSocket(upstreamUrl);
 
     upstreamWs.once('open', () => {
