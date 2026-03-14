@@ -74,6 +74,7 @@ function ReadyChatLayout({ containerName }: { containerName?: string }) {
     Map<string, { resolve: (payload: unknown) => void; reject: (error: Error) => void }>
   >(new Map());
   const sessionKeyRef = useRef('agent:main:main');
+  const sendTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const request = (method: string, params?: unknown) => {
     return new Promise<unknown>((resolve, reject) => {
@@ -188,6 +189,10 @@ function ReadyChatLayout({ containerName }: { containerName?: string }) {
           const chatPayload = (data as GatewayEvent).payload;
           if (!chatPayload) return;
           if (chatPayload.state === 'error') {
+            if (sendTimeoutRef.current) {
+              clearTimeout(sendTimeoutRef.current);
+              sendTimeoutRef.current = null;
+            }
             setMessages((prev) => [
               ...prev,
               { role: 'assistant', text: `⚠️ ${chatPayload.errorMessage || 'chat error'}` },
@@ -196,6 +201,10 @@ function ReadyChatLayout({ containerName }: { containerName?: string }) {
             return;
           }
           if (chatPayload.state === 'final' || chatPayload.state === 'aborted') {
+            if (sendTimeoutRef.current) {
+              clearTimeout(sendTimeoutRef.current);
+              sendTimeoutRef.current = null;
+            }
             const text = messageTextFromPayload(chatPayload.message);
             if (text) {
               setMessages((prev) => [...prev, { role: 'assistant', text }]);
@@ -225,6 +234,10 @@ function ReadyChatLayout({ containerName }: { containerName?: string }) {
       stopped = true;
       pendingMapRef.current.forEach((pending) => pending.reject(new Error('connection closed')));
       pendingMapRef.current.clear();
+      if (sendTimeoutRef.current) {
+        clearTimeout(sendTimeoutRef.current);
+        sendTimeoutRef.current = null;
+      }
       wsRef.current?.close();
       wsRef.current = null;
     };
@@ -254,7 +267,25 @@ function ReadyChatLayout({ containerName }: { containerName?: string }) {
         deliver: false,
         idempotencyKey: randomId(),
       });
+
+      if (sendTimeoutRef.current) {
+        clearTimeout(sendTimeoutRef.current);
+      }
+      sendTimeoutRef.current = setTimeout(() => {
+        setSending(false);
+        setMessages((m) => [
+          ...m,
+          {
+            role: 'assistant',
+            text: '⚠️ 当前消息发送后超时未收到回复（容器网关可能还在启动中），请稍后重试。',
+          },
+        ]);
+      }, 20000);
     } catch (error) {
+      if (sendTimeoutRef.current) {
+        clearTimeout(sendTimeoutRef.current);
+        sendTimeoutRef.current = null;
+      }
       setMessages((m) => [
         ...m,
         {
