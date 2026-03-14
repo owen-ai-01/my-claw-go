@@ -1,5 +1,4 @@
 import { auth } from '@/lib/auth';
-import { loadGatewayChatHistory } from '@/lib/myclawgo/gateway-chat';
 import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 
@@ -10,6 +9,12 @@ export async function GET() {
     return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
   }
 
-  const messages = await loadGatewayChatHistory(userId).catch(() => []);
-  return NextResponse.json({ ok: true, messages });
+  return NextResponse.json(
+    {
+      ok: false,
+      code: 'legacy-chat-api-disabled',
+      error: 'Legacy HTTP chat history endpoint is disabled. Use websocket gateway proxy flow via /api/chat/gateway-connection.',
+    },
+    { status: 410 }
+  );
 }
