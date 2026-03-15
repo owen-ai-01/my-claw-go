@@ -21,26 +21,50 @@ export type UserPrefs = {
   model: string;
 };
 
-const DEFAULT_MODEL = 'openrouter/minimax/minimax-m2.5';
+const DEFAULT_MODEL = 'openrouter/openai/gpt-4o-mini';
 
 export const AVAILABLE_MODELS: { id: string; label: string }[] = [
-  { id: 'openrouter/minimax/minimax-m2.5', label: 'Minimax M2.5' },
-  { id: 'openrouter/deepseek/deepseek-v3', label: 'DeepSeek V3' },
-  { id: 'openrouter/deepseek/deepseek-r1', label: 'DeepSeek R1' },
-  { id: 'openrouter/google/gemini-2.0-flash-001', label: 'Gemini 2.0 Flash' },
-  {
-    id: 'openrouter/google/gemini-2.5-pro-preview-03-25',
-    label: 'Gemini 2.5 Pro',
-  },
-  { id: 'openrouter/anthropic/claude-3.5-sonnet', label: 'Claude 3.5 Sonnet' },
-  { id: 'openrouter/anthropic/claude-3.7-sonnet', label: 'Claude 3.7 Sonnet' },
-  { id: 'openrouter/openai/gpt-4o', label: 'GPT-4o' },
-  { id: 'openrouter/openai/gpt-4o-mini', label: 'GPT-4o Mini' },
-  {
-    id: 'openrouter/meta-llama/llama-3.3-70b-instruct',
-    label: 'Llama 3.3 70B',
-  },
-  { id: 'openrouter/qwen/qwen-2.5-72b-instruct', label: 'Qwen 2.5 72B' },
+  // OpenAI
+  { id: 'openrouter/openai/gpt-4o-mini', label: 'OpenAI · GPT-4o Mini' },
+  { id: 'openrouter/openai/gpt-5-mini', label: 'OpenAI · GPT-5 Mini' },
+  { id: 'openrouter/openai/gpt-5.1', label: 'OpenAI · GPT-5.1' },
+  { id: 'openrouter/openai/gpt-5.2', label: 'OpenAI · GPT-5.2' },
+  { id: 'openrouter/openai/gpt-5.3-codex', label: 'OpenAI · GPT-5.3 Codex' },
+  { id: 'openrouter/openai/gpt-5.4', label: 'OpenAI · GPT-5.4' },
+
+  // Anthropic
+  { id: 'openrouter/anthropic/claude-haiku-4.5', label: 'Anthropic · Claude Haiku 4.5' },
+  { id: 'openrouter/anthropic/claude-sonnet-4.5', label: 'Anthropic · Claude Sonnet 4.5' },
+  { id: 'openrouter/anthropic/claude-sonnet-4.6', label: 'Anthropic · Claude Sonnet 4.6' },
+  { id: 'openrouter/anthropic/claude-opus-4.6', label: 'Anthropic · Claude Opus 4.6' },
+
+  // Google
+  { id: 'openrouter/google/gemini-2.0-flash-exp', label: 'Google · Gemini 2.0 Flash Exp' },
+  { id: 'openrouter/google/gemini-2.0-flash-001', label: 'Google · Gemini 2.0 Flash 001' },
+  { id: 'openrouter/google/gemini-2.5-flash-lite', label: 'Google · Gemini 2.5 Flash Lite' },
+  { id: 'openrouter/google/gemini-2.5-pro', label: 'Google · Gemini 2.5 Pro' },
+  { id: 'openrouter/google/gemini-3-pro-preview', label: 'Google · Gemini 3 Pro Preview' },
+
+  // DeepSeek
+  { id: 'openrouter/deepseek/deepseek-v3', label: 'DeepSeek · V3' },
+  { id: 'openrouter/deepseek/deepseek-v3.1', label: 'DeepSeek · V3.1' },
+  { id: 'openrouter/deepseek/deepseek-v3.2', label: 'DeepSeek · V3.2' },
+  { id: 'openrouter/deepseek/deepseek-r1', label: 'DeepSeek · R1' },
+
+  // Z.ai / GLM
+  { id: 'openrouter/z-ai/glm-4.6', label: 'Z.ai · GLM 4.6' },
+  { id: 'openrouter/z-ai/glm-4.6v', label: 'Z.ai · GLM 4.6v' },
+  { id: 'openrouter/z-ai/glm-4.7', label: 'Z.ai · GLM 4.7' },
+  { id: 'openrouter/z-ai/glm-4.7-flash', label: 'Z.ai · GLM 4.7 Flash' },
+  { id: 'openrouter/z-ai/glm-5', label: 'Z.ai · GLM 5' },
+
+  // MiniMax
+  { id: 'openrouter/minimax/minimax-m2.5', label: 'MiniMax · M2.5' },
+
+  // Moonshot / Kimi
+  { id: 'openrouter/moonshotai/kimi-k2', label: 'Moonshot · Kimi K2' },
+  { id: 'openrouter/moonshotai/kimi-k2-thinking', label: 'Moonshot · Kimi K2 Thinking' },
+  { id: 'openrouter/moonshotai/kimi-k2.5', label: 'Moonshot · Kimi K2.5' },
 ];
 
 function userDir(userId: string) {
