@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 type RuntimeStatus =
   | { ok: true; state: 'not_created'; reason: string; containerName?: string }
@@ -10,24 +10,51 @@ type RuntimeStatus =
 type ChatMessage = {
   id?: string;
   role: 'user' | 'assistant';
-  text: string;
-  timestamp?: string;
+  content: string;
+  createdAt?: string;
 };
 
-function ReadyChatLayout({ containerName }: { containerName?: string }) {
+function ChatLayout() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
-  const [connectionError, setConnectionError] = useState<string | null>(null);
+  const [historyLoading, setHistoryLoading] = useState(true);
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  // Load history on mount
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await fetch('/api/chat/history?agentId=main');
+        const data = (await res.json().catch(() => ({}))) as {
+          ok?: boolean;
+          data?: { messages?: ChatMessage[] };
+        };
+        if (data.ok && data.data?.messages) {
+          setMessages(data.data.messages);
+        }
+      } catch {
+        // silently ignore history load failure
+      } finally {
+        setHistoryLoading(false);
+      }
+    };
+    load();
+  }, []);
+
+  // Auto-scroll to bottom when messages change
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   async function onSend() {
     const text = input.trim();
     if (!text || sending) return;
 
-    setMessages((m) => [...m, { role: 'user', text }]);
+    const userMsg: ChatMessage = { role: 'user', content: text, createdAt: new Date().toISOString() };
+    setMessages((m) => [...m, userMsg]);
     setInput('');
     setSending(true);
-    setConnectionError(null);
 
     try {
       const res = await fetch('/api/chat/send', {
@@ -42,29 +69,30 @@ function ReadyChatLayout({ containerName }: { containerName?: string }) {
       };
 
       if (!res.ok || data.ok !== true) {
-        throw new Error(
+        const errMsg =
           typeof data.error === 'string'
             ? data.error
-            : data.error?.message || 'Failed to send message'
-        );
+            : (data.error as { message?: string })?.message || 'Failed to send message';
+        setMessages((m) => [
+          ...m,
+          { role: 'assistant', content: `⚠️ ${errMsg}`, createdAt: new Date().toISOString() },
+        ]);
+        return;
       }
 
       setMessages((m) => [
         ...m,
         {
           role: 'assistant',
-          text: data.data?.reply || '⚠️ Bridge returned empty reply',
+          content: data.data?.reply || '⚠️ Empty reply',
+          createdAt: new Date().toISOString(),
         },
       ]);
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'Failed to send message';
-      setConnectionError(msg);
       setMessages((m) => [
         ...m,
-        {
-          role: 'assistant',
-          text: `⚠️ ${msg}`,
-        },
+        { role: 'assistant', content: `⚠️ ${msg}`, createdAt: new Date().toISOString() },
       ]);
     } finally {
       setSending(false);
@@ -72,91 +100,93 @@ function ReadyChatLayout({ containerName }: { containerName?: string }) {
   }
 
   return (
-    <div className="grid min-h-[72vh] grid-cols-1 gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
-      <aside className="rounded-2xl border bg-card p-5 shadow-sm">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <h2 className="text-lg font-semibold">MyClawGo Chat</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Direct chat surface for your personal OpenClaw runtime via container bridge.
+    <div className="flex h-[calc(100vh-10rem)] flex-col rounded-2xl border bg-card shadow-sm overflow-hidden">
+      {/* Messages area */}
+      <div className="flex flex-1 flex-col gap-3 overflow-y-auto px-4 py-6 sm:px-6">
+        {historyLoading ? (
+          <div className="m-auto text-sm text-muted-foreground">Loading…</div>
+        ) : messages.length === 0 ? (
+          <div className="m-auto max-w-sm text-center">
+            <p className="text-2xl mb-2">👋</p>
+            <p className="text-sm text-muted-foreground">
+              Start a conversation with your AI assistant.
             </p>
           </div>
-          <span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-600">
-            Ready
-          </span>
-        </div>
-
-        <div className="mt-5 rounded-xl border p-4">
-          <p className="text-xs text-muted-foreground">Runtime container</p>
-          <p className="mt-1 break-all text-sm font-medium">{containerName || 'unknown'}</p>
-        </div>
-
-        {connectionError ? (
-          <div className="mt-4 rounded-xl border border-red-300 bg-red-50 p-3 text-xs text-red-700">
-            {connectionError}
-          </div>
-        ) : null}
-      </aside>
-
-      <section className="flex min-h-[72vh] flex-col rounded-2xl border bg-card shadow-sm">
-        <div className="border-b px-6 py-4">
-          <h2 className="text-lg font-semibold">Chat</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Bridge mode: /chat → platform HTTP API → your container bridge → your OpenClaw.
-          </p>
-        </div>
-
-        <div className="flex flex-1 flex-col justify-between">
-          <div className="flex flex-1 flex-col gap-4 overflow-y-auto px-6 py-6">
-            {messages.length === 0 ? (
-              <div className="m-auto max-w-xl text-center text-sm text-muted-foreground">
-                Start chatting with your MyClawGo runtime.
-              </div>
-            ) : null}
-            {messages.map((msg, idx) => (
-              <div
-                key={`${msg.role}-${idx}-${msg.timestamp || ''}`}
-                className={msg.role === 'user' ? 'ml-auto max-w-[80%]' : 'mr-auto max-w-[80%]'}
-              >
-                <div
-                  className={
-                    msg.role === 'user'
-                      ? 'rounded-2xl bg-primary px-4 py-3 text-sm text-primary-foreground'
-                      : 'rounded-2xl bg-muted px-4 py-3 text-sm text-foreground'
-                  }
-                >
-                  {msg.text}
+        ) : (
+          messages.map((msg, idx) => (
+            <div
+              key={msg.id || `${msg.role}-${idx}`}
+              className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+            >
+              {msg.role === 'assistant' && (
+                <div className="mr-2 mt-1 flex-shrink-0 w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
+                  AI
                 </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="border-t px-6 py-4">
-            <div className="flex items-center gap-3 rounded-2xl border bg-background px-4 py-3">
-              <input
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    onSend();
-                  }
-                }}
-                placeholder="Send a message to your MyClawGo…"
-                className="flex-1 bg-transparent text-sm outline-none"
-              />
-              <button
-                type="button"
-                onClick={onSend}
-                disabled={sending}
-                className="rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
+              )}
+              <div
+                className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap ${
+                  msg.role === 'user'
+                    ? 'bg-primary text-primary-foreground rounded-br-sm'
+                    : 'bg-muted text-foreground rounded-bl-sm'
+                }`}
               >
-                {sending ? 'Sending…' : 'Send'}
-              </button>
+                {msg.content}
+              </div>
+            </div>
+          ))
+        )}
+
+        {sending && (
+          <div className="flex justify-start">
+            <div className="mr-2 mt-1 flex-shrink-0 w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
+              AI
+            </div>
+            <div className="bg-muted rounded-2xl rounded-bl-sm px-4 py-2.5">
+              <span className="flex gap-1 items-center">
+                <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50 animate-bounce [animation-delay:0ms]" />
+                <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50 animate-bounce [animation-delay:150ms]" />
+                <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50 animate-bounce [animation-delay:300ms]" />
+              </span>
             </div>
           </div>
+        )}
+
+        <div ref={bottomRef} />
+      </div>
+
+      {/* Input area */}
+      <div className="border-t px-4 py-3 sm:px-6">
+        <div className="flex items-end gap-2 rounded-2xl border bg-background px-4 py-2.5">
+          <textarea
+            value={input}
+            onChange={(e) => {
+              setInput(e.target.value);
+              e.target.style.height = 'auto';
+              e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                onSend();
+              }
+            }}
+            placeholder="Message your assistant… (Enter to send, Shift+Enter for new line)"
+            rows={1}
+            className="flex-1 resize-none bg-transparent text-sm outline-none max-h-[120px] leading-relaxed py-0.5"
+          />
+          <button
+            type="button"
+            onClick={onSend}
+            disabled={sending || !input.trim()}
+            className="flex-shrink-0 rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-40 transition-opacity"
+          >
+            {sending ? '…' : 'Send'}
+          </button>
         </div>
-      </section>
+        <p className="mt-1.5 text-center text-xs text-muted-foreground/50">
+          Shift+Enter for new line
+        </p>
+      </div>
     </div>
   );
 }
@@ -189,66 +219,79 @@ export function ChatShell() {
     try {
       const res = await fetch('/api/chat/create', { method: 'POST' });
       const data = (await res.json().catch(() => ({}))) as
-        | (RuntimeStatus & { mode?: string; containerName?: string })
-        | { ok?: boolean; error?: string; mode?: string; containerName?: string };
+        | (RuntimeStatus & { containerName?: string })
+        | { ok?: boolean; error?: string; containerName?: string };
       if (!res.ok || !data || data.ok !== true) {
         const error = 'error' in (data || {}) ? (data as { error?: string }).error : undefined;
-        setStatus({ ok: false, error: error || 'Failed to create MyClawGo' });
+        setStatus({ ok: false, error: error || 'Failed to create runtime' });
         return;
       }
-      setStatus({
-        ok: true,
-        state: 'ready',
-        reason: 'runtime-created',
-        containerName: data.containerName,
-      });
+      setStatus({ ok: true, state: 'ready', reason: 'runtime-created', containerName: data.containerName });
     } finally {
       setCreating(false);
     }
   }
 
-  return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Chat</h1>
-        <p className="mt-2 text-sm text-muted-foreground max-w-2xl">
-          Your MyClawGo workspace chat will live here.
-        </p>
-      </div>
-
-      {!status ? (
+  if (!status) {
+    return (
+      <div className="flex flex-col gap-4">
+        <PageHeader />
         <div className="rounded-2xl border bg-card p-8 shadow-sm">
-          <p className="text-sm text-muted-foreground">Checking your MyClawGo status…</p>
+          <p className="text-sm text-muted-foreground">Checking your runtime status…</p>
         </div>
-      ) : null}
+      </div>
+    );
+  }
 
-      {status?.ok && status.state === 'not_created' ? (
-        <div className="rounded-2xl border bg-card p-8 shadow-sm">
-          <div className="mx-auto flex max-w-xl flex-col items-center text-center">
-            <h2 className="text-xl font-semibold">Create MyClawGo</h2>
-            <p className="mt-3 text-sm text-muted-foreground">
-              Create your private OpenClaw cloud workspace first. After it is ready,
-              you will enter chat directly.
+  if (status.ok && status.state === 'not_created') {
+    return (
+      <div className="flex flex-col gap-4">
+        <PageHeader />
+        <div className="rounded-2xl border bg-card p-10 shadow-sm">
+          <div className="mx-auto flex max-w-sm flex-col items-center text-center">
+            <div className="mb-4 text-4xl">🚀</div>
+            <h2 className="text-xl font-semibold">Set up your workspace</h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Create your private AI workspace to start chatting.
             </p>
             <button
               type="button"
               onClick={onCreate}
               disabled={creating}
-              className="mt-6 rounded-xl bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground"
+              className="mt-6 rounded-xl bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground disabled:opacity-60"
             >
-              {creating ? 'Creating…' : 'Create MyClawGo'}
+              {creating ? 'Creating…' : 'Create Workspace'}
             </button>
           </div>
         </div>
-      ) : null}
+      </div>
+    );
+  }
 
-      {status?.ok && status.state === 'ready' ? <ReadyChatLayout containerName={status.containerName} /> : null}
-
-      {status && !status.ok ? (
+  if (status && !status.ok) {
+    return (
+      <div className="flex flex-col gap-4">
+        <PageHeader />
         <div className="rounded-2xl border border-red-300 bg-red-50 p-6 text-sm text-red-700 shadow-sm">
           {status.error}
         </div>
-      ) : null}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <PageHeader />
+      <ChatLayout />
+    </div>
+  );
+}
+
+function PageHeader() {
+  return (
+    <div>
+      <h1 className="text-2xl font-semibold tracking-tight">Chat</h1>
+      <p className="mt-1 text-sm text-muted-foreground">Your personal AI assistant.</p>
     </div>
   );
 }

@@ -184,6 +184,19 @@ export const userAgentTelegramBot = pgTable("user_agent_telegram_bot", {
   userAgentTelegramBotWebhookPathIdx: index("user_agent_telegram_bot_webhook_path_idx").on(table.webhookPath),
 }));
 
+export const userChatMessage = pgTable("user_chat_message", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => user.id, { onDelete: 'cascade' }),
+  agentId: text("agent_id").notNull().default("main"),
+  role: text("role").notNull(), // 'user' | 'assistant'
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  userChatMessageUserIdx: index("user_chat_message_user_idx").on(table.userId),
+  userChatMessageUserAgentIdx: index("user_chat_message_user_agent_idx").on(table.userId, table.agentId),
+  userChatMessageCreatedAtIdx: index("user_chat_message_created_at_idx").on(table.createdAt),
+}));
+
 export const userChannelBinding = pgTable("user_channel_binding", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull().references(() => user.id, { onDelete: 'cascade' }),
