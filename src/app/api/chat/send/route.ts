@@ -153,7 +153,13 @@ export async function POST(req: Request) {
       }
     }
 
-    return NextResponse.json(payload, { status: upstreamRes.status });
+    // Strip internal billing data before returning to client
+    // (model, usage token counts, raw openclaw output are server-only)
+    const clientPayload = payload.ok === true && payload.data
+      ? { ok: true, data: { reply: payload.data.reply } }
+      : payload;
+
+    return NextResponse.json(clientPayload, { status: upstreamRes.status });
   } catch (error) {
     return NextResponse.json(
       {
