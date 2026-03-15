@@ -19,6 +19,7 @@ type GatewayConnectionInfo = {
   gateway?: {
     wsUrl?: string;
     sessionKey?: string;
+    authToken?: string;
   };
 };
 
@@ -74,6 +75,7 @@ function ReadyChatLayout({ containerName }: { containerName?: string }) {
     Map<string, { resolve: (payload: unknown) => void; reject: (error: Error) => void }>
   >(new Map());
   const sessionKeyRef = useRef('agent:main:main');
+  const gatewayAuthTokenRef = useRef<string | null>(null);
   const sendTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const request = (method: string, params?: unknown) => {
@@ -107,6 +109,7 @@ function ReadyChatLayout({ containerName }: { containerName?: string }) {
       }
 
       sessionKeyRef.current = connData?.gateway?.sessionKey || 'agent:main:main';
+      gatewayAuthTokenRef.current = connData?.gateway?.authToken || null;
 
       const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
@@ -120,6 +123,9 @@ function ReadyChatLayout({ containerName }: { containerName?: string }) {
             role: 'webchat',
             scopes: ['chat.read', 'chat.write'],
             caps: ['tool-events'],
+            auth: gatewayAuthTokenRef.current
+              ? { token: gatewayAuthTokenRef.current }
+              : undefined,
             client: {
               id: 'myclawgo-web-chat',
               version: '0.1.0',
