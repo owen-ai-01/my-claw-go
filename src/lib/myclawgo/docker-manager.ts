@@ -212,7 +212,6 @@ async function prepareSeededRuntime(containerName: string) {
     'if [ -f /seed/openclaw.json ] && [ ! -f /home/openclaw/.openclaw/openclaw.json ]; then cp /seed/openclaw.json /home/openclaw/.openclaw/openclaw.json; fi',
     'if [ -f /seed/auth-profiles.json ] && [ ! -f /home/openclaw/.openclaw/agents/main/agent/auth-profiles.json ]; then cp /seed/auth-profiles.json /home/openclaw/.openclaw/agents/main/agent/auth-profiles.json; fi',
     'chown -R openclaw:openclaw /home/openclaw/.openclaw',
-    "su - openclaw -c 'openclaw models set openrouter/minimax/minimax-m2.5 || true'",
   ].join('; ');
 
   await dockerExec(containerName, script);
@@ -238,7 +237,6 @@ async function bootstrapOpenClaw(containerName: string) {
     'chown -R openclaw:openclaw /home/openclaw/.openclaw',
     'su - openclaw -c "if ! command -v node >/dev/null 2>&1; then curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash - && sudo apt-get install -y nodejs; fi"',
     `su - openclaw -c 'if ! command -v openclaw >/dev/null 2>&1; then sudo npm install -g openclaw@${OPENCLAW_NPM_SPEC}; fi'`,
-    "su - openclaw -c 'openclaw models set openrouter/minimax/minimax-m2.5 || true'",
     'su - openclaw -c \'pgrep -f "openclaw gateway run" >/dev/null || nohup openclaw gateway run --auth none --bind loopback --port 18789 > /home/openclaw/.openclaw/gateway.log 2>&1 &\'',
   ].join('; ');
 
