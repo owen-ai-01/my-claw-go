@@ -14,7 +14,7 @@ async function ensureGatewayForContainer(containerName: string) {
   const scriptContent = [
     '#!/bin/bash',
     'while true; do',
-    '  openclaw gateway run --allow-unconfigured --auth none --bind loopback --port 18789 >> /home/openclaw/.openclaw/gateway.log 2>&1',
+    '  openclaw gateway run --allow-unconfigured --auth none --bind lan --port 18789 >> /home/openclaw/.openclaw/gateway.log 2>&1',
     '  sleep 2',
     'done',
   ].join('\n');
@@ -26,7 +26,17 @@ async function ensureGatewayForContainer(containerName: string) {
     containerName,
     'bash',
     '-c',
-    `[ -f /home/openclaw/.openclaw/keep-gateway.sh ] || printf '%s' ${JSON.stringify(scriptContent)} > /home/openclaw/.openclaw/keep-gateway.sh && chmod +x /home/openclaw/.openclaw/keep-gateway.sh`,
+    `printf '%s' ${JSON.stringify(scriptContent)} > /home/openclaw/.openclaw/keep-gateway.sh && chmod +x /home/openclaw/.openclaw/keep-gateway.sh`,
+  ]).catch(() => null);
+
+  await execFileAsync('docker', [
+    'exec',
+    '--user',
+    'openclaw',
+    containerName,
+    'bash',
+    '-c',
+    "pkill -f 'keep-gateway.sh|openclaw gateway run' >/dev/null 2>&1 || true",
   ]).catch(() => null);
 
   const running = await execFileAsync('docker', [
