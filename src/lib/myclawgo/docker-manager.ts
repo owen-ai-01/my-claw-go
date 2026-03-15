@@ -67,6 +67,8 @@ async function getContainerLimitsForUser(
 ): Promise<ContainerLimits> {
   try {
     const db = await getDb();
+
+    // Check active subscription first
     const sub = await db
       .select({ priceId: payment.priceId })
       .from(payment)
@@ -81,8 +83,29 @@ async function getContainerLimitsForUser(
       .orderBy(desc(payment.createdAt))
       .limit(1);
 
-    const tier = priceIdTier(sub[0]?.priceId);
-    return RUNTIME_LIMITS_BY_TIER[tier];
+    if (sub[0]?.priceId) {
+      return RUNTIME_LIMITS_BY_TIER[priceIdTier(sub[0].priceId)];
+    }
+
+    // Lifetime users get premium tier
+    const lifetime = await db
+      .select({ id: payment.id })
+      .from(payment)
+      .where(
+        and(
+          eq(payment.userId, userId),
+          eq(payment.type, PaymentTypes.ONE_TIME),
+          eq(payment.paid, true),
+          eq(payment.status, 'completed')
+        )
+      )
+      .limit(1);
+
+    if (lifetime.length > 0) {
+      return RUNTIME_LIMITS_BY_TIER.premium;
+    }
+
+    return RUNTIME_LIMITS_BY_TIER.pro;
   } catch {
     return RUNTIME_LIMITS_BY_TIER.pro;
   }
