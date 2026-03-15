@@ -29,11 +29,12 @@ if [ -f "$NGINX_UPSTREAM" ]; then
   PREV_UPSTREAM_CONTENT="$(cat "$NGINX_UPSTREAM")"
 fi
 
-CURRENT_PORT=$(grep -oP '(?<=server 127\.0\.0\.1:)\d+' "$NGINX_UPSTREAM" 2>/dev/null || echo "3020")
-if [ "$CURRENT_PORT" = "3020" ]; then
-  NEW_PORT=3021
+# Ports 3020 is reserved for chat-gateway-proxy; use 3021/3022 for Next.js blue-green
+CURRENT_PORT=$(grep -oP '(?<=server 127\.0\.0\.1:)\d+' "$NGINX_UPSTREAM" 2>/dev/null || echo "3021")
+if [ "$CURRENT_PORT" = "3021" ]; then
+  NEW_PORT=3022
 else
-  NEW_PORT=3020
+  NEW_PORT=3021
 fi
 
 rollback() {
