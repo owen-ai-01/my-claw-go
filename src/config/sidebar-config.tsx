@@ -71,12 +71,7 @@ export function useSidebarLinks(): NestedMenuItem[] {
           href: Routes.SettingsProfile,
           external: false,
         },
-        {
-          title: 'Agents',
-          icon: <BotIcon className="size-4 shrink-0" />,
-          href: Routes.SettingsAgents,
-          external: false,
-        },
+        // { title: 'Agents', icon: <BotIcon className="size-4 shrink-0" />, href: Routes.SettingsAgents, external: false },
         {
           title: t('settings.billing.title'),
           icon: <CreditCardIcon className="size-4 shrink-0" />,
