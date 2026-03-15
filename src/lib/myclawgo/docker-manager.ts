@@ -307,6 +307,11 @@ export async function ensureUserContainer(session: UserSession) {
       .map((k) => ({ key: k, value: process.env[k] }))
       .filter((e) => Boolean(e.value));
 
+    envs.push({
+      key: 'BRIDGE_TOKEN',
+      value: process.env.MYCLAWGO_BRIDGE_TOKEN || 'bridge-test-token',
+    });
+
     const limits = await getContainerLimitsForUser(session.id);
     const args = [
       'run',
