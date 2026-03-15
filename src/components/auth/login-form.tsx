@@ -17,7 +17,7 @@ import { Input } from '@/components/ui/input';
 import { websiteConfig } from '@/config/website';
 import { LocaleLink } from '@/i18n/navigation';
 import { authClient } from '@/lib/auth-client';
-import { getUrlWithLocale } from '@/lib/urls/urls';
+import { shouldAppendLocale } from '@/lib/urls/urls';
 import { cn } from '@/lib/utils';
 import { DEFAULT_LOGIN_REDIRECT, Routes } from '@/routes';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -45,7 +45,10 @@ export const LoginForm = ({
   const paramCallbackUrl = searchParams.get('callbackUrl');
   // Use prop callback URL or param callback URL if provided, otherwise use the default login redirect
   const locale = useLocale();
-  const defaultCallbackUrl = getUrlWithLocale(DEFAULT_LOGIN_REDIRECT, locale);
+  // Use relative path so better-auth doesn't reject cross-origin redirects on test/staging envs
+  const defaultCallbackUrl = shouldAppendLocale(locale)
+    ? `/${locale}${DEFAULT_LOGIN_REDIRECT}`
+    : DEFAULT_LOGIN_REDIRECT;
   // console.log('login form, propCallbackUrl', propCallbackUrl);
   // console.log('login form, paramCallbackUrl', paramCallbackUrl);
   // console.log('login form, defaultCallbackUrl', defaultCallbackUrl);
