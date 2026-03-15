@@ -7,11 +7,20 @@ type ModelPricing = {
 };
 
 /**
- * Default pricing map keyed by model identifier.
- * Keys can be full provider/model strings OR OpenClaw alias names.
- * Prices in USD per 1M tokens.
+ * OpenRouter-based model pricing map.
  *
- * Override via env: MYCLAWGO_MODEL_PRICING_JSON (JSON object of same shape).
+ * These are the approximate USD costs that OpenRouter charges us per 1M tokens.
+ * Keys can be full provider/model strings OR OpenClaw alias names.
+ *
+ * Business model:
+ *   - 1 credit costs us: $0.001 (MYCLAWGO_USD_PER_CREDIT_COST)
+ *   - 1 credit sold to users at: $0.005 → 5× gross margin
+ *   - Margin covers: VPS/Docker infra, OpenRouter overhead, ad spend, labor
+ *
+ * Formula: credits_deducted = ceil(openrouter_actual_usd / 0.001)
+ *
+ * Override at runtime via env: MYCLAWGO_MODEL_PRICING_JSON
+ * (JSON object with same keys, { inputPer1M, outputPer1M, cacheReadPer1M })
  */
 const DEFAULT_PRICING: Record<string, ModelPricing> = {
   // ── OpenAI ────────────────────────────────────────────────────────────────
