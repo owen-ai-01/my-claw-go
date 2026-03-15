@@ -197,6 +197,29 @@ export const userChatMessage = pgTable("user_chat_message", {
   userChatMessageCreatedAtIdx: index("user_chat_message_created_at_idx").on(table.createdAt),
 }));
 
+export const userChatBillingAudit = pgTable("user_chat_billing_audit", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => user.id, { onDelete: 'cascade' }),
+  agentId: text("agent_id").notNull().default("main"),
+  model: text("model"),
+  pricingModelKey: text("pricing_model_key"),
+  source: text("source").notNull(), // actual|estimated|fallback
+  status: text("status").notNull().default("ok"), // ok|failed
+  inputTokens: integer("input_tokens").notNull().default(0),
+  outputTokens: integer("output_tokens").notNull().default(0),
+  cacheReadTokens: integer("cache_read_tokens").notNull().default(0),
+  usdCost: text("usd_cost"),
+  creditsDeducted: integer("credits_deducted"),
+  error: text("error"),
+  metaJson: jsonb("meta_json"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  userChatBillingAuditUserIdx: index("user_chat_billing_audit_user_idx").on(table.userId),
+  userChatBillingAuditUserAgentIdx: index("user_chat_billing_audit_user_agent_idx").on(table.userId, table.agentId),
+  userChatBillingAuditCreatedAtIdx: index("user_chat_billing_audit_created_at_idx").on(table.createdAt),
+  userChatBillingAuditStatusIdx: index("user_chat_billing_audit_status_idx").on(table.status),
+}));
+
 export const userChannelBinding = pgTable("user_channel_binding", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull().references(() => user.id, { onDelete: 'cascade' }),

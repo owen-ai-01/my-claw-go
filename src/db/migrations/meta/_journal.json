@@ -64,6 +64,13 @@
       "when": 1773567090292,
       "tag": "0008_user_chat_message",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1773575520700,
+      "tag": "0009_user_chat_billing_audit",
+      "breakpoints": true
     }
   ]
 }

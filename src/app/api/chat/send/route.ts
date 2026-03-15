@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 import { auth } from '@/lib/auth';
 import { getDb } from '@/db';
-import { userChatMessage } from '@/db/schema';
+import { userChatBillingAudit, userChatMessage } from '@/db/schema';
 import { consumeCredits } from '@/credits/credits';
 import {
   type BridgeUsage,
@@ -9,6 +9,8 @@ import {
   creditsFromUsd,
   estimateUsage,
   estimateUsdCostByModel,
+  normalizeBridgeUsage,
+  resolvePricingModelKey,
 } from '@/lib/myclawgo/billing';
 import { checkUserCredits } from '@/lib/myclawgo/membership';
 import { resolveUserBridgeTarget } from '@/lib/myclawgo/bridge-target';
@@ -24,47 +26,88 @@ const MIN_CREDITS_PER_MESSAGE = 1;
  */
 function deductCreditsAsync(params: {
   userId: string;
+  agentId: string;
   message: string;
   reply: string;
   model: string;
   usage: BridgeUsage | null;
 }) {
-  const { userId, message, reply, model, usage } = params;
+  const { userId, agentId, message, reply, model, usage } = params;
 
   // fire-and-forget — intentionally not awaited
   Promise.resolve().then(async () => {
+    const db = await getDb();
+    const auditBase = {
+      id: crypto.randomUUID(),
+      userId,
+      agentId,
+      model: model || null,
+      pricingModelKey: model ? resolvePricingModelKey(model) : null,
+      source: 'fallback',
+      status: 'ok',
+      inputTokens: 0,
+      outputTokens: 0,
+      cacheReadTokens: 0,
+      usdCost: null as string | null,
+      creditsDeducted: null as number | null,
+      error: null as string | null,
+      metaJson: null as Record<string, unknown> | null,
+    };
+
     try {
       let usdCost: number;
       let source: string;
+      let tokens = { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0 };
 
       if (model && usage && (usage.input != null || usage.output != null || usage.total != null)) {
         // Priority 1: actual token usage from bridge (most accurate)
         usdCost = calcUsdCostFromBridgeUsage({ model, usage });
-        source  = `actual [${model}]`;
+        tokens = normalizeBridgeUsage(usage);
+        source = 'actual';
       } else if (model) {
         // Priority 2: estimate from text length
         const est = estimateUsage(message, reply);
         usdCost = estimateUsdCostByModel({ model, inputTokens: est.inputTokens, outputTokens: est.outputTokens });
-        source  = `estimated [${model}]`;
+        tokens = { inputTokens: est.inputTokens, outputTokens: est.outputTokens, cacheReadTokens: 0 };
+        source = 'estimated';
       } else {
         usdCost = 0;
-        source  = 'no model info';
+        source = 'fallback';
       }
 
       const creditsToDeduct = usdCost > 0 ? creditsFromUsd(usdCost) : MIN_CREDITS_PER_MESSAGE;
 
       console.log(
-        `[chat/send] user=${userId} model=${model} source=${source}` +
-        ` usd=${usdCost.toFixed(6)} credits=${creditsToDeduct}`
+        `[chat/send] user=${userId} model=${model} pricingKey=${auditBase.pricingModelKey}` +
+        ` source=${source} in=${tokens.inputTokens} out=${tokens.outputTokens}` +
+        ` cache=${tokens.cacheReadTokens} usd=${usdCost.toFixed(6)} credits=${creditsToDeduct}`
       );
 
       await consumeCredits({
         userId,
-        amount:      creditsToDeduct,
+        amount: creditsToDeduct,
         description: `Chat [${model || 'unknown'}]: ${creditsToDeduct} credits (${source})`,
       });
+
+      await db.insert(userChatBillingAudit).values({
+        ...auditBase,
+        source,
+        status: 'ok',
+        inputTokens: tokens.inputTokens,
+        outputTokens: tokens.outputTokens,
+        cacheReadTokens: tokens.cacheReadTokens,
+        usdCost: usdCost.toFixed(6),
+        creditsDeducted: creditsToDeduct,
+        metaJson: usage ? { usage } : null,
+      }).catch(() => null);
     } catch (err) {
       console.error('[chat/send] async credit deduction failed:', err);
+      await db.insert(userChatBillingAudit).values({
+        ...auditBase,
+        status: 'failed',
+        error: err instanceof Error ? err.message : String(err),
+        metaJson: usage ? { usage } : null,
+      }).catch(() => null);
     }
   });
 }
@@ -156,7 +199,7 @@ export async function POST(req: Request) {
       }).catch(() => null);
 
       // Deduct credits AFTER response is ready — fire-and-forget, zero latency impact
-      deductCreditsAsync({ userId, message, reply, model, usage });
+      deductCreditsAsync({ userId, agentId, message, reply, model, usage });
     }
 
     // Strip internal data before returning to client

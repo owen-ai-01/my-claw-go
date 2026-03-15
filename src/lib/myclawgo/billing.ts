@@ -39,8 +39,11 @@ const DEFAULT_PRICING: Record<string, ModelPricing> = {
 
   // ── Anthropic ─────────────────────────────────────────────────────────────
   'anthropic/claude-opus-4-6': { inputPer1M: 15.0, outputPer1M: 75.0, cacheReadPer1M: 1.5 },
+  'anthropic/claude-opus-4':   { inputPer1M: 15.0, outputPer1M: 75.0, cacheReadPer1M: 1.5 },
   'anthropic/claude-sonnet-4-6': { inputPer1M: 3.0, outputPer1M: 15.0, cacheReadPer1M: 0.3 },
+  'anthropic/claude-sonnet-4':   { inputPer1M: 3.0, outputPer1M: 15.0, cacheReadPer1M: 0.3 },
   'anthropic/claude-haiku-3-5': { inputPer1M: 0.8, outputPer1M: 4.0,  cacheReadPer1M: 0.08 },
+  'anthropic/claude-haiku-4':   { inputPer1M: 0.8, outputPer1M: 4.0,  cacheReadPer1M: 0.08 },
   'anthropic/claude-3-5-sonnet-20241022': { inputPer1M: 3.0, outputPer1M: 15.0, cacheReadPer1M: 0.3 },
   'anthropic/claude-3-7-sonnet-20250219': { inputPer1M: 3.0, outputPer1M: 15.0, cacheReadPer1M: 0.3 },
   // OpenClaw aliases
@@ -56,7 +59,10 @@ const DEFAULT_PRICING: Record<string, ModelPricing> = {
   // ── OpenRouter / DeepSeek ─────────────────────────────────────────────────
   'openrouter/deepseek/deepseek-v3.2':  { inputPer1M: 0.27, outputPer1M: 1.1 },
   'openrouter/deepseek/deepseek-r1':    { inputPer1M: 0.55, outputPer1M: 2.19 },
-  'openrouter/minimax/minimax-m2.5':    { inputPer1M: 0.6,  outputPer1M: 2.4 },
+  // OpenRouter page currently describes MiniMax M2.5 as $0.25 / $1.20 per 1M tokens.
+  'openrouter/minimax/minimax-m2.5':    { inputPer1M: 0.25, outputPer1M: 1.2 },
+  'minimax/minimax-m2.5':               { inputPer1M: 0.25, outputPer1M: 1.2 },
+  'openrouter/deepseek/deepseek-chat':  { inputPer1M: 0.27, outputPer1M: 1.1 },
   'deepseek/deepseek-chat':             { inputPer1M: 0.27, outputPer1M: 1.1 },
 };
 
@@ -92,21 +98,26 @@ function parsePricingFromEnv(): Record<string, ModelPricing> {
  * OpenClaw may return alias like "gpt-5.4" without provider prefix,
  * or "anthropic/claude-sonnet-4-6" in full form. We try both.
  */
-function resolveModelKey(model: string, pricingMap: Record<string, ModelPricing>): ModelPricing | null {
+function resolveModelKeyWithKey(model: string, pricingMap: Record<string, ModelPricing>): { key: string; pricing: ModelPricing } | null {
   if (!model) return null;
   // 1. Direct match
-  if (pricingMap[model]) return pricingMap[model]!;
+  if (pricingMap[model]) return { key: model, pricing: pricingMap[model]! };
   // 2. Strip provider prefix: "openai/gpt-4o" → "gpt-4o", "openrouter/minimax/minimax-m2.5" → "minimax/minimax-m2.5"
   const parts = model.split('/');
   const withoutProvider = parts.slice(1).join('/');
-  if (withoutProvider && pricingMap[withoutProvider]) return pricingMap[withoutProvider]!;
+  if (withoutProvider && pricingMap[withoutProvider]) return { key: withoutProvider, pricing: pricingMap[withoutProvider]! };
   // 3. Try with common provider prefixes
   for (const prefix of ['openrouter', 'openai', 'anthropic', 'google']) {
-    if (pricingMap[`${prefix}/${model}`]) return pricingMap[`${prefix}/${model}`]!;
+    if (pricingMap[`${prefix}/${model}`]) return { key: `${prefix}/${model}`, pricing: pricingMap[`${prefix}/${model}`]! };
     // e.g. "minimax/minimax-m2.5" → "openrouter/minimax/minimax-m2.5"
-    if (pricingMap[`${prefix}/${withoutProvider}`]) return pricingMap[`${prefix}/${withoutProvider}`]!;
+    if (pricingMap[`${prefix}/${withoutProvider}`]) return { key: `${prefix}/${withoutProvider}`, pricing: pricingMap[`${prefix}/${withoutProvider}`]! };
   }
   return null;
+}
+
+export function resolvePricingModelKey(model: string): string | null {
+  const resolved = resolveModelKeyWithKey(model, parsePricingFromEnv());
+  return resolved?.key || null;
 }
 
 // ─── Usage type returned by bridge ───────────────────────────────────────────
@@ -163,7 +174,8 @@ export function calcUsdCostFromBridgeUsage(params: {
   usage: BridgeUsage;
 }): number {
   const pricingMap = parsePricingFromEnv();
-  const pricing = resolveModelKey(params.model, pricingMap);
+  const resolved = resolveModelKeyWithKey(params.model, pricingMap);
+  const pricing = resolved?.pricing || null;
   const { inputTokens, outputTokens, cacheReadTokens } = normalizeBridgeUsage(params.usage);
 
   if (!pricing) {
@@ -193,7 +205,8 @@ export function estimateUsdCostByModel(params: {
   outputTokens: number;
 }) {
   const pricingMap = parsePricingFromEnv();
-  const pricing = resolveModelKey(params.model, pricingMap);
+  const resolved = resolveModelKeyWithKey(params.model, pricingMap);
+  const pricing = resolved?.pricing || null;
 
   if (!pricing) {
     const usdPerTokenFallback = Number(
