@@ -94,14 +94,18 @@ function parsePricingFromEnv(): Record<string, ModelPricing> {
  */
 function resolveModelKey(model: string, pricingMap: Record<string, ModelPricing>): ModelPricing | null {
   if (!model) return null;
-  // Direct match
+  // 1. Direct match
   if (pricingMap[model]) return pricingMap[model]!;
-  // Try stripping provider prefix: "openai/gpt-4o" → "gpt-4o"
-  const withoutProvider = model.split('/').slice(1).join('/');
+  // 2. Strip provider prefix: "openai/gpt-4o" → "gpt-4o", "openrouter/minimax/minimax-m2.5" → "minimax/minimax-m2.5"
+  const parts = model.split('/');
+  const withoutProvider = parts.slice(1).join('/');
   if (withoutProvider && pricingMap[withoutProvider]) return pricingMap[withoutProvider]!;
-  // Try adding "openai/" prefix
-  if (pricingMap[`openai/${model}`]) return pricingMap[`openai/${model}`]!;
-  if (pricingMap[`anthropic/${model}`]) return pricingMap[`anthropic/${model}`]!;
+  // 3. Try with common provider prefixes
+  for (const prefix of ['openrouter', 'openai', 'anthropic', 'google']) {
+    if (pricingMap[`${prefix}/${model}`]) return pricingMap[`${prefix}/${model}`]!;
+    // e.g. "minimax/minimax-m2.5" → "openrouter/minimax/minimax-m2.5"
+    if (pricingMap[`${prefix}/${withoutProvider}`]) return pricingMap[`${prefix}/${withoutProvider}`]!;
+  }
   return null;
 }
 
