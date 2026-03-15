@@ -17,6 +17,58 @@ import { NextResponse } from 'next/server';
 
 const MIN_CREDITS_PER_MESSAGE = 1;
 
+/**
+ * Deduct credits in the background — does NOT block the HTTP response.
+ * Formula: credits = ceil(openrouter_usd_cost / 0.001)
+ * e.g. $1 USD cost → 1000 credits deducted
+ */
+function deductCreditsAsync(params: {
+  userId: string;
+  message: string;
+  reply: string;
+  model: string;
+  usage: BridgeUsage | null;
+}) {
+  const { userId, message, reply, model, usage } = params;
+
+  // fire-and-forget — intentionally not awaited
+  Promise.resolve().then(async () => {
+    try {
+      let usdCost: number;
+      let source: string;
+
+      if (model && usage && (usage.input != null || usage.output != null || usage.total != null)) {
+        // Priority 1: actual token usage from bridge (most accurate)
+        usdCost = calcUsdCostFromBridgeUsage({ model, usage });
+        source  = `actual [${model}]`;
+      } else if (model) {
+        // Priority 2: estimate from text length
+        const est = estimateUsage(message, reply);
+        usdCost = estimateUsdCostByModel({ model, inputTokens: est.inputTokens, outputTokens: est.outputTokens });
+        source  = `estimated [${model}]`;
+      } else {
+        usdCost = 0;
+        source  = 'no model info';
+      }
+
+      const creditsToDeduct = usdCost > 0 ? creditsFromUsd(usdCost) : MIN_CREDITS_PER_MESSAGE;
+
+      console.log(
+        `[chat/send] user=${userId} model=${model} source=${source}` +
+        ` usd=${usdCost.toFixed(6)} credits=${creditsToDeduct}`
+      );
+
+      await consumeCredits({
+        userId,
+        amount:      creditsToDeduct,
+        description: `Chat [${model || 'unknown'}]: ${creditsToDeduct} credits (${source})`,
+      });
+    } catch (err) {
+      console.error('[chat/send] async credit deduction failed:', err);
+    }
+  });
+}
+
 export async function POST(req: Request) {
   const session = await auth.api.getSession({ headers: await headers() });
   const userId = session?.user?.id;
@@ -37,7 +89,7 @@ export async function POST(req: Request) {
 
   const agentId = String(body.agentId || 'main');
 
-  // Credit balance check before sending
+  // ── Pre-flight: block users with zero credits ────────────────────────────
   const creditCheck = await checkUserCredits(userId, MIN_CREDITS_PER_MESSAGE);
   if (!creditCheck.hasCredits) {
     return NextResponse.json(
@@ -56,9 +108,9 @@ export async function POST(req: Request) {
     return NextResponse.json(target, { status: 503 });
   }
 
-  // Save user message to DB
+  // Save user message to DB (best-effort, non-blocking)
   const db = await getDb();
-  await db.insert(userChatMessage).values({
+  db.insert(userChatMessage).values({
     id: crypto.randomUUID(),
     userId,
     agentId,
@@ -85,21 +137,17 @@ export async function POST(req: Request) {
       error: 'Invalid bridge response',
     })) as {
       ok?: boolean;
-      data?: {
-        reply?: string;
-        model?: string;
-        usage?: BridgeUsage;
-      };
+      data?: { reply?: string; model?: string; usage?: BridgeUsage };
       error?: string;
     };
 
     if (payload.ok === true && payload.data?.reply) {
-      const reply  = payload.data.reply;
-      const model  = payload.data.model  || '';
-      const usage  = payload.data.usage  || null;
+      const reply = payload.data.reply;
+      const model = payload.data.model || '';
+      const usage = payload.data.usage || null;
 
-      // Save assistant reply to DB
-      await db.insert(userChatMessage).values({
+      // Save assistant reply to DB (non-blocking)
+      db.insert(userChatMessage).values({
         id: crypto.randomUUID(),
         userId,
         agentId,
@@ -107,54 +155,11 @@ export async function POST(req: Request) {
         content: reply,
       }).catch(() => null);
 
-      // ── Credit deduction ──────────────────────────────────────────────────
-      // Priority 1: use actual token usage returned by the bridge (real model cost)
-      // Priority 2: estimate from text length (fallback)
-      try {
-        let usdCost: number;
-        let source: string;
-
-        if (model && usage && (usage.input != null || usage.output != null || usage.total != null)) {
-          // Actual usage data from OpenClaw
-          usdCost = calcUsdCostFromBridgeUsage({ model, usage });
-          source  = `actual usage [${model}]`;
-        } else if (model) {
-          // Have model name but no usage — estimate from text
-          const est = estimateUsage(message, reply);
-          usdCost = estimateUsdCostByModel({
-            model,
-            inputTokens:  est.inputTokens,
-            outputTokens: est.outputTokens,
-          });
-          source = `estimated usage [${model}]`;
-        } else {
-          // No model info at all — minimum charge
-          usdCost = 0;
-          source  = 'no model info';
-        }
-
-        const creditsToDeduct = usdCost > 0
-          ? creditsFromUsd(usdCost)
-          : MIN_CREDITS_PER_MESSAGE;
-
-        console.log(
-          `[chat/send] user=${userId} model=${model} source=${source}` +
-          ` usd=${usdCost.toFixed(6)} credits=${creditsToDeduct}`
-        );
-
-        await consumeCredits({
-          userId,
-          amount:      creditsToDeduct,
-          description: `Chat [${model || 'unknown'}]: ${creditsToDeduct} credits (${source})`,
-        });
-      } catch (creditErr) {
-        // Credit deduction failure must NOT block the user's reply
-        console.error('[chat/send] credit deduction failed:', creditErr);
-      }
+      // Deduct credits AFTER response is ready — fire-and-forget, zero latency impact
+      deductCreditsAsync({ userId, message, reply, model, usage });
     }
 
-    // Strip internal billing data before returning to client
-    // (model, usage token counts, raw openclaw output are server-only)
+    // Strip internal data before returning to client
     const clientPayload = payload.ok === true && payload.data
       ? { ok: true, data: { reply: payload.data.reply } }
       : payload;
