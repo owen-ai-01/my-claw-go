@@ -21,7 +21,7 @@ cp package.json pnpm-lock.yaml "$RELEASE_DIR/"
 cp -R dist "$RELEASE_DIR/dist"
 cp -R node_modules "$RELEASE_DIR/node_modules"
 
-ln -sfn "$RELEASE_DIR" "$CURRENT_LINK"
+ln -sfn "releases/$STAMP" "$CURRENT_LINK"
 
 echo "Published bridge release: $RELEASE_DIR"
 echo "Current -> $(readlink -f "$CURRENT_LINK")"
