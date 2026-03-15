@@ -42,7 +42,7 @@ export const websiteConfig: WebsiteConfig = {
     enableTurnstileCaptcha: process.env.NEXT_PUBLIC_DEMO_WEBSITE === 'true',
   },
   routes: {
-    defaultLoginRedirect: '/dashboard',
+    defaultLoginRedirect: '/chat',
   },
   analytics: {
     enableVercelAnalytics: false,

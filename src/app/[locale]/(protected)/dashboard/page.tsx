@@ -1,19 +1,13 @@
 import { DashboardHeader } from '@/components/dashboard/dashboard-header';
 import { Button } from '@/components/ui/button';
 import { LocaleLink } from '@/i18n/navigation';
-import { auth } from '@/lib/auth';
 import { getTranslations } from 'next-intl/server';
-import { headers } from 'next/headers';
 
 /**
- * Dashboard page
+ * Dashboard page — redirects users to /chat
  */
 export default async function DashboardPage() {
-  const [t, authSession] = await Promise.all([
-    getTranslations(),
-    auth.api.getSession({ headers: await headers() }),
-  ]);
-  const userId = authSession?.user?.id;
+  const t = await getTranslations();
 
   const breadcrumbs = [
     {
@@ -34,8 +28,8 @@ export default async function DashboardPage() {
                 {t('Dashboard.dashboard.welcomeMessage')}
               </h1>
               <Button asChild size="lg">
-                <LocaleLink href={userId ? `/${userId}/bot` : '/'}>
-                  Go to My Claw
+                <LocaleLink href="/chat">
+                  Go to Chat
                 </LocaleLink>
               </Button>
             </div>
