@@ -41,3 +41,33 @@ export async function appendChatTranscript(
   await fs.appendFile(filePath, `${block}\n`, 'utf8');
   return filePath;
 }
+
+export async function readChatTranscript(input: ChatStoreKey) {
+  const filePath = getChatFilePath(input);
+  try {
+    const raw = await fs.readFile(filePath, 'utf8');
+    const parts = raw.split('\n---\n').map((x) => x.trim()).filter(Boolean);
+    const messages = parts
+      .map((part, index) => {
+        const lines = part.split('\n');
+        const roleLine = lines.find((line) => line.startsWith('## '));
+        const timestampLine = lines.find((line) => line.startsWith('timestamp: '));
+        const metaIndex = lines.findIndex((line) => line.startsWith('meta: '));
+        const contentStart = metaIndex >= 0 ? metaIndex + 2 : 3;
+        const role = roleLine?.replace('## ', '').trim();
+        const createdAt = timestampLine?.replace('timestamp: ', '').trim();
+        const content = lines.slice(contentStart).join('\n').trim();
+        if ((role !== 'user' && role !== 'assistant') || !content) return null;
+        return {
+          id: `${input.agentId}-${index}`,
+          role,
+          content,
+          createdAt,
+        };
+      })
+      .filter(Boolean);
+    return messages;
+  } catch {
+    return [];
+  }
+}

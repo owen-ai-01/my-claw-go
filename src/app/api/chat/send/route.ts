@@ -123,6 +123,8 @@ export async function POST(req: Request) {
     message?: string;
     agentId?: string;
     timeoutMs?: number;
+    channel?: string;
+    chatScope?: string;
   };
 
   const message = String(body.message || '').trim();
@@ -172,6 +174,8 @@ export async function POST(req: Request) {
         message,
         agentId,
         timeoutMs: body.timeoutMs || 90000,
+        channel: body.channel || 'direct',
+        chatScope: body.chatScope || 'default',
       }),
     });
 

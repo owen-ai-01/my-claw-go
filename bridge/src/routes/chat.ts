@@ -1,10 +1,25 @@
 import type { FastifyInstance } from 'fastify';
 import { fail, ok } from '../lib/response.js';
 import { ensureAgentExists } from '../services/agent.js';
+import { readChatTranscript } from '../services/chat-store.js';
 import { sendChatMessage } from '../services/openclaw.js';
 import { getBridgeState } from '../services/state.js';
 
 export async function chatRoutes(app: FastifyInstance) {
+  app.get('/chat/history', async (req: any, reply) => {
+    try {
+      const state = await getBridgeState();
+      const agentId = String(req.query?.agentId || state.defaultAgentId || 'main');
+      const channel = String(req.query?.channel || 'direct');
+      const chatScope = String(req.query?.chatScope || 'default');
+      await ensureAgentExists(agentId);
+      const messages = await readChatTranscript({ agentId, channel, chatScope });
+      return ok(reply, { agentId, messages });
+    } catch (error: any) {
+      return fail(reply, error.code || 'INTERNAL_ERROR', error.message || 'history failed', error.statusCode || 500);
+    }
+  });
+
   app.post('/chat/send', async (req: any, reply) => {
     try {
       const body = req.body || {};

@@ -1,7 +1,5 @@
 import { auth } from '@/lib/auth';
-import { getDb } from '@/db';
-import { userChatMessage } from '@/db/schema';
-import { and, asc, eq } from 'drizzle-orm';
+import { resolveUserBridgeTarget } from '@/lib/myclawgo/bridge-target';
 import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 
@@ -14,25 +12,31 @@ export async function GET(req: Request) {
 
   const url = new URL(req.url);
   const agentId = url.searchParams.get('agentId') || 'main';
-  const limit = Math.min(Number(url.searchParams.get('limit') || '200'), 500);
+  const channel = url.searchParams.get('channel') || 'direct';
+  const chatScope = url.searchParams.get('chatScope') || 'default';
 
-  const db = await getDb();
-  const messages = await db
-    .select()
-    .from(userChatMessage)
-    .where(and(eq(userChatMessage.userId, userId), eq(userChatMessage.agentId, agentId)))
-    .orderBy(asc(userChatMessage.createdAt))
-    .limit(limit);
+  const target = await resolveUserBridgeTarget(userId);
+  if (!target.ok) {
+    return NextResponse.json(target, { status: 503 });
+  }
 
-  return NextResponse.json({
-    ok: true,
-    data: {
-      messages: messages.map((m) => ({
-        id: m.id,
-        role: m.role as 'user' | 'assistant',
-        content: m.content,
-        createdAt: m.createdAt,
-      })),
-    },
-  });
+  try {
+    const upstream = await fetch(
+      `${target.bridge.baseUrl}/chat/history?agentId=${encodeURIComponent(agentId)}&channel=${encodeURIComponent(channel)}&chatScope=${encodeURIComponent(chatScope)}`,
+      {
+        headers: { authorization: `Bearer ${target.bridge.token}` },
+      }
+    );
+    const payload = await upstream.json().catch(() => ({ ok: false, error: 'Invalid bridge response' }));
+    return NextResponse.json(payload, { status: upstream.status });
+  } catch (error) {
+    return NextResponse.json(
+      {
+        ok: false,
+        code: 'bridge-history-failed',
+        error: error instanceof Error ? error.message : 'Bridge history failed',
+      },
+      { status: 502 }
+    );
+  }
 }
