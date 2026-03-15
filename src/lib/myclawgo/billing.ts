@@ -25,7 +25,9 @@ type ModelPricing = {
 const DEFAULT_PRICING: Record<string, ModelPricing> = {
   // ── OpenAI ────────────────────────────────────────────────────────────────
   'openai/gpt-5.4':            { inputPer1M: 2.5,  outputPer1M: 10.0, cacheReadPer1M: 1.25 },
+  'openai/gpt-5.3-codex':      { inputPer1M: 2.0,  outputPer1M: 8.0 },
   'openai/gpt-5.2':            { inputPer1M: 2.0,  outputPer1M: 8.0 },
+  'openai/gpt-5.1':            { inputPer1M: 2.0,  outputPer1M: 8.0 },
   'openai/gpt-4o':             { inputPer1M: 2.5,  outputPer1M: 10.0, cacheReadPer1M: 1.25 },
   'openai/gpt-4o-mini':        { inputPer1M: 0.15, outputPer1M: 0.6,  cacheReadPer1M: 0.075 },
   'openai/gpt-4.1':            { inputPer1M: 2.0,  outputPer1M: 8.0,  cacheReadPer1M: 0.5 },
