@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 import { auth } from '@/lib/auth';
 import { getDb } from '@/db';
-import { userChatBillingAudit, userChatMessage } from '@/db/schema';
+import { userChatBillingAudit } from '@/db/schema';
 import { consumeCredits } from '@/credits/credits';
 import {
   type BridgeUsage,
@@ -153,15 +153,7 @@ export async function POST(req: Request) {
     return NextResponse.json(target, { status: 503 });
   }
 
-  // Save user message to DB (best-effort, non-blocking)
   const db = await getDb();
-  db.insert(userChatMessage).values({
-    id: crypto.randomUUID(),
-    userId,
-    agentId,
-    role: 'user',
-    content: message,
-  }).catch(() => null);
 
   try {
     const upstreamRes = await fetch(`${target.bridge.baseUrl}/chat/send`, {
@@ -192,15 +184,6 @@ export async function POST(req: Request) {
       const reply = payload.data.reply;
       const model = payload.data.model || '';
       const usage = payload.data.usage || null;
-
-      // Save assistant reply to DB (non-blocking)
-      db.insert(userChatMessage).values({
-        id: crypto.randomUUID(),
-        userId,
-        agentId,
-        role: 'assistant',
-        content: reply,
-      }).catch(() => null);
 
       // Deduct credits AFTER response is ready — fire-and-forget, zero latency impact
       deductCreditsAsync({ userId, agentId, message, reply, model, usage });
