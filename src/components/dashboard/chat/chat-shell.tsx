@@ -256,37 +256,63 @@ function ReadyChatLayout({ containerName }: { containerName?: string }) {
     if (!text || sending) return;
 
     const ws = wsRef.current;
-    if (!ws || ws.readyState !== WebSocket.OPEN) {
-      setMessages((m) => [...m, { role: 'assistant', text: '⚠️ WebSocket not connected' }]);
-      return;
-    }
-
     const optimisticUser: ChatMessage = { role: 'user', text };
     setMessages((m) => [...m, optimisticUser]);
     setInput('');
     setSending(true);
 
     try {
-      await request('chat.send', {
-        sessionKey: sessionKeyRef.current,
-        message: text,
-        deliver: false,
-        idempotencyKey: randomId(),
-      });
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        await request('chat.send', {
+          sessionKey: sessionKeyRef.current,
+          message: text,
+          deliver: false,
+          idempotencyKey: randomId(),
+        });
 
-      if (sendTimeoutRef.current) {
-        clearTimeout(sendTimeoutRef.current);
+        if (sendTimeoutRef.current) {
+          clearTimeout(sendTimeoutRef.current);
+        }
+        sendTimeoutRef.current = setTimeout(() => {
+          setSending(false);
+          setMessages((m) => [
+            ...m,
+            {
+              role: 'assistant',
+              text: '⚠️ 当前消息发送后超时未收到回复（容器网关可能还在启动中），请稍后重试。',
+            },
+          ]);
+        }, 20000);
+        return;
       }
-      sendTimeoutRef.current = setTimeout(() => {
-        setSending(false);
-        setMessages((m) => [
-          ...m,
-          {
-            role: 'assistant',
-            text: '⚠️ 当前消息发送后超时未收到回复（容器网关可能还在启动中），请稍后重试。',
-          },
-        ]);
-      }, 20000);
+
+      const res = await fetch('/api/chat/send', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ message: text, agentId: 'main', timeoutMs: 90000 }),
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        ok?: boolean;
+        data?: { reply?: string };
+        error?: string | { message?: string };
+      };
+
+      if (!res.ok || data.ok !== true) {
+        throw new Error(
+          typeof data.error === 'string'
+            ? data.error
+            : data.error?.message || 'Failed to send message'
+        );
+      }
+
+      setMessages((m) => [
+        ...m,
+        {
+          role: 'assistant',
+          text: data.data?.reply || '⚠️ Bridge returned empty reply',
+        },
+      ]);
+      setSending(false);
     } catch (error) {
       if (sendTimeoutRef.current) {
         clearTimeout(sendTimeoutRef.current);
