@@ -21,6 +21,8 @@ export async function chatRoutes(app: FastifyInstance) {
         message,
         agentId,
         timeoutMs: body.timeoutMs ? Number(body.timeoutMs) : 90000,
+        channel: String(body.channel || 'direct'),
+        chatScope: String(body.chatScope || 'default'),
       });
 
       return ok(reply, {

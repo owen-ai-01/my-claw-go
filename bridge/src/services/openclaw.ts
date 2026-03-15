@@ -1,3 +1,4 @@
+import { appendChatTranscript } from './chat-store.js';
 import { BridgeError } from '../lib/errors.js';
 import { runCommand } from '../lib/exec.js';
 
@@ -20,8 +21,14 @@ export async function checkOpenClawHealth() {
   }
 }
 
-export async function sendChatMessage(params: { message: string; agentId: string; timeoutMs?: number }) {
-  const { message, agentId, timeoutMs = 90000 } = params;
+export async function sendChatMessage(params: {
+  message: string;
+  agentId: string;
+  timeoutMs?: number;
+  channel?: string;
+  chatScope?: string;
+}) {
+  const { message, agentId, timeoutMs = 90000, channel = 'direct', chatScope = 'default' } = params;
   const { stdout } = await runCommand(
     'openclaw',
     ['agent', '--agent', agentId, '--message', message, '--thinking', 'off', '--json'],
@@ -30,13 +37,18 @@ export async function sendChatMessage(params: { message: string; agentId: string
 
   try {
     const parsed = JSON.parse(stdout);
+    const reply = extractReply(parsed);
+    await appendChatTranscript({ role: 'user', text: message, agentId, channel, chatScope });
+    await appendChatTranscript({ role: 'assistant', text: reply || '', agentId, channel, chatScope, meta: { model: parsed?.result?.meta?.agentMeta?.model } });
     return {
       raw: parsed,
-      reply: extractReply(parsed),
+      reply,
       model: parsed?.result?.meta?.agentMeta?.model,
       usage: parsed?.result?.meta?.agentMeta?.lastCallUsage || parsed?.result?.meta?.agentMeta?.usage,
     };
   } catch {
+    await appendChatTranscript({ role: 'user', text: message, agentId, channel, chatScope });
+    await appendChatTranscript({ role: 'assistant', text: stdout.trim(), agentId, channel, chatScope });
     return { raw: stdout.trim(), reply: stdout.trim() };
   }
 }
