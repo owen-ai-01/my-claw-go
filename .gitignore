@@ -70,3 +70,6 @@ next-env.d.ts
 
 # local runtime data
 .runtime-data/
+
+bridge/node_modules/
+bridge/dist/
