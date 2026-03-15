@@ -33,19 +33,9 @@ RUN id -u openclaw >/dev/null 2>&1 || adduser --disabled-password --gecos '' ope
   && echo 'openclaw ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/openclaw \
   && chmod 0440 /etc/sudoers.d/openclaw \
   && mkdir -p /home/openclaw/.openclaw /home/openclaw/.openclaw/agents/main/agent /seed /opt/myclawgo-bridge \
-  && chown -R openclaw:openclaw /home/openclaw/.openclaw /home/openclaw /seed /opt/myclawgo-bridge
+  && chown -R openclaw:openclaw /home/openclaw/.openclaw /home/openclaw /seed
 
 RUN npm install -g openclaw@${OPENCLAW_VERSION}
-
-COPY bridge/package.json /opt/myclawgo-bridge/package.json
-COPY bridge/pnpm-lock.yaml /opt/myclawgo-bridge/pnpm-lock.yaml
-COPY bridge/tsconfig.json /opt/myclawgo-bridge/tsconfig.json
-COPY bridge/src /opt/myclawgo-bridge/src
-RUN corepack enable \
-  && cd /opt/myclawgo-bridge \
-  && pnpm install --frozen-lockfile \
-  && pnpm build \
-  && chown -R openclaw:openclaw /opt/myclawgo-bridge
 
 COPY docker/openclaw-runtime/entrypoint.sh /usr/local/bin/myclawgo-openclaw-entrypoint
 RUN chmod +x /usr/local/bin/myclawgo-openclaw-entrypoint \

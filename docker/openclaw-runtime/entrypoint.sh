@@ -2,7 +2,7 @@
 set -euo pipefail
 
 mkdir -p /home/openclaw/.openclaw /home/openclaw/.openclaw/agents/main/agent
-chown -R openclaw:openclaw /home/openclaw/.openclaw /home/openclaw /opt/myclawgo-bridge
+chown -R openclaw:openclaw /home/openclaw/.openclaw /home/openclaw
 
 if [ -f /seed/openclaw.json ] && [ ! -f /home/openclaw/.openclaw/openclaw.json ]; then
   cp /seed/openclaw.json /home/openclaw/.openclaw/openclaw.json
@@ -29,9 +29,9 @@ if ! pgrep -u openclaw -f "keep-gateway.sh" >/dev/null 2>&1; then
   su - openclaw -c 'nohup /home/openclaw/.openclaw/keep-gateway.sh >/dev/null 2>&1 &' || true
 fi
 
-if ! pgrep -u openclaw -f "dist/server.js" >/dev/null 2>&1; then
+if [ -f /opt/myclawgo-bridge/current/dist/server.js ] && ! pgrep -u openclaw -f "current/dist/server.js" >/dev/null 2>&1; then
   BRIDGE_TOKEN_VALUE="${BRIDGE_TOKEN:-bridge-test-token}"
-  su - openclaw -c "cd /opt/myclawgo-bridge && BRIDGE_PORT=18080 BRIDGE_TOKEN=${BRIDGE_TOKEN_VALUE} nohup node dist/server.js >> /home/openclaw/.openclaw/bridge.log 2>&1 </dev/null &" || true
+  su - openclaw -c "cd /opt/myclawgo-bridge/current && BRIDGE_PORT=18080 BRIDGE_TOKEN=${BRIDGE_TOKEN_VALUE} nohup node dist/server.js >> /home/openclaw/.openclaw/bridge.log 2>&1 </dev/null &" || true
 fi
 
 if [ "${1:-}" = "sleep-infinity" ]; then

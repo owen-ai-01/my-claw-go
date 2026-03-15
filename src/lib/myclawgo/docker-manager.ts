@@ -22,6 +22,8 @@ const HOST_AUTH_PROFILES =
   '/home/openclaw/docker-openclaw-seed/auth-profiles.json';
 const HOST_PW_DIR =
   process.env.MYCLAWGO_PW_DIR || '/home/openclaw/docker-openclaw-pw';
+const HOST_BRIDGE_ROOT =
+  process.env.MYCLAWGO_BRIDGE_ROOT || '/home/openclaw/myclawgo-bridge';
 const DEFAULT_RUNTIME_MODEL =
   process.env.MYCLAWGO_RUNTIME_MODEL || 'openrouter/minimax/minimax-m2.5';
 const OPENCLAW_NPM_SPEC = process.env.MYCLAWGO_OPENCLAW_NPM_SPEC || 'latest';
@@ -353,6 +355,8 @@ export async function ensureUserContainer(session: UserSession) {
       `${HOST_OPENCLAW_CONFIG}:/seed/openclaw.json:ro`,
       '-v',
       `${HOST_AUTH_PROFILES}:/seed/auth-profiles.json:ro`,
+      '-v',
+      `${HOST_BRIDGE_ROOT}:/opt/myclawgo-bridge:ro`,
       '-w',
       '/root',
     ];
