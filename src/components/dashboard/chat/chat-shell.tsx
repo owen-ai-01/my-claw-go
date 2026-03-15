@@ -1,5 +1,10 @@
 'use client';
 
+import { useCurrentUser } from '@/hooks/use-current-user';
+import { useCurrentPlan } from '@/hooks/use-payment';
+import { useCreditBalance } from '@/hooks/use-credits';
+import { Routes } from '@/routes';
+import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
 type RuntimeStatus =
@@ -14,12 +19,16 @@ type ChatMessage = {
   createdAt?: string;
 };
 
+// ─── Chat window (only rendered when runtime is ready) ───────────────────────
+
 function ChatLayout() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(true);
+  const [insufficientCredits, setInsufficientCredits] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
   // Load history on mount
   useEffect(() => {
@@ -34,7 +43,7 @@ function ChatLayout() {
           setMessages(data.data.messages);
         }
       } catch {
-        // silently ignore history load failure
+        // silently ignore
       } finally {
         setHistoryLoading(false);
       }
@@ -42,19 +51,22 @@ function ChatLayout() {
     load();
   }, []);
 
-  // Auto-scroll to bottom when messages change
+  // Auto-scroll to bottom
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, sending]);
 
   async function onSend() {
     const text = input.trim();
     if (!text || sending) return;
 
-    const userMsg: ChatMessage = { role: 'user', content: text, createdAt: new Date().toISOString() };
-    setMessages((m) => [...m, userMsg]);
+    setMessages((m) => [
+      ...m,
+      { role: 'user', content: text, createdAt: new Date().toISOString() },
+    ]);
     setInput('');
     setSending(true);
+    setInsufficientCredits(false);
 
     try {
       const res = await fetch('/api/chat/send', {
@@ -62,11 +74,21 @@ function ChatLayout() {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ message: text, agentId: 'main', timeoutMs: 90000 }),
       });
+
       const data = (await res.json().catch(() => ({}))) as {
         ok?: boolean;
+        code?: string;
         data?: { reply?: string };
         error?: string | { message?: string };
+        balance?: number;
       };
+
+      // Insufficient credits → show buy-credits prompt
+      if (res.status === 402 && data.code === 'insufficient_credits') {
+        setInsufficientCredits(true);
+        setMessages((m) => m.slice(0, -1)); // remove the optimistic user message
+        return;
+      }
 
       if (!res.ok || data.ok !== true) {
         const errMsg =
@@ -101,6 +123,20 @@ function ChatLayout() {
 
   return (
     <div className="flex h-[calc(100vh-10rem)] flex-col rounded-2xl border bg-card shadow-sm overflow-hidden">
+      {/* Insufficient credits banner */}
+      {insufficientCredits && (
+        <div className="flex items-center justify-between gap-3 bg-amber-50 border-b border-amber-200 px-4 py-3 text-sm text-amber-800">
+          <span>⚠️ Insufficient credits. Please top up to continue chatting.</span>
+          <button
+            type="button"
+            onClick={() => router.push(Routes.SettingsCredits)}
+            className="flex-shrink-0 rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-amber-700 transition-colors"
+          >
+            Buy Credits
+          </button>
+        </div>
+      )}
+
       {/* Messages area */}
       <div className="flex flex-1 flex-col gap-3 overflow-y-auto px-4 py-6 sm:px-6">
         {historyLoading ? (
@@ -119,12 +155,12 @@ function ChatLayout() {
               className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
               {msg.role === 'assistant' && (
-                <div className="mr-2 mt-1 flex-shrink-0 w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
+                <div className="mr-2 mt-1 flex-shrink-0 w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary select-none">
                   AI
                 </div>
               )}
               <div
-                className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap ${
+                className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap break-words ${
                   msg.role === 'user'
                     ? 'bg-primary text-primary-foreground rounded-br-sm'
                     : 'bg-muted text-foreground rounded-bl-sm'
@@ -138,11 +174,11 @@ function ChatLayout() {
 
         {sending && (
           <div className="flex justify-start">
-            <div className="mr-2 mt-1 flex-shrink-0 w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
+            <div className="mr-2 mt-1 flex-shrink-0 w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary select-none">
               AI
             </div>
-            <div className="bg-muted rounded-2xl rounded-bl-sm px-4 py-2.5">
-              <span className="flex gap-1 items-center">
+            <div className="bg-muted rounded-2xl rounded-bl-sm px-4 py-3">
+              <span className="flex gap-1 items-center h-4">
                 <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50 animate-bounce [animation-delay:0ms]" />
                 <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50 animate-bounce [animation-delay:150ms]" />
                 <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50 animate-bounce [animation-delay:300ms]" />
@@ -170,7 +206,7 @@ function ChatLayout() {
                 onSend();
               }
             }}
-            placeholder="Message your assistant… (Enter to send, Shift+Enter for new line)"
+            placeholder="Message your assistant… (Enter to send)"
             rows={1}
             className="flex-1 resize-none bg-transparent text-sm outline-none max-h-[120px] leading-relaxed py-0.5"
           />
@@ -183,7 +219,7 @@ function ChatLayout() {
             {sending ? '…' : 'Send'}
           </button>
         </div>
-        <p className="mt-1.5 text-center text-xs text-muted-foreground/50">
+        <p className="mt-1.5 text-center text-xs text-muted-foreground/40">
           Shift+Enter for new line
         </p>
       </div>
@@ -191,11 +227,38 @@ function ChatLayout() {
   );
 }
 
+// ─── Main shell ───────────────────────────────────────────────────────────────
+
 export function ChatShell() {
+  const user = useCurrentUser();
+  const router = useRouter();
+  const { data: planData, isLoading: planLoading } = useCurrentPlan(user?.id);
+  const { data: credits } = useCreditBalance();
+
   const [status, setStatus] = useState<RuntimeStatus | null>(null);
   const [creating, setCreating] = useState(false);
 
+  // Redirect to login if not authenticated
   useEffect(() => {
+    if (user === null) {
+      router.replace(Routes.Login);
+    }
+  }, [user, router]);
+
+  // Membership check: free plan → redirect to /pricing
+  useEffect(() => {
+    if (!planLoading && planData) {
+      if (planData.currentPlan?.isFree) {
+        router.replace(Routes.Pricing);
+      }
+    }
+  }, [planData, planLoading, router]);
+
+  // Load runtime status (only once plan is confirmed paid)
+  useEffect(() => {
+    if (planLoading) return;
+    if (!planData || planData.currentPlan?.isFree) return;
+
     let stopped = false;
     const run = async () => {
       const res = await fetch('/api/chat/runtime-status').catch(() => null);
@@ -211,33 +274,56 @@ export function ChatShell() {
     return () => {
       stopped = true;
     };
-  }, []);
+  }, [planData, planLoading]);
 
   async function onCreate() {
     if (creating) return;
     setCreating(true);
     try {
       const res = await fetch('/api/chat/create', { method: 'POST' });
-      const data = (await res.json().catch(() => ({}))) as
-        | (RuntimeStatus & { containerName?: string })
-        | { ok?: boolean; error?: string; containerName?: string };
-      if (!res.ok || !data || data.ok !== true) {
-        const error = 'error' in (data || {}) ? (data as { error?: string }).error : undefined;
-        setStatus({ ok: false, error: error || 'Failed to create runtime' });
+      const data = (await res.json().catch(() => ({}))) as {
+        ok?: boolean;
+        code?: string;
+        error?: string;
+        containerName?: string;
+        state?: string;
+      };
+
+      // Payment required → redirect to pricing
+      if (res.status === 402 || data.code === 'payment_required') {
+        router.push(Routes.Pricing);
         return;
       }
+
+      if (!res.ok || data.ok !== true) {
+        setStatus({ ok: false, error: data.error || 'Failed to create workspace' });
+        return;
+      }
+
       setStatus({ ok: true, state: 'ready', reason: 'runtime-created', containerName: data.containerName });
     } finally {
       setCreating(false);
     }
   }
 
+  // Loading states
+  if (!user || planLoading) {
+    return (
+      <div className="flex flex-col gap-4">
+        <PageHeader credits={credits} />
+        <div className="rounded-2xl border bg-card p-8 shadow-sm">
+          <p className="text-sm text-muted-foreground">Loading…</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!status) {
     return (
       <div className="flex flex-col gap-4">
-        <PageHeader />
+        <PageHeader credits={credits} />
         <div className="rounded-2xl border bg-card p-8 shadow-sm">
-          <p className="text-sm text-muted-foreground">Checking your runtime status…</p>
+          <p className="text-sm text-muted-foreground">Checking your workspace…</p>
         </div>
       </div>
     );
@@ -246,7 +332,7 @@ export function ChatShell() {
   if (status.ok && status.state === 'not_created') {
     return (
       <div className="flex flex-col gap-4">
-        <PageHeader />
+        <PageHeader credits={credits} />
         <div className="rounded-2xl border bg-card p-10 shadow-sm">
           <div className="mx-auto flex max-w-sm flex-col items-center text-center">
             <div className="mb-4 text-4xl">🚀</div>
@@ -271,7 +357,7 @@ export function ChatShell() {
   if (status && !status.ok) {
     return (
       <div className="flex flex-col gap-4">
-        <PageHeader />
+        <PageHeader credits={credits} />
         <div className="rounded-2xl border border-red-300 bg-red-50 p-6 text-sm text-red-700 shadow-sm">
           {status.error}
         </div>
@@ -281,17 +367,24 @@ export function ChatShell() {
 
   return (
     <div className="flex flex-col gap-4">
-      <PageHeader />
+      <PageHeader credits={credits} />
       <ChatLayout />
     </div>
   );
 }
 
-function PageHeader() {
+function PageHeader({ credits }: { credits?: number }) {
   return (
-    <div>
-      <h1 className="text-2xl font-semibold tracking-tight">Chat</h1>
-      <p className="mt-1 text-sm text-muted-foreground">Your personal AI assistant.</p>
+    <div className="flex items-center justify-between">
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight">Chat</h1>
+        <p className="mt-1 text-sm text-muted-foreground">Your personal AI assistant.</p>
+      </div>
+      {credits !== undefined && (
+        <div className="rounded-xl border bg-card px-3 py-1.5 text-xs text-muted-foreground">
+          💳 {credits.toLocaleString()} credits
+        </div>
+      )}
     </div>
   );
 }

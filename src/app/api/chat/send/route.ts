@@ -2,9 +2,18 @@ import crypto from 'node:crypto';
 import { auth } from '@/lib/auth';
 import { getDb } from '@/db';
 import { userChatMessage } from '@/db/schema';
+import { consumeCredits } from '@/credits/credits';
+import {
+  creditsFromUsd,
+  estimateUsdCostByModel,
+  estimateUsage,
+} from '@/lib/myclawgo/billing';
+import { checkUserCredits } from '@/lib/myclawgo/membership';
 import { resolveUserBridgeTarget } from '@/lib/myclawgo/bridge-target';
 import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
+
+const MIN_CREDITS_PER_MESSAGE = 1;
 
 export async function POST(req: Request) {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -26,16 +35,29 @@ export async function POST(req: Request) {
 
   const agentId = String(body.agentId || 'main');
 
+  // Credit balance check before sending
+  const creditCheck = await checkUserCredits(userId, MIN_CREDITS_PER_MESSAGE);
+  if (!creditCheck.hasCredits) {
+    return NextResponse.json(
+      {
+        ok: false,
+        code: 'insufficient_credits',
+        error: 'Insufficient credits. Please top up to continue chatting.',
+        balance: creditCheck.balance,
+      },
+      { status: 402 }
+    );
+  }
+
   const target = await resolveUserBridgeTarget(userId);
   if (!target.ok) {
     return NextResponse.json(target, { status: 503 });
   }
 
-  // Save user message to DB (best-effort, don't block on failure)
+  // Save user message to DB
   const db = await getDb();
-  const userMsgId = crypto.randomUUID();
   await db.insert(userChatMessage).values({
-    id: userMsgId,
+    id: crypto.randomUUID(),
     userId,
     agentId,
     role: 'user',
@@ -58,15 +80,36 @@ export async function POST(req: Request) {
 
     const payload = await upstreamRes.json().catch(() => ({ ok: false, error: 'Invalid bridge response' }));
 
-    // Save assistant reply to DB
     if (payload.ok === true && payload.data?.reply) {
+      const reply: string = payload.data.reply;
+      const model: string = payload.data?.model || '';
+
+      // Save assistant reply to DB
       await db.insert(userChatMessage).values({
         id: crypto.randomUUID(),
         userId,
         agentId,
         role: 'assistant',
-        content: payload.data.reply,
+        content: reply,
       }).catch(() => null);
+
+      // Deduct credits based on usage
+      try {
+        const usage = estimateUsage(message, reply);
+        const usdCost = model
+          ? estimateUsdCostByModel({ model, inputTokens: usage.inputTokens, outputTokens: usage.outputTokens })
+          : 0;
+        const creditsToDeduct = usdCost > 0 ? creditsFromUsd(usdCost) : MIN_CREDITS_PER_MESSAGE;
+
+        await consumeCredits({
+          userId,
+          amount: creditsToDeduct,
+          description: `Chat message${model ? ` [${model}]` : ''}: ${creditsToDeduct} credits`,
+        });
+      } catch (creditErr) {
+        // Credit deduction failure should not break the response — log and continue
+        console.error('[chat/send] credit deduction failed:', creditErr);
+      }
     }
 
     return NextResponse.json(payload, { status: upstreamRes.status });
@@ -74,7 +117,7 @@ export async function POST(req: Request) {
     return NextResponse.json(
       {
         ok: false,
-        code: 'bridge-request-failed',
+        code: 'bridge_request_failed',
         error: error instanceof Error ? error.message : 'Bridge request failed',
       },
       { status: 502 }

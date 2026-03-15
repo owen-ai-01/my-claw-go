@@ -1,4 +1,5 @@
 import { auth } from '@/lib/auth';
+import { checkUserMembership } from '@/lib/myclawgo/membership';
 import { ensureUserContainer } from '@/lib/myclawgo/docker-manager';
 import { ensureSessionById } from '@/lib/myclawgo/session-store';
 import { headers } from 'next/headers';
@@ -10,6 +11,19 @@ export async function POST() {
     const userId = session?.user?.id;
     if (!userId) {
       return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Membership check — only paid users can create a runtime
+    const membership = await checkUserMembership(userId);
+    if (!membership.isPaid) {
+      return NextResponse.json(
+        {
+          ok: false,
+          code: 'payment_required',
+          error: 'A paid plan is required to create your workspace.',
+        },
+        { status: 402 }
+      );
     }
 
     const runtimeSession = await ensureSessionById(userId, 'chat-create');
