@@ -30,8 +30,12 @@ const DEFAULT_PRICING: Record<string, ModelPricing> = {
   'openai/gpt-4o-mini':        { inputPer1M: 0.15, outputPer1M: 0.6,  cacheReadPer1M: 0.075 },
   'openai/gpt-4.1':            { inputPer1M: 2.0,  outputPer1M: 8.0,  cacheReadPer1M: 0.5 },
   'openai/gpt-4.1-mini':       { inputPer1M: 0.4,  outputPer1M: 1.6,  cacheReadPer1M: 0.1 },
+  'openai/gpt-4.1-nano':       { inputPer1M: 0.1,  outputPer1M: 0.4 },
   'openai/o3':                 { inputPer1M: 10.0, outputPer1M: 40.0 },
+  'openai/o3-mini':            { inputPer1M: 1.1,  outputPer1M: 4.4 },
   'openai/o4-mini':            { inputPer1M: 1.1,  outputPer1M: 4.4 },
+  'openai/gpt-5-mini':         { inputPer1M: 0.25, outputPer1M: 2.0 },
+  'openai/gpt-5-nano':         { inputPer1M: 0.05, outputPer1M: 0.4 },
   // OpenClaw aliases
   'gpt':                       { inputPer1M: 2.5,  outputPer1M: 10.0, cacheReadPer1M: 1.25 },
   'gpt-4o':                    { inputPer1M: 2.5,  outputPer1M: 10.0, cacheReadPer1M: 1.25 },
@@ -54,16 +58,31 @@ const DEFAULT_PRICING: Record<string, ModelPricing> = {
   // ── Google ────────────────────────────────────────────────────────────────
   'google/gemini-2.5-pro':     { inputPer1M: 1.25, outputPer1M: 10.0 },
   'google/gemini-2.5-flash':   { inputPer1M: 0.15, outputPer1M: 0.6 },
+  'google/gemini-2.5-flash-lite': { inputPer1M: 0.1, outputPer1M: 0.4 },
   'google/gemini-2.0-flash':   { inputPer1M: 0.1,  outputPer1M: 0.4 },
+  // Free/cheap Google models in OpenRouter are billed to users using MiniMax M2.5 equivalent pricing
+  'google/gemini-2.0-flash-exp':   { inputPer1M: 0.25, outputPer1M: 1.2 },
+  'google/gemini-2.0-flash-001':   { inputPer1M: 0.25, outputPer1M: 1.2 },
+  'google/gemini-2.0-flash-lite':  { inputPer1M: 0.25, outputPer1M: 1.2 },
 
   // ── OpenRouter / DeepSeek ─────────────────────────────────────────────────
+  'openrouter/deepseek/deepseek-chat':  { inputPer1M: 0.27, outputPer1M: 1.1 },
+  'openrouter/deepseek/deepseek-v3':    { inputPer1M: 0.27, outputPer1M: 1.1 },
   'openrouter/deepseek/deepseek-v3.2':  { inputPer1M: 0.27, outputPer1M: 1.1 },
   'openrouter/deepseek/deepseek-r1':    { inputPer1M: 0.55, outputPer1M: 2.19 },
+  'deepseek/deepseek-chat':             { inputPer1M: 0.27, outputPer1M: 1.1 },
+  'deepseek/deepseek-v3':               { inputPer1M: 0.27, outputPer1M: 1.1 },
+  'deepseek/deepseek-v3.2':             { inputPer1M: 0.27, outputPer1M: 1.1 },
+  'deepseek/deepseek-r1':               { inputPer1M: 0.55, outputPer1M: 2.19 },
   // OpenRouter page currently describes MiniMax M2.5 as $0.25 / $1.20 per 1M tokens.
   'openrouter/minimax/minimax-m2.5':    { inputPer1M: 0.25, outputPer1M: 1.2 },
   'minimax/minimax-m2.5':               { inputPer1M: 0.25, outputPer1M: 1.2 },
-  'openrouter/deepseek/deepseek-chat':  { inputPer1M: 0.27, outputPer1M: 1.1 },
-  'deepseek/deepseek-chat':             { inputPer1M: 0.27, outputPer1M: 1.1 },
+  // GLM — if specific live OpenRouter price differs later, override via env JSON
+  'openrouter/z-ai/glm-4.7-flash':      { inputPer1M: 0.25, outputPer1M: 1.2 },
+  'z-ai/glm-4.7-flash':                 { inputPer1M: 0.25, outputPer1M: 1.2 },
+  // OpenRouter auto route — bill conservatively using MiniMax-equivalent floor
+  'openrouter/openrouter/auto':         { inputPer1M: 0.25, outputPer1M: 1.2 },
+  'openrouter/auto':                    { inputPer1M: 0.25, outputPer1M: 1.2 },
 };
 
 function parsePricingFromEnv(): Record<string, ModelPricing> {
