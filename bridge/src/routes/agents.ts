@@ -7,6 +7,7 @@ import {
   listAgents,
   updateAgent,
   updateAgentMarkdown,
+  updateAgentTelegram,
 } from '../services/agent.js';
 import { setDefaultAgentId } from '../services/state.js';
 
@@ -65,6 +66,22 @@ export async function agentRoutes(app: FastifyInstance) {
       return ok(reply, data);
     } catch (error: any) {
       return fail(reply, error.code || 'INTERNAL_ERROR', error.message || 'update agent failed', error.statusCode || 500);
+    }
+  });
+
+  app.put('/agents/:agentId/channels/telegram', async (req: any, reply) => {
+    try {
+      const agentId = String(req.params?.agentId || '').trim();
+      if (!agentId) return fail(reply, 'INVALID_PARAMS', 'agentId is required', 400);
+      const patch = {
+        enabled: typeof req.body?.enabled === 'boolean' ? req.body.enabled : undefined,
+        botToken: typeof req.body?.botToken === 'string' ? req.body.botToken : undefined,
+        bindingEnabled: typeof req.body?.bindingEnabled === 'boolean' ? req.body.bindingEnabled : undefined,
+      };
+      const data = await updateAgentTelegram(agentId, patch);
+      return ok(reply, data);
+    } catch (error: any) {
+      return fail(reply, error.code || 'INTERNAL_ERROR', error.message || 'update telegram failed', error.statusCode || 500);
     }
   });
 

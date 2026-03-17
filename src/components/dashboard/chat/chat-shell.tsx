@@ -12,6 +12,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { useEffect, useRef, useState } from 'react';
 
 type RuntimeStatus =
@@ -101,6 +102,9 @@ function AgentConfigDrawer({
   const [agentsMd, setAgentsMd] = useState('');
   const [draftAgentsMd, setDraftAgentsMd] = useState('');
   const [draftModel, setDraftModel] = useState('');
+  const [draftTelegramEnabled, setDraftTelegramEnabled] = useState(false);
+  const [draftTelegramBindingEnabled, setDraftTelegramBindingEnabled] = useState(false);
+  const [draftTelegramBotToken, setDraftTelegramBotToken] = useState('');
 
   useEffect(() => {
     if (!open || !agentId) return;
@@ -134,6 +138,9 @@ function AgentConfigDrawer({
         setAgentsMd(nextAgentsMd);
         setDraftAgentsMd(nextAgentsMd);
         setDraftModel(agentPayload.data.model || '');
+        setDraftTelegramEnabled(agentPayload.data.telegram?.enabled ?? false);
+        setDraftTelegramBindingEnabled(agentPayload.data.telegram?.bindingEnabled ?? false);
+        setDraftTelegramBotToken('');
       } catch (err) {
         if (cancelled) return;
         setError(err instanceof Error ? err.message : 'Failed to load agent details');
@@ -141,6 +148,9 @@ function AgentConfigDrawer({
         setAgentsMd('');
         setDraftAgentsMd('');
         setDraftModel('');
+        setDraftTelegramEnabled(false);
+        setDraftTelegramBindingEnabled(false);
+        setDraftTelegramBotToken('');
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -159,7 +169,7 @@ function AgentConfigDrawer({
     setSaveMessage(null);
 
     try {
-      const [modelRes, agentsMdRes] = await Promise.all([
+      const [modelRes, agentsMdRes, telegramRes] = await Promise.all([
         fetch(`/api/agents/${encodeURIComponent(agent.id)}`, {
           method: 'PATCH',
           headers: { 'content-type': 'application/json' },
@@ -170,23 +180,40 @@ function AgentConfigDrawer({
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({ content: draftAgentsMd }),
         }),
+        fetch(`/api/agents/${encodeURIComponent(agent.id)}/channels/telegram`, {
+          method: 'PUT',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({
+            enabled: draftTelegramEnabled,
+            bindingEnabled: draftTelegramBindingEnabled,
+            botToken: draftTelegramBotToken,
+          }),
+        }),
       ]);
 
       const modelPayload = await modelRes.json().catch(() => ({}));
       const agentsMdPayload = await agentsMdRes.json().catch(() => ({}));
+      const telegramPayload = await telegramRes.json().catch(() => ({}));
       if (!modelRes.ok || modelPayload.ok !== true) {
         throw new Error(modelPayload?.error?.message || modelPayload?.error || 'Failed to save model');
       }
       if (!agentsMdRes.ok || agentsMdPayload.ok !== true) {
         throw new Error(agentsMdPayload?.error?.message || agentsMdPayload?.error || 'Failed to save AGENTS.md');
       }
+      if (!telegramRes.ok || telegramPayload.ok !== true) {
+        throw new Error(telegramPayload?.error?.message || telegramPayload?.error || 'Failed to save Telegram settings');
+      }
 
-      const refreshedAgent = modelPayload.data as AgentDetail;
+      const refreshedAgent = telegramPayload.data as AgentDetail;
       setAgent(refreshedAgent);
       setAgentsMd(draftAgentsMd);
+      setDraftTelegramBotToken('');
       setSaveMessage('Saved');
+      toast.success('Agent settings saved successfully');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save changes');
+      const message = err instanceof Error ? err.message : 'Failed to save changes';
+      setError(message);
+      toast.error(message);
     } finally {
       setSaving(false);
     }
@@ -273,20 +300,37 @@ function AgentConfigDrawer({
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Bot Token</p>
-                    <p className="mt-1 font-medium">{agent.telegram?.hasBotToken ? 'Configured' : 'Not configured'}</p>
+                    <input
+                      value={draftTelegramBotToken}
+                      onChange={(e) => setDraftTelegramBotToken(e.target.value)}
+                      placeholder={agent.telegram?.hasBotToken ? 'Leave blank to keep current token' : 'Paste Telegram bot token'}
+                      className="mt-1 w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none"
+                    />
                   </div>
+                  <label className="flex items-center gap-2 rounded-xl border px-3 py-2">
+                    <input
+                      type="checkbox"
+                      checked={draftTelegramEnabled}
+                      onChange={(e) => setDraftTelegramEnabled(e.target.checked)}
+                    />
+                    <span className="text-sm">Enable Telegram for this agent</span>
+                  </label>
+                  <label className="flex items-center gap-2 rounded-xl border px-3 py-2">
+                    <input
+                      type="checkbox"
+                      checked={draftTelegramBindingEnabled}
+                      onChange={(e) => setDraftTelegramBindingEnabled(e.target.checked)}
+                    />
+                    <span className="text-sm">Route this Telegram account to the current agent</span>
+                  </label>
                   <div>
-                    <p className="text-xs text-muted-foreground">Binding</p>
-                    <p className="mt-1 font-medium">{agent.telegram?.bindingEnabled ? 'Connected to this agent' : 'Not routed yet'}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Enabled</p>
-                    <p className="mt-1 font-medium">{agent.telegram ? (agent.telegram.enabled ? 'Yes' : 'No') : 'No'}</p>
+                    <p className="text-xs text-muted-foreground">Current Status</p>
+                    <p className="mt-1 font-medium">{agent.telegram?.hasBotToken ? 'Configured' : 'Not configured'} / {agent.telegram?.bindingEnabled ? 'Bound' : 'Unbound'}</p>
                   </div>
                 </div>
                 <div className="mt-4 flex items-center justify-between gap-3">
                   <p className="text-xs text-muted-foreground">
-                    Telegram editing is the next step. This round enables AGENTS.md + model editing first.
+                    Save updates model, AGENTS.md, and Telegram settings together.
                   </p>
                   <button
                     type="button"

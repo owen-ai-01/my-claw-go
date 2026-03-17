@@ -19,6 +19,12 @@ type TelegramAccount = {
   webhookPath?: string;
 };
 
+type UpdateTelegramPatch = {
+  enabled?: boolean;
+  botToken?: string;
+  bindingEnabled?: boolean;
+};
+
 type AgentConfigEntry = {
   id: string;
   name?: string;
@@ -209,6 +215,62 @@ export async function updateAgent(agentId: string, patch: { model?: string }) {
     ...(config.agents || {}),
     list: agents,
   };
+  await writeConfig(config);
+  return getAgent(agentId);
+}
+
+export async function updateAgentTelegram(agentId: string, patch: UpdateTelegramPatch) {
+  const config = await readConfig();
+  const agent = config.agents?.list?.find((entry) => entry.id === agentId);
+  if (!agent) {
+    throw new BridgeError('AGENT_NOT_FOUND', `Agent not found: ${agentId}`, 404);
+  }
+
+  config.channels = config.channels || {};
+  config.channels.telegram = config.channels.telegram || {};
+  config.channels.telegram.accounts = config.channels.telegram.accounts || {};
+
+  const currentAccount = config.channels.telegram.accounts[agentId] || {};
+  const nextAccount: TelegramAccount = { ...currentAccount };
+
+  if (typeof patch.enabled === 'boolean') {
+    nextAccount.enabled = patch.enabled;
+  }
+  if (typeof patch.botToken === 'string') {
+    const trimmed = patch.botToken.trim();
+    if (!trimmed) {
+      delete nextAccount.botToken;
+    } else {
+      nextAccount.botToken = trimmed;
+    }
+  }
+
+  if (Object.keys(nextAccount).length === 0 || (!nextAccount.botToken && nextAccount.enabled === false)) {
+    delete config.channels.telegram.accounts[agentId];
+  } else {
+    config.channels.telegram.accounts[agentId] = nextAccount;
+  }
+
+  const bindings = [...(config.bindings || [])];
+  const bindingIndex = bindings.findIndex((binding) => binding.agentId === agentId && binding.match?.channel === 'telegram' && binding.match?.accountId === agentId);
+
+  if (patch.bindingEnabled === true) {
+    if (bindingIndex < 0) {
+      bindings.push({
+        agentId,
+        match: {
+          channel: 'telegram',
+          accountId: agentId,
+        },
+      });
+    }
+  } else if (patch.bindingEnabled === false) {
+    if (bindingIndex >= 0) {
+      bindings.splice(bindingIndex, 1);
+    }
+  }
+
+  config.bindings = bindings;
   await writeConfig(config);
   return getAgent(agentId);
 }
