@@ -94,9 +94,13 @@ function AgentConfigDrawer({
   agentId: string;
 }) {
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [agent, setAgent] = useState<AgentDetail | null>(null);
   const [agentsMd, setAgentsMd] = useState('');
+  const [draftAgentsMd, setDraftAgentsMd] = useState('');
+  const [draftModel, setDraftModel] = useState('');
 
   useEffect(() => {
     if (!open || !agentId) return;
@@ -105,6 +109,7 @@ function AgentConfigDrawer({
     const load = async () => {
       setLoading(true);
       setError(null);
+      setSaveMessage(null);
       try {
         const [agentRes, agentsMdRes] = await Promise.all([
           fetch(`/api/agents/${encodeURIComponent(agentId)}`, { cache: 'no-store' }),
@@ -127,11 +132,15 @@ function AgentConfigDrawer({
         if (cancelled) return;
         setAgent(agentPayload.data);
         setAgentsMd(nextAgentsMd);
+        setDraftAgentsMd(nextAgentsMd);
+        setDraftModel(agentPayload.data.model || '');
       } catch (err) {
         if (cancelled) return;
         setError(err instanceof Error ? err.message : 'Failed to load agent details');
         setAgent(null);
         setAgentsMd('');
+        setDraftAgentsMd('');
+        setDraftModel('');
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -142,6 +151,46 @@ function AgentConfigDrawer({
       cancelled = true;
     };
   }, [open, agentId]);
+
+  async function onSave() {
+    if (!agent || saving) return;
+    setSaving(true);
+    setError(null);
+    setSaveMessage(null);
+
+    try {
+      const [modelRes, agentsMdRes] = await Promise.all([
+        fetch(`/api/agents/${encodeURIComponent(agent.id)}`, {
+          method: 'PATCH',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ model: draftModel }),
+        }),
+        fetch(`/api/agents/${encodeURIComponent(agent.id)}/agents-md`, {
+          method: 'PUT',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ content: draftAgentsMd }),
+        }),
+      ]);
+
+      const modelPayload = await modelRes.json().catch(() => ({}));
+      const agentsMdPayload = await agentsMdRes.json().catch(() => ({}));
+      if (!modelRes.ok || modelPayload.ok !== true) {
+        throw new Error(modelPayload?.error?.message || modelPayload?.error || 'Failed to save model');
+      }
+      if (!agentsMdRes.ok || agentsMdPayload.ok !== true) {
+        throw new Error(agentsMdPayload?.error?.message || agentsMdPayload?.error || 'Failed to save AGENTS.md');
+      }
+
+      const refreshedAgent = modelPayload.data as AgentDetail;
+      setAgent(refreshedAgent);
+      setAgentsMd(draftAgentsMd);
+      setSaveMessage('Saved');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save changes');
+    } finally {
+      setSaving(false);
+    }
+  }
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -166,7 +215,10 @@ function AgentConfigDrawer({
           ) : agent ? (
             <div className="space-y-5">
               <section className="rounded-2xl border bg-card p-4 shadow-sm">
-                <h3 className="text-sm font-semibold">Agent Basics</h3>
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="text-sm font-semibold">Agent Basics</h3>
+                  {saveMessage ? <span className="text-xs text-emerald-600">{saveMessage}</span> : null}
+                </div>
                 <div className="mt-4 grid grid-cols-1 gap-3 text-sm">
                   <div>
                     <p className="text-xs text-muted-foreground">Agent ID</p>
@@ -174,7 +226,12 @@ function AgentConfigDrawer({
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Model</p>
-                    <p className="mt-1 break-all font-medium">{agent.model || 'Use default'}</p>
+                    <input
+                      value={draftModel}
+                      onChange={(e) => setDraftModel(e.target.value)}
+                      placeholder="openrouter/openai/gpt-4o-mini"
+                      className="mt-1 w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none"
+                    />
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Workspace</p>
@@ -200,8 +257,8 @@ function AgentConfigDrawer({
                 <div className="mt-4">
                   <p className="mb-2 text-xs text-muted-foreground break-all">{agent.agentsMdPath || 'No AGENTS.md path'}</p>
                   <textarea
-                    readOnly
-                    value={agentsMd}
+                    value={draftAgentsMd}
+                    onChange={(e) => setDraftAgentsMd(e.target.value)}
                     className="min-h-[260px] w-full resize-none rounded-xl border bg-muted/30 p-3 font-mono text-xs leading-6 outline-none"
                   />
                 </div>
@@ -227,9 +284,19 @@ function AgentConfigDrawer({
                     <p className="mt-1 font-medium">{agent.telegram ? (agent.telegram.enabled ? 'Yes' : 'No') : 'No'}</p>
                   </div>
                 </div>
-                <p className="mt-4 text-xs text-muted-foreground">
-                  Next step: make this panel editable for model, AGENTS.md, and Telegram bot configuration.
-                </p>
+                <div className="mt-4 flex items-center justify-between gap-3">
+                  <p className="text-xs text-muted-foreground">
+                    Telegram editing is the next step. This round enables AGENTS.md + model editing first.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={onSave}
+                    disabled={saving}
+                    className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+                  >
+                    {saving ? 'Saving…' : 'Save'}
+                  </button>
+                </div>
               </section>
             </div>
           ) : null}

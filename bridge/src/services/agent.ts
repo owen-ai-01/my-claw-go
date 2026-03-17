@@ -76,6 +76,10 @@ async function readConfig() {
   return JSON.parse(raw) as OpenClawConfig;
 }
 
+async function writeConfig(config: OpenClawConfig) {
+  await fs.writeFile(OPENCLAW_CONFIG_PATH, JSON.stringify(config, null, 2), 'utf8');
+}
+
 async function pathExists(filePath: string) {
   try {
     await fs.access(filePath);
@@ -165,4 +169,46 @@ export async function getAgentMarkdown(agentId: string) {
     path: agent.agentsMdPath,
     content,
   };
+}
+
+export async function updateAgentMarkdown(agentId: string, content: string) {
+  const agent = await getAgent(agentId);
+  if (!agent.agentsMdPath) {
+    throw new BridgeError('AGENTS_MD_NOT_FOUND', `AGENTS.md path not configured for agent: ${agentId}`, 404);
+  }
+
+  await fs.mkdir(path.dirname(agent.agentsMdPath), { recursive: true });
+  await fs.writeFile(agent.agentsMdPath, content, 'utf8');
+  return {
+    agentId,
+    path: agent.agentsMdPath,
+    updated: true,
+  };
+}
+
+export async function updateAgent(agentId: string, patch: { model?: string }) {
+  const config = await readConfig();
+  const agents = config.agents?.list || [];
+  const index = agents.findIndex((agent) => agent.id === agentId);
+  if (index < 0) {
+    throw new BridgeError('AGENT_NOT_FOUND', `Agent not found: ${agentId}`, 404);
+  }
+
+  const next = { ...agents[index] };
+  if (typeof patch.model === 'string') {
+    const trimmed = patch.model.trim();
+    if (!trimmed) {
+      delete next.model;
+    } else {
+      next.model = trimmed;
+    }
+  }
+
+  agents[index] = next;
+  config.agents = {
+    ...(config.agents || {}),
+    list: agents,
+  };
+  await writeConfig(config);
+  return getAgent(agentId);
 }
