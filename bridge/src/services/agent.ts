@@ -1,15 +1,124 @@
 import fs from 'node:fs/promises';
+import path from 'node:path';
 import { BridgeError } from '../lib/errors.js';
 import { OPENCLAW_CONFIG_PATH } from '../lib/paths.js';
 import { getBridgeState } from './state.js';
 
-export async function listAgents() {
+type AgentIdentity = {
+  name?: string;
+  theme?: string;
+  emoji?: string;
+  avatar?: string;
+};
+
+type TelegramAccount = {
+  enabled?: boolean;
+  botToken?: string;
+  name?: string;
+  webhookUrl?: string;
+  webhookPath?: string;
+};
+
+type AgentConfigEntry = {
+  id: string;
+  name?: string;
+  workspace?: string;
+  agentDir?: string;
+  model?: string;
+  default?: boolean;
+  identity?: AgentIdentity;
+};
+
+type OpenClawConfig = {
+  agents?: {
+    list?: AgentConfigEntry[];
+  };
+  channels?: {
+    telegram?: {
+      accounts?: Record<string, TelegramAccount>;
+    };
+  };
+  bindings?: Array<{
+    agentId?: string;
+    match?: {
+      channel?: string;
+      accountId?: string;
+    };
+  }>;
+};
+
+export type AgentListItem = {
+  id: string;
+  name?: string;
+  workspace?: string;
+  agentDir?: string;
+  model?: string;
+  isDefault: boolean;
+  identity?: AgentIdentity;
+  telegram?: {
+    accountId: string;
+    enabled: boolean;
+    hasBotToken: boolean;
+    name?: string;
+    bindingEnabled: boolean;
+    webhookUrl?: string;
+    webhookPath?: string;
+  } | null;
+};
+
+export type AgentDetail = AgentListItem & {
+  agentsMdPath: string | null;
+  agentsMdExists: boolean;
+};
+
+async function readConfig() {
   const raw = await fs.readFile(OPENCLAW_CONFIG_PATH, 'utf8');
-  const json = JSON.parse(raw) as { agents?: { list?: Array<{ id: string; workspace?: string }> } };
+  return JSON.parse(raw) as OpenClawConfig;
+}
+
+async function pathExists(filePath: string) {
+  try {
+    await fs.access(filePath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function toAgentListItem(config: OpenClawConfig, defaultAgentId: string | undefined, agent: AgentConfigEntry): AgentListItem {
+  const accountId = agent.id;
+  const telegramAccount = config.channels?.telegram?.accounts?.[accountId];
+  const bindingEnabled = !!config.bindings?.some((binding) => binding.agentId === agent.id && binding.match?.channel === 'telegram' && binding.match?.accountId === accountId);
+
+  return {
+    id: agent.id,
+    name: agent.name || agent.identity?.name || agent.id,
+    workspace: agent.workspace,
+    agentDir: agent.agentDir,
+    model: agent.model,
+    isDefault: agent.default === true || agent.id === defaultAgentId,
+    identity: agent.identity,
+    telegram: telegramAccount
+      ? {
+          accountId,
+          enabled: telegramAccount.enabled !== false,
+          hasBotToken: !!telegramAccount.botToken,
+          name: telegramAccount.name,
+          bindingEnabled,
+          webhookUrl: telegramAccount.webhookUrl,
+          webhookPath: telegramAccount.webhookPath,
+        }
+      : null,
+  };
+}
+
+export async function listAgents() {
+  const config = await readConfig();
   const state = await getBridgeState();
+  const agents = (config?.agents?.list || []).map((agent) => toAgentListItem(config, state.defaultAgentId, agent));
   return {
     defaultAgentId: state.defaultAgentId,
-    agents: json?.agents?.list || [],
+    agents,
   };
 }
 
@@ -20,4 +129,40 @@ export async function ensureAgentExists(agentId: string) {
     throw new BridgeError('AGENT_NOT_FOUND', `Agent not found: ${agentId}`, 404);
   }
   return found;
+}
+
+export async function getAgent(agentId: string): Promise<AgentDetail> {
+  const config = await readConfig();
+  const state = await getBridgeState();
+  const found = config?.agents?.list?.find((agent) => agent.id === agentId);
+  if (!found) {
+    throw new BridgeError('AGENT_NOT_FOUND', `Agent not found: ${agentId}`, 404);
+  }
+
+  const detail = toAgentListItem(config, state.defaultAgentId, found);
+  const agentsMdPath = found.workspace ? path.join(found.workspace, 'AGENTS.md') : null;
+  const agentsMdExists = agentsMdPath ? await pathExists(agentsMdPath) : false;
+  return {
+    ...detail,
+    agentsMdPath,
+    agentsMdExists,
+  };
+}
+
+export async function getAgentMarkdown(agentId: string) {
+  const agent = await getAgent(agentId);
+  if (!agent.agentsMdPath) {
+    throw new BridgeError('AGENTS_MD_NOT_FOUND', `AGENTS.md path not configured for agent: ${agentId}`, 404);
+  }
+
+  if (!agent.agentsMdExists) {
+    throw new BridgeError('AGENTS_MD_NOT_FOUND', `AGENTS.md not found for agent: ${agentId}`, 404);
+  }
+
+  const content = await fs.readFile(agent.agentsMdPath, 'utf8');
+  return {
+    agentId,
+    path: agent.agentsMdPath,
+    content,
+  };
 }
