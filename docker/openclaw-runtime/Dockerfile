@@ -1,7 +1,7 @@
 FROM node:22-bookworm
 
 ENV DEBIAN_FRONTEND=noninteractive \
-    OPENCLAW_VERSION=2026.3.8 \
+    OPENCLAW_VERSION=2026.3.13 \
     PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 RUN apt-get update && apt-get install -y \
