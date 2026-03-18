@@ -17,6 +17,11 @@ type TelegramAccount = {
   name?: string;
   webhookUrl?: string;
   webhookPath?: string;
+  dmPolicy?: string;
+  allowFrom?: string[];
+  groupPolicy?: string;
+  groupAllowFrom?: string[];
+  streaming?: string;
 };
 
 type UpdateTelegramPatch = {
@@ -41,6 +46,12 @@ type OpenClawConfig = {
   };
   channels?: {
     telegram?: {
+      enabled?: boolean;
+      dmPolicy?: string;
+      allowFrom?: string[];
+      groupPolicy?: string;
+      groupAllowFrom?: string[];
+      streaming?: string;
       accounts?: Record<string, TelegramAccount>;
     };
   };
@@ -248,7 +259,21 @@ export async function updateAgentTelegram(agentId: string, patch: UpdateTelegram
   if (Object.keys(nextAccount).length === 0 || (!nextAccount.botToken && nextAccount.enabled === false)) {
     delete config.channels.telegram.accounts[agentId];
   } else {
+    // OpenClaw 2026.3.13+ requires dmPolicy + allowFrom
+    nextAccount.dmPolicy = nextAccount.dmPolicy || 'open';
+    nextAccount.allowFrom = nextAccount.allowFrom || ['*'];
+    nextAccount.groupPolicy = nextAccount.groupPolicy || 'disabled';
+    nextAccount.streaming = nextAccount.streaming || 'partial';
+    
     config.channels.telegram.accounts[agentId] = nextAccount;
+  }
+  
+  // Ensure top-level telegram also has required fields
+  if (config.channels.telegram.enabled !== false) {
+    config.channels.telegram.dmPolicy = config.channels.telegram.dmPolicy || 'open';
+    config.channels.telegram.allowFrom = config.channels.telegram.allowFrom || ['*'];
+    config.channels.telegram.groupPolicy = config.channels.telegram.groupPolicy || 'disabled';
+    config.channels.telegram.streaming = config.channels.telegram.streaming || 'partial';
   }
 
   const bindings = [...(config.bindings || [])];
