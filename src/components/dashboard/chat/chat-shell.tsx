@@ -741,13 +741,6 @@ function ChatLayout() {
                 <h2 className="text-sm font-semibold">Chats</h2>
                 <p className="mt-1 text-xs text-muted-foreground">Agents & Groups</p>
               </div>
-              <button
-                type="button"
-                onClick={() => router.push(Routes.SettingsAgents)}
-                className="rounded-lg border px-2.5 py-1 text-xs text-muted-foreground hover:bg-muted transition-colors"
-              >
-                Manage
-              </button>
             </div>
           </div>
 
@@ -785,51 +778,9 @@ function ChatLayout() {
                     </button>
                   );
                 })}
-                    <button
-                      type="button"
-                      onClick={() => setAddAgentOpen(true)}
-                      className="w-full rounded-xl border border-dashed border-border px-3 py-3 text-left text-sm text-muted-foreground transition-colors hover:bg-muted/60 hover:border-primary/50"
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="text-base">+</span>
-                        <span>Add Agent</span>
-                      </div>
-                    </button>
                   </div>
                 </div>
 
-                {/* Groups Section */}
-                {groups.length > 0 && (
-                  <div>
-                    <div className="px-2 pb-2 text-xs font-semibold text-muted-foreground">Groups</div>
-                    <div className="space-y-2">
-                      {groups.map((group) => {
-                        const active = selectedGroupId === group.id;
-                        const leader = agents.find((a) => a.id === group.leaderId);
-                        return (
-                          <button
-                            key={group.id}
-                            type="button"
-                            onClick={() => switchToGroup(group.id)}
-                            className={`w-full rounded-xl border px-3 py-3 text-left transition-colors ${active ? 'border-primary bg-primary/5 shadow-sm' : 'border-border hover:bg-muted/60'}`}
-                          >
-                            <div className="flex items-start gap-3">
-                              <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-base">
-                                👥
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                <p className="truncate text-sm font-medium">{group.name}</p>
-                                <p className="mt-1 truncate text-xs text-muted-foreground">
-                                  {group.members.length} members · {leader ? agentLabel(leader) : group.leaderId}
-                                </p>
-                              </div>
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
               </div>
             )}
           </div>

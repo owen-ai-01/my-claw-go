@@ -49,18 +49,6 @@ export function useSidebarLinks(): NestedMenuItem[] {
       external: false,
     },
     {
-      title: 'Office',
-      icon: <UsersRoundIcon className="size-4 shrink-0" />,
-      href: Routes.Office,
-      external: false,
-    },
-    {
-      title: 'Groups',
-      icon: <BotIcon className="size-4 shrink-0" />,
-      href: Routes.Groups,
-      external: false,
-    },
-    {
       title: t('admin.title'),
       icon: <SettingsIcon className="size-4 shrink-0" />,
       authorizeOnly: [], // isDemo ? ['admin', 'user'] : ['admin'],
