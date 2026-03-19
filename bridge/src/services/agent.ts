@@ -231,6 +231,35 @@ export async function updateAgent(agentId: string, patch: { model?: string }) {
   return getAgent(agentId);
 }
 
+export async function createAgent(params: { agentId: string; name?: string; workspace?: string; model?: string }) {
+  const { agentId, name, workspace, model } = params;
+  
+  if (!agentId || !/^[a-z0-9_-]+$/i.test(agentId)) {
+    throw new BridgeError('INVALID_AGENT_ID', 'Agent ID must be alphanumeric with hyphens/underscores', 400);
+  }
+
+  const config = await readConfig();
+  const exists = config.agents?.list?.some((agent) => agent.id === agentId);
+  if (exists) {
+    throw new BridgeError('AGENT_EXISTS', `Agent ${agentId} already exists`, 409);
+  }
+
+  const newAgent: AgentConfigEntry = {
+    id: agentId,
+  };
+
+  if (name) newAgent.name = name;
+  if (workspace) newAgent.workspace = workspace;
+  if (model) newAgent.model = model;
+
+  config.agents = config.agents || {};
+  config.agents.list = config.agents.list || [];
+  config.agents.list.push(newAgent);
+
+  await writeConfig(config);
+  return getAgent(agentId);
+}
+
 export async function updateAgentTelegram(agentId: string, patch: UpdateTelegramPatch) {
   const config = await readConfig();
   const agent = config.agents?.list?.find((entry) => entry.id === agentId);

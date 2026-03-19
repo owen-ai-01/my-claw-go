@@ -8,6 +8,7 @@ import {
   updateAgent,
   updateAgentMarkdown,
   updateAgentTelegram,
+  createAgent,
 } from '../services/agent.js';
 import { setDefaultAgentId } from '../services/state.js';
 
@@ -18,6 +19,17 @@ export async function agentRoutes(app: FastifyInstance) {
       return ok(reply, data);
     } catch (error: any) {
       return fail(reply, error.code || 'INTERNAL_ERROR', error.message || 'list agents failed', error.statusCode || 500);
+    }
+  });
+
+  app.post('/agents', async (req: any, reply) => {
+    try {
+      const { agentId, name, workspace, model } = req.body || {};
+      if (!agentId) return fail(reply, 'INVALID_PARAMS', 'agentId is required', 400);
+      const data = await createAgent({ agentId, name, workspace, model });
+      return ok(reply, data);
+    } catch (error: any) {
+      return fail(reply, error.code || 'INTERNAL_ERROR', error.message || 'create agent failed', error.statusCode || 500);
     }
   });
 

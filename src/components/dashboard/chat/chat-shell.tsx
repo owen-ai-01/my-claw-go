@@ -365,6 +365,132 @@ function AgentConfigDrawer({
   );
 }
 
+function AddAgentDrawer({
+  open,
+  onOpenChange,
+  onSuccess,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSuccess: () => void;
+}) {
+  const [agentId, setAgentId] = useState('');
+  const [name, setName] = useState('');
+  const [model, setModel] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!agentId.trim() || submitting) return;
+
+    setSubmitting(true);
+    setError(null);
+
+    try {
+      const res = await fetch('/api/agents', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          agentId: agentId.trim(),
+          name: name.trim() || undefined,
+          model: model.trim() || undefined,
+        }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data.ok !== true) {
+        throw new Error(data?.error?.message || data?.error || 'Failed to create agent');
+      }
+
+      toast.success(`Agent ${agentId} created successfully`);
+      setAgentId('');
+      setName('');
+      setModel('');
+      onSuccess();
+      onOpenChange(false);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to create agent';
+      setError(message);
+      toast.error(message);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="right" className="w-full sm:max-w-xl p-0 gap-0">
+        <SheetHeader className="border-b px-5 py-4">
+          <SheetTitle className="text-base">Add Agent</SheetTitle>
+          <SheetDescription>Create a new AI employee for your team.</SheetDescription>
+        </SheetHeader>
+
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-5 py-5">
+          {error ? (
+            <div className="mb-4 rounded-xl border border-red-300 bg-red-50 p-3 text-sm text-red-700">{error}</div>
+          ) : null}
+
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">Agent ID *</label>
+              <input
+                required
+                value={agentId}
+                onChange={(e) => setAgentId(e.target.value)}
+                placeholder="sales, support, dev, etc."
+                pattern="[a-zA-Z0-9_-]+"
+                className="mt-1 w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none"
+              />
+              <p className="mt-1 text-xs text-muted-foreground">Lowercase letters, numbers, hyphens, underscores only</p>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium">Display Name</label>
+              <input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Sales Agent, Support Bot, etc."
+                className="mt-1 w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none"
+              />
+              <p className="mt-1 text-xs text-muted-foreground">Optional: Human-friendly name for this agent</p>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium">Model</label>
+              <input
+                value={model}
+                onChange={(e) => setModel(e.target.value)}
+                placeholder="openrouter/anthropic/claude-sonnet-4.6"
+                className="mt-1 w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none"
+              />
+              <p className="mt-1 text-xs text-muted-foreground">Optional: Leave blank to use default model</p>
+            </div>
+          </div>
+
+          <div className="mt-6 flex gap-3">
+            <button
+              type="button"
+              onClick={() => onOpenChange(false)}
+              disabled={submitting}
+              className="flex-1 rounded-lg border px-4 py-2 text-sm font-medium disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={!agentId.trim() || submitting}
+              className="flex-1 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+            >
+              {submitting ? 'Creating…' : 'Create Agent'}
+            </button>
+          </div>
+        </form>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
 function ChatLayout() {
   const [agents, setAgents] = useState<AgentItem[]>([]);
   const [selectedAgentId, setSelectedAgentId] = useState('main');
@@ -375,6 +501,7 @@ function ChatLayout() {
   const [historyLoading, setHistoryLoading] = useState(true);
   const [insufficientCredits, setInsufficientCredits] = useState(false);
   const [configOpen, setConfigOpen] = useState(false);
+  const [addAgentOpen, setAddAgentOpen] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
@@ -526,6 +653,16 @@ function ChatLayout() {
                     </button>
                   );
                 })}
+                <button
+                  type="button"
+                  onClick={() => setAddAgentOpen(true)}
+                  className="w-full rounded-xl border border-dashed border-border px-3 py-3 text-left text-sm text-muted-foreground transition-colors hover:bg-muted/60 hover:border-primary/50"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">+</span>
+                    <span>Add Agent</span>
+                  </div>
+                </button>
               </div>
             )}
           </div>
@@ -638,6 +775,17 @@ function ChatLayout() {
       </div>
 
       <AgentConfigDrawer open={configOpen} onOpenChange={setConfigOpen} agentId={selectedAgentId} />
+      <AddAgentDrawer
+        open={addAgentOpen}
+        onOpenChange={setAddAgentOpen}
+        onSuccess={async () => {
+          const res = await fetch('/api/agents', { cache: 'no-store' });
+          const data = (await res.json().catch(() => ({}))) as AgentsResponse;
+          if (data.ok && data.data?.agents?.length) {
+            setAgents(data.data.agents);
+          }
+        }}
+      />
     </>
   );
 }
