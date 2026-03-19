@@ -559,9 +559,20 @@ function AddAgentDrawer({
   );
 }
 
+type Group = {
+  id: string;
+  name: string;
+  description?: string;
+  type: 'project' | 'department' | 'temporary';
+  leaderId: string;
+  members: string[];
+};
+
 function ChatLayout() {
   const [agents, setAgents] = useState<AgentItem[]>([]);
+  const [groups, setGroups] = useState<Group[]>([]);
   const [selectedAgentId, setSelectedAgentId] = useState('main');
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [agentsLoading, setAgentsLoading] = useState(true);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
@@ -574,18 +585,27 @@ function ChatLayout() {
   const router = useRouter();
 
   useEffect(() => {
-    const loadAgents = async () => {
+    const loadData = async () => {
       try {
-        const res = await fetch('/api/agents', { cache: 'no-store' });
-        const data = (await res.json().catch(() => ({}))) as AgentsResponse;
-        if (data.ok && data.data?.agents?.length) {
-          const nextAgents = data.data.agents;
+        const [agentsRes, groupsRes] = await Promise.all([
+          fetch('/api/agents', { cache: 'no-store' }),
+          fetch('/api/groups', { cache: 'no-store' }),
+        ]);
+
+        const agentsData = (await agentsRes.json().catch(() => ({}))) as AgentsResponse;
+        if (agentsData.ok && agentsData.data?.agents?.length) {
+          const nextAgents = agentsData.data.agents;
           setAgents(nextAgents);
-          const preferred = data.data.defaultAgentId || nextAgents.find((agent) => agent.isDefault)?.id || nextAgents[0]?.id || 'main';
+          const preferred = agentsData.data.defaultAgentId || nextAgents.find((agent) => agent.isDefault)?.id || nextAgents[0]?.id || 'main';
           setSelectedAgentId(preferred);
         } else {
           setAgents([{ id: 'main', name: 'main', isDefault: true }]);
           setSelectedAgentId('main');
+        }
+
+        const groupsData = await groupsRes.json().catch(() => ({}));
+        if (groupsData.ok && groupsData.data?.groups) {
+          setGroups(groupsData.data.groups);
         }
       } catch {
         setAgents([{ id: 'main', name: 'main', isDefault: true }]);
@@ -594,15 +614,17 @@ function ChatLayout() {
         setAgentsLoading(false);
       }
     };
-    loadAgents();
+    loadData();
   }, []);
 
   useEffect(() => {
-    if (!selectedAgentId) return;
+    if (!selectedAgentId && !selectedGroupId) return;
     const load = async () => {
       setHistoryLoading(true);
       try {
-        const res = await fetch(`/api/chat/history?agentId=${encodeURIComponent(selectedAgentId)}`, { cache: 'no-store' });
+        const targetId = selectedGroupId || selectedAgentId;
+        const queryParam = selectedGroupId ? `groupId=${encodeURIComponent(selectedGroupId)}` : `agentId=${encodeURIComponent(selectedAgentId)}`;
+        const res = await fetch(`/api/chat/history?${queryParam}`, { cache: 'no-store' });
         const data = (await res.json().catch(() => ({}))) as {
           ok?: boolean;
           data?: { messages?: ChatMessage[] };
@@ -619,7 +641,7 @@ function ChatLayout() {
       }
     };
     load();
-  }, [selectedAgentId]);
+  }, [selectedAgentId, selectedGroupId]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -635,10 +657,17 @@ function ChatLayout() {
     setInsufficientCredits(false);
 
     try {
+      const payload: any = { message: text, timeoutMs: 90000 };
+      if (selectedGroupId) {
+        payload.groupId = selectedGroupId;
+      } else {
+        payload.agentId = selectedAgentId;
+      }
+
       const res = await fetch('/api/chat/send', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ message: text, agentId: selectedAgentId, timeoutMs: 90000 }),
+        body: JSON.stringify(payload),
       });
 
       const data = (await res.json().catch(() => ({}))) as {
@@ -670,6 +699,18 @@ function ChatLayout() {
   }
 
   const selectedAgent = agents.find((agent) => agent.id === selectedAgentId) || { id: selectedAgentId, name: selectedAgentId };
+  const selectedGroup = groups.find((g) => g.id === selectedGroupId);
+  const currentTitle = selectedGroup ? selectedGroup.name : agentLabel(selectedAgent);
+  const currentSubtitle = selectedGroup ? `Group · ${selectedGroup.members.length} members` : `Chatting with @${selectedAgent.id}`;
+
+  function switchToAgent(agentId: string) {
+    setSelectedAgentId(agentId);
+    setSelectedGroupId(null);
+  }
+
+  function switchToGroup(groupId: string) {
+    setSelectedGroupId(groupId);
+  }
 
   return (
     <>
@@ -678,8 +719,8 @@ function ChatLayout() {
           <div className="border-b px-4 py-3">
             <div className="flex items-center justify-between gap-2">
               <div>
-                <h2 className="text-sm font-semibold">Agents</h2>
-                <p className="mt-1 text-xs text-muted-foreground">Telegram-style switching between your AI employees</p>
+                <h2 className="text-sm font-semibold">Chats</h2>
+                <p className="mt-1 text-xs text-muted-foreground">Agents & Groups</p>
               </div>
               <button
                 type="button"
@@ -693,18 +734,22 @@ function ChatLayout() {
 
           <div className="flex-1 overflow-y-auto p-3">
             {agentsLoading ? (
-              <div className="px-2 py-3 text-sm text-muted-foreground">Loading agents…</div>
+              <div className="px-2 py-3 text-sm text-muted-foreground">Loading…</div>
             ) : (
-              <div className="space-y-2">
-                {agents.map((agent) => {
-                  const active = agent.id === selectedAgentId;
-                  return (
-                    <button
-                      key={agent.id}
-                      type="button"
-                      onClick={() => setSelectedAgentId(agent.id)}
-                      className={`w-full rounded-xl border px-3 py-3 text-left transition-colors ${active ? 'border-primary bg-primary/5 shadow-sm' : 'border-border hover:bg-muted/60'}`}
-                    >
+              <div className="space-y-3">
+                {/* Agents Section */}
+                <div>
+                  <div className="px-2 pb-2 text-xs font-semibold text-muted-foreground">Agents</div>
+                  <div className="space-y-2">
+                    {agents.map((agent) => {
+                      const active = !selectedGroupId && agent.id === selectedAgentId;
+                      return (
+                        <button
+                          key={agent.id}
+                          type="button"
+                          onClick={() => switchToAgent(agent.id)}
+                          className={`w-full rounded-xl border px-3 py-3 text-left transition-colors ${active ? 'border-primary bg-primary/5 shadow-sm' : 'border-border hover:bg-muted/60'}`}
+                        >
                       <div className="flex items-start gap-3">
                         <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-base">
                           {agentEmoji(agent)}
@@ -721,16 +766,51 @@ function ChatLayout() {
                     </button>
                   );
                 })}
-                <button
-                  type="button"
-                  onClick={() => setAddAgentOpen(true)}
-                  className="w-full rounded-xl border border-dashed border-border px-3 py-3 text-left text-sm text-muted-foreground transition-colors hover:bg-muted/60 hover:border-primary/50"
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="text-base">+</span>
-                    <span>Add Agent</span>
+                    <button
+                      type="button"
+                      onClick={() => setAddAgentOpen(true)}
+                      className="w-full rounded-xl border border-dashed border-border px-3 py-3 text-left text-sm text-muted-foreground transition-colors hover:bg-muted/60 hover:border-primary/50"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-base">+</span>
+                        <span>Add Agent</span>
+                      </div>
+                    </button>
                   </div>
-                </button>
+                </div>
+
+                {/* Groups Section */}
+                {groups.length > 0 && (
+                  <div>
+                    <div className="px-2 pb-2 text-xs font-semibold text-muted-foreground">Groups</div>
+                    <div className="space-y-2">
+                      {groups.map((group) => {
+                        const active = selectedGroupId === group.id;
+                        const leader = agents.find((a) => a.id === group.leaderId);
+                        return (
+                          <button
+                            key={group.id}
+                            type="button"
+                            onClick={() => switchToGroup(group.id)}
+                            className={`w-full rounded-xl border px-3 py-3 text-left transition-colors ${active ? 'border-primary bg-primary/5 shadow-sm' : 'border-border hover:bg-muted/60'}`}
+                          >
+                            <div className="flex items-start gap-3">
+                              <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-base">
+                                👥
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="truncate text-sm font-medium">{group.name}</p>
+                                <p className="mt-1 truncate text-xs text-muted-foreground">
+                                  {group.members.length} members · {leader ? agentLabel(leader) : group.leaderId}
+                                </p>
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -742,21 +822,23 @@ function ChatLayout() {
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
                   <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm">
-                    {agentEmoji(selectedAgent)}
+                    {selectedGroup ? '👥' : agentEmoji(selectedAgent)}
                   </div>
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold">{agentLabel(selectedAgent)}</p>
-                    <p className="truncate text-xs text-muted-foreground">Chatting with @{selectedAgent.id}</p>
+                    <p className="truncate text-sm font-semibold">{currentTitle}</p>
+                    <p className="truncate text-xs text-muted-foreground">{currentSubtitle}</p>
                   </div>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => setConfigOpen(true)}
-                className="rounded-lg border px-3 py-1.5 text-xs text-muted-foreground hover:bg-muted transition-colors"
-              >
-                Config
-              </button>
+              {!selectedGroup && (
+                <button
+                  type="button"
+                  onClick={() => setConfigOpen(true)}
+                  className="rounded-lg border px-3 py-1.5 text-xs text-muted-foreground hover:bg-muted transition-colors"
+                >
+                  Config
+                </button>
+              )}
             </div>
           </div>
 
