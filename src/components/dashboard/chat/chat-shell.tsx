@@ -20,23 +20,12 @@ type RuntimeStatus =
   | { ok: true; state: 'ready'; reason: string; containerName?: string }
   | { ok: false; error: string };
 
-type ChatTiming = {
-  totalMs?: number;
-  platformApiMs?: number;
-  bridgeHttpMs?: number;
-  platformOverheadMs?: number;
-  bridgeRouteMs?: number;
-  openclawAgentMs?: number;
-  browserRoundTripMs?: number;
-};
-
 type ChatMessage = {
   id?: string;
   role: 'user' | 'assistant';
   content: string;
   createdAt?: string;
   routedAgentId?: string;
-  timing?: ChatTiming;
 };
 
 type AgentItem = {
@@ -686,7 +675,7 @@ function ChatLayout() {
       const data = (await res.json().catch(() => ({}))) as {
         ok?: boolean;
         code?: string;
-        data?: { reply?: string; routedAgentId?: string; timing?: ChatTiming };
+        data?: { reply?: string; routedAgentId?: string; timing?: Record<string, unknown> };
         error?: string | { message?: string };
       };
 
@@ -703,15 +692,16 @@ function ChatLayout() {
       }
 
       const browserRoundTripMs = Math.round(performance.now() - clientStartedAt);
-      const timing = data.data?.timing ? { ...data.data.timing, browserRoundTripMs } : { browserRoundTripMs };
-      console.debug('[chat/send timing]', timing);
+      console.debug('[chat/send timing]', {
+        browserRoundTripMs,
+        ...(data.data?.timing || {}),
+      });
 
       setMessages((m) => [...m, {
         role: 'assistant',
         content: data.data?.reply || '⚠️ Empty reply',
         createdAt: new Date().toISOString(),
         routedAgentId: data.data?.routedAgentId,
-        timing,
       }]);
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'Failed to send message';
@@ -919,16 +909,6 @@ function ChatLayout() {
                       <div className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap break-words [overflow-wrap:anywhere] ${msg.role === 'user' ? 'bg-primary text-primary-foreground rounded-br-sm' : 'bg-muted text-foreground rounded-bl-sm'}`}>
                         {msg.content}
                       </div>
-                      {msg.role === 'assistant' && msg.timing ? (
-                        <div className="mt-1 ml-1 text-[11px] text-muted-foreground/70">
-                          total {Math.round(msg.timing.totalMs ?? msg.timing.browserRoundTripMs ?? 0)}ms
-                          {msg.timing.browserRoundTripMs ? ` · browser ${Math.round(msg.timing.browserRoundTripMs)}ms` : ''}
-                          {msg.timing.platformOverheadMs != null ? ` · api-overhead ${Math.round(msg.timing.platformOverheadMs)}ms` : ''}
-                          {msg.timing.bridgeHttpMs != null ? ` · bridge-http ${Math.round(msg.timing.bridgeHttpMs)}ms` : ''}
-                          {msg.timing.bridgeRouteMs != null ? ` · bridge ${Math.round(msg.timing.bridgeRouteMs)}ms` : ''}
-                          {msg.timing.openclawAgentMs != null ? ` · agent ${Math.round(msg.timing.openclawAgentMs)}ms` : ''}
-                        </div>
-                      ) : null}
                     </div>
                   </div>
                 );

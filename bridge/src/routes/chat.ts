@@ -84,6 +84,13 @@ export async function chatRoutes(app: FastifyInstance) {
       const agentDurationMs = Date.now() - agentStartedAt;
       const routeDurationMs = Date.now() - routeStartedAt;
 
+      app.log.info(
+        `[bridge/chat/send timing] targetAgent=${targetAgentId}` +
+        `${groupId ? ` group=${groupId}` : ''}` +
+        ` bridgeRouteMs=${routeDurationMs}` +
+        ` openclawAgentMs=${agentDurationMs}`
+      );
+
       return ok(reply, {
         agentId: targetAgentId,
         routedAgentId: targetAgentId,

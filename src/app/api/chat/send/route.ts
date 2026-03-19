@@ -215,6 +215,16 @@ export async function POST(req: Request) {
     const totalDurationMs = Date.now() - requestStartedAt;
     const apiOverheadMs = Math.max(0, totalDurationMs - bridgeFetchDurationMs);
 
+    console.log(
+      `[chat/send timing] user=${userId} agent=${agentId}` +
+      `${body.groupId ? ` group=${body.groupId}` : ''}` +
+      ` totalMs=${totalDurationMs}` +
+      ` apiOverheadMs=${apiOverheadMs}` +
+      ` bridgeHttpMs=${bridgeFetchDurationMs}` +
+      ` bridgeRouteMs=${payload.data?.timing?.bridgeRouteMs ?? 'n/a'}` +
+      ` openclawAgentMs=${payload.data?.timing?.openclawAgentMs ?? 'n/a'}`
+    );
+
     // Strip internal data before returning to client
     const clientPayload = payload.ok === true && payload.data
       ? {
