@@ -9,6 +9,7 @@ import {
   updateAgentMarkdown,
   updateAgentTelegram,
   createAgent,
+  deleteAgent,
 } from '../services/agent.js';
 import { setDefaultAgentId } from '../services/state.js';
 
@@ -30,6 +31,17 @@ export async function agentRoutes(app: FastifyInstance) {
       return ok(reply, data);
     } catch (error: any) {
       return fail(reply, error.code || 'INTERNAL_ERROR', error.message || 'create agent failed', error.statusCode || 500);
+    }
+  });
+
+  app.delete('/agents/:agentId', async (req: any, reply) => {
+    try {
+      const agentId = String(req.params?.agentId || '').trim();
+      if (!agentId) return fail(reply, 'INVALID_PARAMS', 'agentId is required', 400);
+      const data = await deleteAgent(agentId);
+      return ok(reply, data);
+    } catch (error: any) {
+      return fail(reply, error.code || 'INTERNAL_ERROR', error.message || 'delete agent failed', error.statusCode || 500);
     }
   });
 

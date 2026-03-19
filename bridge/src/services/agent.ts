@@ -231,6 +231,43 @@ export async function updateAgent(agentId: string, patch: { model?: string }) {
   return getAgent(agentId);
 }
 
+export async function deleteAgent(agentId: string) {
+  const config = await readConfig();
+  const agents = config.agents?.list || [];
+  const index = agents.findIndex((agent) => agent.id === agentId);
+  
+  if (index < 0) {
+    throw new BridgeError('AGENT_NOT_FOUND', `Agent not found: ${agentId}`, 404);
+  }
+
+  // Don't allow deleting the last agent
+  if (agents.length <= 1) {
+    throw new BridgeError('LAST_AGENT', 'Cannot delete the last agent', 400);
+  }
+
+  // Remove from agents list
+  agents.splice(index, 1);
+  config.agents = {
+    ...(config.agents || {}),
+    list: agents,
+  };
+
+  // Clean up telegram account if exists
+  if (config.channels?.telegram?.accounts?.[agentId]) {
+    delete config.channels.telegram.accounts[agentId];
+  }
+
+  // Clean up bindings
+  if (config.bindings) {
+    config.bindings = config.bindings.filter(
+      (binding) => binding.agentId !== agentId
+    );
+  }
+
+  await writeConfig(config);
+  return { deleted: true, agentId };
+}
+
 export async function createAgent(params: { agentId: string; name?: string; workspace?: string; model?: string }) {
   const { agentId, name, workspace, model } = params;
   

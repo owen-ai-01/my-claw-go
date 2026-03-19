@@ -68,3 +68,27 @@ export async function forwardBridgeJson(method: 'PUT' | 'PATCH' | 'POST', path: 
     );
   }
 }
+
+export async function forwardBridgeDelete(path: string) {
+  const bridge = await requireUserBridgeTarget();
+  if (!bridge.ok) return bridge.response;
+
+  try {
+    const upstream = await fetch(`${bridge.target.bridge.baseUrl}${path}`, {
+      method: 'DELETE',
+      headers: { authorization: `Bearer ${bridge.target.bridge.token}` },
+      cache: 'no-store',
+    });
+    const payload = await upstream.json().catch(() => ({ ok: false, error: 'Invalid bridge response' }));
+    return NextResponse.json(payload, { status: upstream.status });
+  } catch (error) {
+    return NextResponse.json(
+      {
+        ok: false,
+        code: 'bridge_request_failed',
+        error: error instanceof Error ? error.message : 'Bridge request failed',
+      },
+      { status: 502 }
+    );
+  }
+}
