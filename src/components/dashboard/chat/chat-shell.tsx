@@ -25,6 +25,7 @@ type ChatMessage = {
   role: 'user' | 'assistant';
   content: string;
   createdAt?: string;
+  routedAgentId?: string;
 };
 
 type AgentItem = {
@@ -673,7 +674,7 @@ function ChatLayout() {
       const data = (await res.json().catch(() => ({}))) as {
         ok?: boolean;
         code?: string;
-        data?: { reply?: string };
+        data?: { reply?: string; routedAgentId?: string };
         error?: string | { message?: string };
       };
 
@@ -689,7 +690,12 @@ function ChatLayout() {
         return;
       }
 
-      setMessages((m) => [...m, { role: 'assistant', content: data.data?.reply || '⚠️ Empty reply', createdAt: new Date().toISOString() }]);
+      setMessages((m) => [...m, {
+        role: 'assistant',
+        content: data.data?.reply || '⚠️ Empty reply',
+        createdAt: new Date().toISOString(),
+        routedAgentId: data.data?.routedAgentId,
+      }]);
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'Failed to send message';
       setMessages((m) => [...m, { role: 'assistant', content: `⚠️ ${msg}`, createdAt: new Date().toISOString() }]);
@@ -700,8 +706,14 @@ function ChatLayout() {
 
   const selectedAgent = agents.find((agent) => agent.id === selectedAgentId) || { id: selectedAgentId, name: selectedAgentId };
   const selectedGroup = groups.find((g) => g.id === selectedGroupId);
+  const selectedGroupLeader = selectedGroup ? agents.find((agent) => agent.id === selectedGroup.leaderId) : null;
   const currentTitle = selectedGroup ? selectedGroup.name : agentLabel(selectedAgent);
-  const currentSubtitle = selectedGroup ? `Group · ${selectedGroup.members.length} members` : `Chatting with @${selectedAgent.id}`;
+  const currentSubtitle = selectedGroup
+    ? `Group · ${selectedGroup.members.length} members · Leader ${selectedGroupLeader ? agentLabel(selectedGroupLeader) : `@${selectedGroup?.leaderId}`}`
+    : `Chatting with @${selectedAgent.id}`;
+  const inputPlaceholder = selectedGroup
+    ? `Message ${selectedGroup.name}… Use @agentId to route to a member`
+    : `Message ${agentLabel(selectedAgent)}… (Enter to send)`;
 
   function switchToAgent(agentId: string) {
     setSelectedAgentId(agentId);
@@ -819,7 +831,7 @@ function ChatLayout() {
         <div className="flex min-h-0 flex-col rounded-2xl border bg-card shadow-sm overflow-hidden overflow-x-hidden">
           <div className="border-b px-4 py-3 sm:px-6">
             <div className="flex items-center justify-between gap-3">
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm">
                     {selectedGroup ? '👥' : agentEmoji(selectedAgent)}
@@ -829,6 +841,14 @@ function ChatLayout() {
                     <p className="truncate text-xs text-muted-foreground">{currentSubtitle}</p>
                   </div>
                 </div>
+                {selectedGroup && (
+                  <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                    <span className="rounded-full bg-muted px-2.5 py-1">Type: {selectedGroup.type}</span>
+                    <span className="rounded-full bg-muted px-2.5 py-1">Members: {selectedGroup.members.length}</span>
+                    <span className="rounded-full bg-muted px-2.5 py-1">Leader: {selectedGroupLeader ? agentLabel(selectedGroupLeader) : `@${selectedGroup.leaderId}`}</span>
+                    {selectedGroup.description ? <span className="max-w-full truncate rounded-full bg-muted px-2.5 py-1">{selectedGroup.description}</span> : null}
+                  </div>
+                )}
               </div>
               {!selectedGroup && (
                 <button
@@ -864,18 +884,28 @@ function ChatLayout() {
                 <p className="text-sm text-muted-foreground">Start a conversation with {agentLabel(selectedAgent)}.</p>
               </div>
             ) : (
-              messages.map((msg, idx) => (
-                <div key={msg.id || `${selectedAgentId}-${msg.role}-${idx}`} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  {msg.role === 'assistant' && (
-                    <div className="mr-2 mt-1 flex-shrink-0 w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary select-none">
-                      {agentEmoji(selectedAgent)}
+              messages.map((msg, idx) => {
+                const routedAgent = msg.routedAgentId ? agents.find((agent) => agent.id === msg.routedAgentId) || selectedAgent : selectedAgent;
+                return (
+                  <div key={msg.id || `${selectedAgentId}-${msg.role}-${idx}`} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    {msg.role === 'assistant' && (
+                      <div className="mr-2 mt-1 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary select-none">
+                        {selectedGroup ? agentEmoji(routedAgent) : agentEmoji(selectedAgent)}
+                      </div>
+                    )}
+                    <div>
+                      {msg.role === 'assistant' && selectedGroup && msg.routedAgentId ? (
+                        <div className="mb-1 ml-1 text-[11px] text-muted-foreground">
+                          {agentLabel(routedAgent)} · @{msg.routedAgentId}
+                        </div>
+                      ) : null}
+                      <div className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap break-words [overflow-wrap:anywhere] ${msg.role === 'user' ? 'bg-primary text-primary-foreground rounded-br-sm' : 'bg-muted text-foreground rounded-bl-sm'}`}>
+                        {msg.content}
+                      </div>
                     </div>
-                  )}
-                  <div className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap break-words [overflow-wrap:anywhere] ${msg.role === 'user' ? 'bg-primary text-primary-foreground rounded-br-sm' : 'bg-muted text-foreground rounded-bl-sm'}`}>
-                    {msg.content}
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
 
             {sending && (
@@ -911,7 +941,7 @@ function ChatLayout() {
                     onSend();
                   }
                 }}
-                placeholder={`Message ${agentLabel(selectedAgent)}… (Enter to send)`}
+                placeholder={inputPlaceholder}
                 rows={1}
                 className="flex-1 resize-none bg-transparent text-sm outline-none max-h-[120px] leading-relaxed py-0.5"
               />
@@ -919,7 +949,9 @@ function ChatLayout() {
                 {sending ? '…' : 'Send'}
               </button>
             </div>
-            <p className="mt-1.5 text-center text-xs text-muted-foreground/40">Shift+Enter for new line</p>
+            <p className="mt-1.5 text-center text-xs text-muted-foreground/40">
+              {selectedGroup ? 'Shift+Enter for new line · Tip: use @agentId in group chat' : 'Shift+Enter for new line'}
+            </p>
           </div>
         </div>
       </div>

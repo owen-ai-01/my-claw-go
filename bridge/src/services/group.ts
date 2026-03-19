@@ -108,6 +108,7 @@ export async function createGroup(params: {
 export async function updateGroup(groupId: string, patch: {
   name?: string;
   description?: string;
+  type?: GroupType;
   leaderId?: string;
   members?: string[];
 }) {
@@ -130,6 +131,10 @@ export async function updateGroup(groupId: string, patch: {
 
   if (patch.description !== undefined) {
     group.description = patch.description.trim() || undefined;
+  }
+
+  if (patch.type !== undefined) {
+    group.type = patch.type;
   }
 
   if (patch.members !== undefined) {

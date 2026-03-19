@@ -6,6 +6,17 @@ import { sendChatMessage } from '../services/openclaw.js';
 import { getBridgeState } from '../services/state.js';
 import { getGroup } from '../services/group.js';
 
+function extractMentionedAgentId(message: string, members: string[]) {
+  const mentionMatches = [...message.matchAll(/@([a-zA-Z0-9_-]+)/g)];
+  for (const match of mentionMatches) {
+    const candidate = match[1];
+    if (members.includes(candidate)) {
+      return candidate;
+    }
+  }
+  return null;
+}
+
 export async function chatRoutes(app: FastifyInstance) {
   app.get('/chat/history', async (req: any, reply) => {
     try {
@@ -45,9 +56,10 @@ export async function chatRoutes(app: FastifyInstance) {
       let chatScope: string;
 
       if (groupId) {
-        // 群组消息：发给群主
+        // 群组消息：优先按 @agentId 路由，否则发给群主
         const group = await getGroup(groupId);
-        targetAgentId = group.leaderId;
+        const mentionedAgentId = extractMentionedAgentId(message, group.members);
+        targetAgentId = mentionedAgentId || group.leaderId;
         channel = 'group';
         chatScope = groupId;
         await ensureAgentExists(targetAgentId);
@@ -70,6 +82,7 @@ export async function chatRoutes(app: FastifyInstance) {
 
       return ok(reply, {
         agentId: targetAgentId,
+        routedAgentId: targetAgentId,
         groupId: groupId || undefined,
         reply: result.reply,
         model: result.model,
