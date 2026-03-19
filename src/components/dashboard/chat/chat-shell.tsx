@@ -476,7 +476,7 @@ function AddAgentDrawer({
       setAgentId('');
       setName('');
       setModel('');
-      onSuccess();
+      await Promise.resolve(onSuccess());
       onOpenChange(false);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to create agent';

@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { BridgeError } from '../lib/errors.js';
-import { OPENCLAW_CONFIG_PATH } from '../lib/paths.js';
+import { OPENCLAW_CONFIG_PATH, OPENCLAW_HOME } from '../lib/paths.js';
 import { getBridgeState } from './state.js';
 
 type AgentIdentity = {
@@ -270,7 +270,7 @@ export async function deleteAgent(agentId: string) {
 
 export async function createAgent(params: { agentId: string; name?: string; workspace?: string; model?: string }) {
   const { agentId, name, workspace, model } = params;
-  
+
   if (!agentId || !/^[a-z0-9_-]+$/i.test(agentId)) {
     throw new BridgeError('INVALID_AGENT_ID', 'Agent ID must be alphanumeric with hyphens/underscores', 400);
   }
@@ -281,12 +281,34 @@ export async function createAgent(params: { agentId: string; name?: string; work
     throw new BridgeError('AGENT_EXISTS', `Agent ${agentId} already exists`, 409);
   }
 
+  const nextWorkspace = workspace || path.join(OPENCLAW_HOME, 'agents', agentId, 'workspace');
+  const nextAgentDir = path.join(OPENCLAW_HOME, 'agents', agentId);
+  const agentsMdPath = path.join(nextWorkspace, 'AGENTS.md');
+
+  await fs.mkdir(nextWorkspace, { recursive: true });
+  const initialAgentsMd = [
+    `# ${name?.trim() || agentId}`,
+    '',
+    `You are @${agentId}.`,
+    '',
+    '## Role',
+    '- Newly created agent in MyClawGo',
+    '',
+    '## Behavior',
+    '- Be helpful, concise, and action-oriented.',
+  ].join('\n');
+  await fs.writeFile(agentsMdPath, initialAgentsMd, 'utf8');
+
   const newAgent: AgentConfigEntry = {
     id: agentId,
+    workspace: nextWorkspace,
+    agentDir: nextAgentDir,
   };
 
-  if (name) newAgent.name = name;
-  if (workspace) newAgent.workspace = workspace;
+  if (name) {
+    newAgent.name = name;
+    newAgent.identity = { ...(newAgent.identity || {}), name };
+  }
   if (model) newAgent.model = model;
 
   config.agents = config.agents || {};
