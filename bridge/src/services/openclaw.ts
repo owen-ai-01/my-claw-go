@@ -38,11 +38,12 @@ export async function sendChatMessage(params: {
   try {
     const parsed = JSON.parse(stdout);
     const reply = extractReply(parsed);
+    const fallbackReply = reply || parsed?.error || parsed?.result?.error || '';
     await appendChatTranscript({ role: 'user', text: message, agentId, channel, chatScope });
-    await appendChatTranscript({ role: 'assistant', text: reply || '', agentId, channel, chatScope, meta: { model: parsed?.result?.meta?.agentMeta?.model } });
+    await appendChatTranscript({ role: 'assistant', text: fallbackReply || '', agentId, channel, chatScope, meta: { model: parsed?.result?.meta?.agentMeta?.model } });
     return {
       raw: parsed,
-      reply,
+      reply: fallbackReply,
       model: parsed?.result?.meta?.agentMeta?.model,
       usage: parsed?.result?.meta?.agentMeta?.lastCallUsage || parsed?.result?.meta?.agentMeta?.usage,
     };

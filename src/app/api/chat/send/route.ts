@@ -122,6 +122,7 @@ export async function POST(req: Request) {
   const body = (await req.json().catch(() => ({}))) as {
     message?: string;
     agentId?: string;
+    groupId?: string;
     timeoutMs?: number;
     channel?: string;
     chatScope?: string;
@@ -165,6 +166,7 @@ export async function POST(req: Request) {
       body: JSON.stringify({
         message,
         agentId,
+        groupId: body.groupId,
         timeoutMs: body.timeoutMs || 90000,
         channel: body.channel || 'direct',
         chatScope: body.chatScope || 'default',
@@ -176,7 +178,7 @@ export async function POST(req: Request) {
       error: 'Invalid bridge response',
     })) as {
       ok?: boolean;
-      data?: { reply?: string; model?: string; usage?: BridgeUsage };
+      data?: { reply?: string; model?: string; usage?: BridgeUsage; routedAgentId?: string; groupId?: string };
       error?: string;
     };
 
@@ -189,9 +191,27 @@ export async function POST(req: Request) {
       deductCreditsAsync({ userId, agentId, message, reply, model, usage });
     }
 
+    if (payload.ok === true && !payload.data?.reply?.trim()) {
+      return NextResponse.json(
+        {
+          ok: false,
+          code: 'empty_reply',
+          error: 'Agent returned an empty reply',
+        },
+        { status: 502 }
+      );
+    }
+
     // Strip internal data before returning to client
     const clientPayload = payload.ok === true && payload.data
-      ? { ok: true, data: { reply: payload.data.reply } }
+      ? {
+          ok: true,
+          data: {
+            reply: payload.data.reply,
+            routedAgentId: payload.data.routedAgentId,
+            groupId: payload.data.groupId,
+          },
+        }
       : payload;
 
     return NextResponse.json(clientPayload, { status: upstreamRes.status });
