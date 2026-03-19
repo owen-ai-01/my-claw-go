@@ -113,6 +113,7 @@ function deductCreditsAsync(params: {
 }
 
 export async function POST(req: Request) {
+  const requestStartedAt = Date.now();
   const session = await auth.api.getSession({ headers: await headers() });
   const userId = session?.user?.id;
   if (!userId) {
@@ -157,6 +158,7 @@ export async function POST(req: Request) {
   const db = await getDb();
 
   try {
+    const bridgeFetchStartedAt = Date.now();
     const upstreamRes = await fetch(`${target.bridge.baseUrl}/chat/send`, {
       method: 'POST',
       headers: {
@@ -173,12 +175,20 @@ export async function POST(req: Request) {
       }),
     });
 
+    const bridgeFetchDurationMs = Date.now() - bridgeFetchStartedAt;
     const payload = await upstreamRes.json().catch(() => ({
       ok: false,
       error: 'Invalid bridge response',
     })) as {
       ok?: boolean;
-      data?: { reply?: string; model?: string; usage?: BridgeUsage; routedAgentId?: string; groupId?: string };
+      data?: {
+        reply?: string;
+        model?: string;
+        usage?: BridgeUsage;
+        routedAgentId?: string;
+        groupId?: string;
+        timing?: { bridgeRouteMs?: number; openclawAgentMs?: number };
+      };
       error?: string;
     };
 
@@ -202,6 +212,9 @@ export async function POST(req: Request) {
       );
     }
 
+    const totalDurationMs = Date.now() - requestStartedAt;
+    const apiOverheadMs = Math.max(0, totalDurationMs - bridgeFetchDurationMs);
+
     // Strip internal data before returning to client
     const clientPayload = payload.ok === true && payload.data
       ? {
@@ -210,6 +223,14 @@ export async function POST(req: Request) {
             reply: payload.data.reply,
             routedAgentId: payload.data.routedAgentId,
             groupId: payload.data.groupId,
+            timing: {
+              totalMs: totalDurationMs,
+              platformApiMs: totalDurationMs,
+              bridgeHttpMs: bridgeFetchDurationMs,
+              platformOverheadMs: apiOverheadMs,
+              bridgeRouteMs: payload.data.timing?.bridgeRouteMs,
+              openclawAgentMs: payload.data.timing?.openclawAgentMs,
+            },
           },
         }
       : payload;

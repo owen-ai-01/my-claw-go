@@ -43,6 +43,7 @@ export async function chatRoutes(app: FastifyInstance) {
   });
 
   app.post('/chat/send', async (req: any, reply) => {
+    const routeStartedAt = Date.now();
     try {
       const body = req.body || {};
       const message = String(body.message || '').trim();
@@ -72,6 +73,7 @@ export async function chatRoutes(app: FastifyInstance) {
         await ensureAgentExists(targetAgentId);
       }
 
+      const agentStartedAt = Date.now();
       const result = await sendChatMessage({
         message,
         agentId: targetAgentId,
@@ -79,6 +81,8 @@ export async function chatRoutes(app: FastifyInstance) {
         channel,
         chatScope,
       });
+      const agentDurationMs = Date.now() - agentStartedAt;
+      const routeDurationMs = Date.now() - routeStartedAt;
 
       return ok(reply, {
         agentId: targetAgentId,
@@ -88,6 +92,10 @@ export async function chatRoutes(app: FastifyInstance) {
         model: result.model,
         usage: result.usage,
         raw: result.raw,
+        timing: {
+          bridgeRouteMs: routeDurationMs,
+          openclawAgentMs: agentDurationMs,
+        },
       });
     } catch (error: any) {
       return fail(
