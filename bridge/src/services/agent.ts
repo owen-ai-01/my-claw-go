@@ -28,6 +28,7 @@ type UpdateTelegramPatch = {
   enabled?: boolean;
   botToken?: string;
   bindingEnabled?: boolean;
+  allowFrom?: string[];
 };
 
 type AgentConfigEntry = {
@@ -261,7 +262,14 @@ export async function updateAgentTelegram(agentId: string, patch: UpdateTelegram
   } else {
     // OpenClaw 2026.3.13+ requires dmPolicy + allowFrom
     nextAccount.dmPolicy = nextAccount.dmPolicy || 'open';
-    nextAccount.allowFrom = nextAccount.allowFrom || ['*'];
+    
+    // Use user-provided allowFrom if available, otherwise default to ['*']
+    if (patch.allowFrom !== undefined) {
+      nextAccount.allowFrom = patch.allowFrom.length > 0 ? patch.allowFrom : ['*'];
+    } else {
+      nextAccount.allowFrom = nextAccount.allowFrom || ['*'];
+    }
+    
     nextAccount.groupPolicy = nextAccount.groupPolicy || 'disabled';
     nextAccount.streaming = nextAccount.streaming || 'partial';
     

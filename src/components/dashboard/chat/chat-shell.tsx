@@ -105,6 +105,7 @@ function AgentConfigDrawer({
   const [draftTelegramEnabled, setDraftTelegramEnabled] = useState(false);
   const [draftTelegramBindingEnabled, setDraftTelegramBindingEnabled] = useState(false);
   const [draftTelegramBotToken, setDraftTelegramBotToken] = useState('');
+  const [draftTelegramAllowFrom, setDraftTelegramAllowFrom] = useState('');
 
   useEffect(() => {
     if (!open || !agentId) return;
@@ -141,6 +142,8 @@ function AgentConfigDrawer({
         setDraftTelegramEnabled(agentPayload.data.telegram?.enabled ?? false);
         setDraftTelegramBindingEnabled(agentPayload.data.telegram?.bindingEnabled ?? false);
         setDraftTelegramBotToken('');
+        // Show current allowFrom if exists (backend will return it in next update)
+        setDraftTelegramAllowFrom('');
       } catch (err) {
         if (cancelled) return;
         setError(err instanceof Error ? err.message : 'Failed to load agent details');
@@ -151,6 +154,7 @@ function AgentConfigDrawer({
         setDraftTelegramEnabled(false);
         setDraftTelegramBindingEnabled(false);
         setDraftTelegramBotToken('');
+        setDraftTelegramAllowFrom('');
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -187,6 +191,7 @@ function AgentConfigDrawer({
             enabled: draftTelegramEnabled,
             bindingEnabled: draftTelegramBindingEnabled,
             botToken: draftTelegramBotToken,
+            allowFrom: draftTelegramAllowFrom.trim() ? draftTelegramAllowFrom.split(',').map(s => s.trim()).filter(Boolean) : undefined,
           }),
         }),
       ]);
@@ -306,6 +311,16 @@ function AgentConfigDrawer({
                       placeholder={agent.telegram?.hasBotToken ? 'Leave blank to keep current token' : 'Paste Telegram bot token'}
                       className="mt-1 w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none"
                     />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Allowed Telegram IDs</p>
+                    <input
+                      value={draftTelegramAllowFrom}
+                      onChange={(e) => setDraftTelegramAllowFrom(e.target.value)}
+                      placeholder="Leave blank for * (allow all), or comma-separated IDs: 123456,789012"
+                      className="mt-1 w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none"
+                    />
+                    <p className="mt-1 text-[11px] text-muted-foreground">Default: * (allow all users). Enter specific Telegram user IDs to restrict access.</p>
                   </div>
                   <label className="flex items-center gap-2 rounded-xl border px-3 py-2">
                     <input
