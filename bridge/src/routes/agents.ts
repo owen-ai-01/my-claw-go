@@ -56,6 +56,27 @@ export async function agentRoutes(app: FastifyInstance) {
     }
   });
 
+  app.get('/agents/:agentId/status', async (req: any, reply) => {
+    try {
+      const agentId = String(req.params?.agentId || '').trim();
+      if (!agentId) return fail(reply, 'INVALID_PARAMS', 'agentId is required', 400);
+      
+      // 简化版状态：返回基本 agent 信息 + 一些扩展状态
+      const agent = await getAgent(agentId);
+      const status = {
+        agentId,
+        online: true, // 简化版先假设都在线
+        lastActivity: new Date().toISOString(),
+        currentTask: null,
+        recentErrors: [],
+      };
+      
+      return ok(reply, { agent, status });
+    } catch (error: any) {
+      return fail(reply, error.code || 'INTERNAL_ERROR', error.message || 'get status failed', error.statusCode || 500);
+    }
+  });
+
   app.get('/agents/:agentId/agents-md', async (req: any, reply) => {
     try {
       const agentId = String(req.params?.agentId || '').trim();
