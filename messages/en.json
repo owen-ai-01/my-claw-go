@@ -480,7 +480,8 @@
       "getStarted": "Get Started",
       "notAvailable": "Not Available",
       "daysTrial": "Free Trial: {days} days",
-      "discount50": "20% Discount"
+      "discount50": "20% Discount",
+      "billedAnnually": "Billed annually"
     },
     "CheckoutButton": {
       "loading": "Loading...",
@@ -1217,10 +1218,10 @@
     },
     "pro_monthly": {
       "name": "Pro (Monthly)",
-      "description": "Your own private AI workspace",
+      "description": "Private AI workspace for solo builders",
       "features": {
         "feature-1": "4,000 Credits / month",
-        "feature-2": "Private workspace: 0.5 vCPU / 1 GB RAM / 10 GB disk",
+        "feature-2": "Container: 1 vCPU / 2 GB RAM / 20 GB disk",
         "feature-3": "Access to all AI models",
         "feature-4": "No VPS or API key setup needed",
         "feature-5": "Credits valid for 1 month",
@@ -1229,10 +1230,10 @@
     },
     "pro_yearly": {
       "name": "Pro (Yearly)",
-      "description": "Your own private AI workspace — save 20%",
+      "description": "Private AI workspace for solo builders — save 20%",
       "features": {
         "feature-1": "48,000 Credits / year",
-        "feature-2": "Private workspace: 0.5 vCPU / 1 GB RAM / 10 GB disk",
+        "feature-2": "Container: 1 vCPU / 2 GB RAM / 20 GB disk",
         "feature-3": "Access to all AI models",
         "feature-4": "No VPS or API key setup needed",
         "feature-5": "Credits valid for 1 year",
@@ -1241,10 +1242,10 @@
     },
     "premium_monthly": {
       "name": "Premium (Monthly)",
-      "description": "More power, more credits",
+      "description": "More compute and more credits for serious usage",
       "features": {
         "feature-1": "8,000 Credits / month",
-        "feature-2": "Private workspace: 1 vCPU / 2 GB RAM / 20 GB disk",
+        "feature-2": "Container: 2 vCPU / 4 GB RAM / 40 GB disk",
         "feature-3": "Access to all AI models",
         "feature-4": "No VPS or API key setup needed",
         "feature-5": "Credits valid for 1 month",
@@ -1253,10 +1254,10 @@
     },
     "premium_yearly": {
       "name": "Premium (Yearly)",
-      "description": "More power, more credits — save 20%",
+      "description": "More compute and more credits — save 20%",
       "features": {
         "feature-1": "96,000 Credits / year",
-        "feature-2": "Private workspace: 1 vCPU / 2 GB RAM / 20 GB disk",
+        "feature-2": "Container: 2 vCPU / 4 GB RAM / 40 GB disk",
         "feature-3": "Access to all AI models",
         "feature-4": "No VPS or API key setup needed",
         "feature-5": "Credits valid for 1 year",
@@ -1265,26 +1266,26 @@
     },
     "ultra_monthly": {
       "name": "Ultra",
-      "description": "Maximum power for heavy users",
+      "description": "Maximum compute and credits for heavy workloads",
       "features": {
         "feature-1": "40,000 Credits / month",
-        "feature-2": "Private workspace: 4 vCPU / 8 GB RAM / 50 GB disk",
+        "feature-2": "Container: 4 vCPU / 8 GB RAM / 80 GB disk",
         "feature-3": "Access to all AI models",
         "feature-4": "No VPS or API key setup needed",
         "feature-5": "Credits valid for 1 month",
-        "feature-6": "VIP support 24/7"
+        "feature-6": "Priority support"
       }
     },
     "ultra_yearly": {
       "name": "Ultra",
-      "description": "Maximum power for heavy users — save 20%",
+      "description": "Maximum compute and credits — save 20%",
       "features": {
         "feature-1": "480,000 Credits / year",
-        "feature-2": "Private workspace: 4 vCPU / 8 GB RAM / 50 GB disk",
+        "feature-2": "Container: 4 vCPU / 8 GB RAM / 80 GB disk",
         "feature-3": "Access to all AI models",
         "feature-4": "No VPS or API key setup needed",
         "feature-5": "Credits valid for 1 year",
-        "feature-6": "VIP support 24/7"
+        "feature-6": "Priority support"
       }
     }
   },

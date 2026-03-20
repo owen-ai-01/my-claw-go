@@ -480,7 +480,8 @@
       "getStarted": "Starten",
       "notAvailable": "Nicht verfügbar",
       "daysTrial": "Kostenlose Testphase: {days} Tage",
-      "discount50": "20% Rabatt"
+      "discount50": "20% Rabatt",
+      "billedAnnually": "Jährlich abgerechnet"
     },
     "CheckoutButton": {
       "loading": "Laden...",
@@ -1217,74 +1218,74 @@
     },
     "pro_monthly": {
       "name": "Pro (Monatlich)",
-      "description": "Für professionelle Anwender",
+      "description": "Privater AI-Workspace für Solo-Builder",
       "features": {
-        "feature-1": "700 Credits monatlich",
-        "feature-2": "ca. 7 Videos",
-        "feature-3": "Zugang zu allen Modellen",
-        "feature-4": "Kommerzielle Lizenz",
-        "feature-5": "Priorisierter Support",
-        "feature-6": "Credits gültig für 1 Monat"
+        "feature-1": "4.000 Credits pro Monat",
+        "feature-2": "Container: 1 vCPU / 2 GB RAM / 20 GB Speicher",
+        "feature-3": "Zugang zu allen AI-Modellen",
+        "feature-4": "Kein VPS- oder API-Key-Setup nötig",
+        "feature-5": "Credits 1 Monat gültig",
+        "feature-6": "Standard-Support"
       }
     },
     "pro_yearly": {
       "name": "Pro (Jährlich)",
-      "description": "Sparen Sie 30% mit jährlicher Zahlung",
+      "description": "Privater AI-Workspace für Solo-Builder — 20% sparen",
       "features": {
-        "feature-1": "8.400 Credits jährlich",
-        "feature-2": "ca. 84 Videos",
-        "feature-3": "Zugang zu allen Modellen",
-        "feature-4": "Kommerzielle Lizenz",
-        "feature-5": "Priorisierter Support",
-        "feature-6": "Credits gültig für 1 Jahr"
+        "feature-1": "48.000 Credits pro Jahr",
+        "feature-2": "Container: 1 vCPU / 2 GB RAM / 20 GB Speicher",
+        "feature-3": "Zugang zu allen AI-Modellen",
+        "feature-4": "Kein VPS- oder API-Key-Setup nötig",
+        "feature-5": "Credits 1 Jahr gültig",
+        "feature-6": "Standard-Support"
       }
     },
     "premium_monthly": {
       "name": "Premium (Monatlich)",
-      "description": "Für Power-User und Teams",
+      "description": "Mehr Rechenleistung und mehr Credits für ernsthafte Nutzung",
       "features": {
-        "feature-1": "2.400 Credits monatlich",
-        "feature-2": "ca. 24 Videos",
-        "feature-3": "Zugang zu allen Modellen",
-        "feature-4": "Kommerzielle Lizenz+ (Teams)",
-        "feature-5": "VIP Support 24/7",
-        "feature-6": "Credits gültig für 1 Monat"
+        "feature-1": "8.000 Credits pro Monat",
+        "feature-2": "Container: 2 vCPU / 4 GB RAM / 40 GB Speicher",
+        "feature-3": "Zugang zu allen AI-Modellen",
+        "feature-4": "Kein VPS- oder API-Key-Setup nötig",
+        "feature-5": "Credits 1 Monat gültig",
+        "feature-6": "Priorisierter Support"
       }
     },
     "premium_yearly": {
       "name": "Premium (Jährlich)",
-      "description": "Sparen Sie 30% mit jährlicher Zahlung",
+      "description": "Mehr Rechenleistung und mehr Credits — 20% sparen",
       "features": {
-        "feature-1": "28.800 Credits jährlich",
-        "feature-2": "ca. 288 Videos",
-        "feature-3": "Zugang zu allen Modellen",
-        "feature-4": "Kommerzielle Lizenz+ (Teams)",
-        "feature-5": "VIP Support 24/7",
-        "feature-6": "Credits gültig für 1 Jahr"
+        "feature-1": "96.000 Credits pro Jahr",
+        "feature-2": "Container: 2 vCPU / 4 GB RAM / 40 GB Speicher",
+        "feature-3": "Zugang zu allen AI-Modellen",
+        "feature-4": "Kein VPS- oder API-Key-Setup nötig",
+        "feature-5": "Credits 1 Jahr gültig",
+        "feature-6": "Priorisierter Support"
       }
     },
     "ultra_monthly": {
       "name": "Ultra",
-      "description": "适合重度用户与团队，提供更高积分和优先性能。",
+      "description": "Maximale Rechenleistung und Credits für Heavy-Workloads",
       "features": {
-        "feature-1": "每月 40,000 积分",
-        "feature-2": "专属私有 OpenClaw 工作空间",
-        "feature-3": "无需 VPS 与 Key 配置",
-        "feature-4": "更高队列优先级",
-        "feature-5": "高级运行时能力",
-        "feature-6": "优先支持"
+        "feature-1": "40.000 Credits pro Monat",
+        "feature-2": "Container: 4 vCPU / 8 GB RAM / 80 GB Speicher",
+        "feature-3": "Zugang zu allen AI-Modellen",
+        "feature-4": "Kein VPS- oder API-Key-Setup nötig",
+        "feature-5": "Credits 1 Monat gültig",
+        "feature-6": "Priorisierter Support"
       }
     },
     "ultra_yearly": {
       "name": "Ultra",
-      "description": "Ultra 年付方案，享受 20% 优惠与最高积分额度。",
+      "description": "Maximale Rechenleistung und Credits — 20% sparen",
       "features": {
-        "feature-1": "每年 480,000 积分",
-        "feature-2": "专属私有 OpenClaw 工作空间",
-        "feature-3": "无需 VPS 与 Key 配置",
-        "feature-4": "更高队列优先级",
-        "feature-5": "高级运行时能力",
-        "feature-6": "优先支持"
+        "feature-1": "480.000 Credits pro Jahr",
+        "feature-2": "Container: 4 vCPU / 8 GB RAM / 80 GB Speicher",
+        "feature-3": "Zugang zu allen AI-Modellen",
+        "feature-4": "Kein VPS- oder API-Key-Setup nötig",
+        "feature-5": "Credits 1 Jahr gültig",
+        "feature-6": "Priorisierter Support"
       }
     }
   },

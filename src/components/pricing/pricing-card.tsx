@@ -90,12 +90,11 @@ export function PricingCard({
   if (plan.isFree) {
     formattedPrice = t('freePrice');
   } else if (price && price.amount > 0) {
-    // price is available
-    formattedPrice = formatPrice(price.amount, price.currency);
-    if (interval === PlanIntervals.MONTH) {
+    // For yearly subscriptions, display the monthly equivalent price.
+    const displayAmount = interval === PlanIntervals.YEAR ? Math.round(price.amount / 12) : price.amount;
+    formattedPrice = formatPrice(displayAmount, price.currency);
+    if (interval === PlanIntervals.MONTH || interval === PlanIntervals.YEAR) {
       priceLabel = t('perMonth');
-    } else if (interval === PlanIntervals.YEAR) {
-      priceLabel = t('perYear');
     }
   } else {
     formattedPrice = t('notAvailable');
@@ -156,12 +155,15 @@ export function PricingCard({
           </div>
           {/* show discount badge for yearly plans */}
           {interval === PlanIntervals.YEAR && (
-            <Badge
-              variant="default"
-              className="w-fit bg-orange-500 text-white hover:bg-orange-600"
-            >
-              {t('discount50')}
-            </Badge>
+            <div className="flex flex-col gap-1">
+              <Badge
+                variant="default"
+                className="w-fit bg-orange-500 text-white hover:bg-orange-600"
+              >
+                {t('discount50')}
+              </Badge>
+              <span className="text-xs text-muted-foreground">{t('billedAnnually')}</span>
+            </div>
           )}
         </div>
 
