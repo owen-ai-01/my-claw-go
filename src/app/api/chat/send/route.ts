@@ -18,6 +18,8 @@ import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 
 const MIN_CREDITS_PER_MESSAGE = 1;
+const BRIDGE_CHAT_TIMEOUT_MS = 60000;
+const BRIDGE_CHAT_RETRIES = 1;
 
 /**
  * Deduct credits in the background — does NOT block the HTTP response.
@@ -158,25 +160,49 @@ export async function POST(req: Request) {
   const db = await getDb();
 
   try {
-    const bridgeFetchStartedAt = Date.now();
-    const upstreamRes = await fetch(`${target.bridge.baseUrl}/chat/send`, {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        authorization: `Bearer ${target.bridge.token}`,
-      },
-      body: JSON.stringify({
-        message,
-        agentId,
-        groupId: body.groupId,
-        timeoutMs: body.timeoutMs || 90000,
-        channel: body.channel || 'direct',
-        chatScope: body.chatScope || 'default',
-      }),
-      signal: AbortSignal.timeout(60000),
+    const requestBody = JSON.stringify({
+      message,
+      agentId,
+      groupId: body.groupId,
+      timeoutMs: body.timeoutMs || 90000,
+      channel: body.channel || 'direct',
+      chatScope: body.chatScope || 'default',
     });
 
-    const bridgeFetchDurationMs = Date.now() - bridgeFetchStartedAt;
+    let upstreamRes: Response | null = null;
+    let bridgeFetchDurationMs = 0;
+    let lastFetchError: unknown = null;
+
+    for (let attempt = 0; attempt <= BRIDGE_CHAT_RETRIES; attempt += 1) {
+      const bridgeFetchStartedAt = Date.now();
+      try {
+        upstreamRes = await fetch(`${target.bridge.baseUrl}/chat/send`, {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+            authorization: `Bearer ${target.bridge.token}`,
+          },
+          body: requestBody,
+          signal: AbortSignal.timeout(BRIDGE_CHAT_TIMEOUT_MS),
+        });
+        bridgeFetchDurationMs = Date.now() - bridgeFetchStartedAt;
+        lastFetchError = null;
+        break;
+      } catch (error) {
+        bridgeFetchDurationMs = Date.now() - bridgeFetchStartedAt;
+        lastFetchError = error;
+        const isLastAttempt = attempt === BRIDGE_CHAT_RETRIES;
+        const isTimeout = (error as any)?.name === 'TimeoutError' || (error as any)?.name === 'AbortError' || (error as any)?.code === 23;
+        console.error(`[chat/send] bridge fetch attempt ${attempt + 1} failed (timeout=${isTimeout})`, error);
+        if (isLastAttempt) {
+          throw error;
+        }
+      }
+    }
+
+    if (!upstreamRes) {
+      throw lastFetchError instanceof Error ? lastFetchError : new Error('Bridge response missing');
+    }
     const payload = await upstreamRes.json().catch(() => ({
       ok: false,
       code: 'bridge_invalid_response',
@@ -224,7 +250,8 @@ export async function POST(req: Request) {
       ` apiOverheadMs=${apiOverheadMs}` +
       ` bridgeHttpMs=${bridgeFetchDurationMs}` +
       ` bridgeRouteMs=${payload.data?.timing?.bridgeRouteMs ?? 'n/a'}` +
-      ` openclawAgentMs=${payload.data?.timing?.openclawAgentMs ?? 'n/a'}`
+      ` openclawAgentMs=${payload.data?.timing?.openclawAgentMs ?? 'n/a'}` +
+      ` retries=${BRIDGE_CHAT_RETRIES}`
     );
 
     // Strip internal data before returning to client
