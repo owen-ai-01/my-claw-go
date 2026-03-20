@@ -24,7 +24,7 @@ import { useMounted } from '@/hooks/use-mounted';
 import { useLocalePathname } from '@/i18n/navigation';
 import { formatPrice } from '@/lib/formatter';
 import { cn } from '@/lib/utils';
-import { Activity, CheckCircleIcon } from 'lucide-react';
+import { CheckCircleIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useMemo, useState } from 'react';
 
@@ -169,18 +169,6 @@ export function CreditPricingCard({ className }: { className?: string }) {
               <CheckCircleIcon className="size-4 text-green-500 dark:text-green-400" />
               <span>{selectedPackage.description}</span>
             </li>
-          )}
-          {selectedPackage?.capacity && (
-            <>
-              <li className="flex items-center gap-2">
-                <Activity className="size-4 text-green-500 dark:text-green-400" />
-                <span>
-                  {t('packages.videoCapacity', {
-                    seconds: selectedPackage.capacity.videoSeconds,
-                  })}
-                </span>
-              </li>
-            </>
           )}
         </ul>
       </CardContent>
