@@ -122,8 +122,11 @@ export function CreditPricingCard({ className }: { className?: string }) {
           </Select>
         </div>
 
-        <CardDescription className="mt-4">
+        <CardDescription className="mt-4 space-y-2">
           <p className="text-sm">{t('packages.description')}</p>
+          {selectedPackage ? (
+            <p className="text-sm text-muted-foreground">{selectedPackage.description}</p>
+          ) : null}
         </CardDescription>
 
         {selectedPackage ? (

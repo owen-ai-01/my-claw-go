@@ -262,7 +262,7 @@ export const websiteConfig: WebsiteConfig = {
       basic: {
         id: 'basic',
         popular: false,
-        amount: 600,
+        amount: 1320,
         expireDays: 365,
         price: {
           priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_CREDITS_BASIC!,
@@ -271,14 +271,14 @@ export const websiteConfig: WebsiteConfig = {
           allowPromotionCode: true,
         },
         capacity: {
-          videoSeconds: 360, // 6 videos x 60s
-          imageCount: 120,
+          videoSeconds: 792,
+          imageCount: 264,
         },
       },
       standard: {
         id: 'standard',
         popular: true,
-        amount: 1400,
+        amount: 2650,
         expireDays: 365,
         price: {
           priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_CREDITS_STANDARD!,
@@ -287,14 +287,14 @@ export const websiteConfig: WebsiteConfig = {
           allowPromotionCode: true,
         },
         capacity: {
-          videoSeconds: 840, // 14 videos x 60s
-          imageCount: 280,
+          videoSeconds: 1590,
+          imageCount: 530,
         },
       },
       premium: {
         id: 'premium',
         popular: false,
-        amount: 3200,
+        amount: 7980,
         expireDays: 365,
         price: {
           priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_CREDITS_PREMIUM!,
@@ -303,14 +303,14 @@ export const websiteConfig: WebsiteConfig = {
           allowPromotionCode: true,
         },
         capacity: {
-          videoSeconds: 1920, // 32 videos x 60s
-          imageCount: 640,
+          videoSeconds: 4788,
+          imageCount: 1596,
         },
       },
       enterprise: {
         id: 'enterprise',
         popular: false,
-        amount: 9000,
+        amount: 19980,
         expireDays: 365,
         price: {
           priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_CREDITS_ENTERPRISE!,
@@ -319,8 +319,8 @@ export const websiteConfig: WebsiteConfig = {
           allowPromotionCode: true,
         },
         capacity: {
-          videoSeconds: 5400, // 90 videos x 60s
-          imageCount: 1800,
+          videoSeconds: 11988,
+          imageCount: 3996,
         },
       },
     },

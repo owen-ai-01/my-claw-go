@@ -929,24 +929,24 @@
           "popular": "Beliebt",
           "purchase": "Starten",
           "loading": "Wird geladen…",
-          "videoCapacity": "ca. {seconds} Sekunden Video",
+          "videoCapacity": "Ca. {seconds} Sekunden Videogenerierung",
           "imageCapacity": "ca. {count} Bilder",
           "checkoutFailed": "Bezahlseite konnte nicht geöffnet werden",
           "basic": {
-            "name": "Credits Basic",
-            "description": "Kleines Einsteiger-Paket, ideal zum Ausprobieren oder für Wenig-Nutzer."
+            "name": "Starter Credits",
+            "description": "Ideal für den ersten Kauf, leichtes Testen und gelegentliche Nutzung."
           },
           "standard": {
-            "name": "Credits Standard",
-            "description": "Mittleres Paket, geeignet für normale Nutzer mit höherer Produktionsleistung."
+            "name": "Growth Credits",
+            "description": "Ein ausgewogenes Paket für regelmäßige Creator mit mehr Iterationsspielraum."
           },
           "premium": {
-            "name": "Credits Premium",
-            "description": "Paket für High-End-Nutzer, mehr Videos/Bilder, Zugang zu Premium-Modellen."
+            "name": "Scale Credits",
+            "description": "Für stärkere Produktionslasten mit deutlich besserem Credit-Preis."
           },
           "enterprise": {
-            "name": "Credits Enterprise",
-            "description": "Großes Paket für Unternehmen oder Teams, maximale Leistung, volle Unterstützung für High-End-Modelle."
+            "name": "Power Credits",
+            "description": "Das Paket mit dem besten Gegenwert für Teams und dauerhaft hohes Volumen."
           },
           "rules": {
             "title": "Verbrauchsregeln",

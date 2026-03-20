@@ -929,24 +929,24 @@
           "popular": "Popular",
           "purchase": "Start",
           "loading": "Loading...",
-          "videoCapacity": "approx. {seconds} seconds video",
+          "videoCapacity": "Approx. {seconds} seconds of video generation",
           "imageCapacity": "approx. {count} images",
           "checkoutFailed": "Payment page could not be opened",
           "basic": {
-            "name": "Credits Basic",
-            "description": "Small starter package, ideal for trying out or light users."
+            "name": "Starter Credits",
+            "description": "Best for first-time purchases, light testing, and occasional usage."
           },
           "standard": {
-            "name": "Credits Standard",
-            "description": "Medium package, suitable for normal users with higher production output."
+            "name": "Growth Credits",
+            "description": "A balanced package for regular creators who need more room to iterate."
           },
           "premium": {
-            "name": "Credits Premium",
-            "description": "Package for high-end users, more videos/images, access to premium models."
+            "name": "Scale Credits",
+            "description": "Built for heavier production workloads with a much better credit rate."
           },
           "enterprise": {
-            "name": "Credits Enterprise",
-            "description": "Large package for companies or teams, maximum performance, full support for high-end models."
+            "name": "Power Credits",
+            "description": "The highest-value package for teams and sustained high-volume generation."
           },
           "rules": {
             "title": "Usage Rules",
