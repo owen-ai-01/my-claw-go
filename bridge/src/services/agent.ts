@@ -235,9 +235,13 @@ export async function deleteAgent(agentId: string) {
   const config = await readConfig();
   const agents = config.agents?.list || [];
   const index = agents.findIndex((agent) => agent.id === agentId);
-  
+
   if (index < 0) {
     throw new BridgeError('AGENT_NOT_FOUND', `Agent not found: ${agentId}`, 404);
+  }
+
+  if (agentId === 'main') {
+    throw new BridgeError('PROTECTED_AGENT', 'The main agent cannot be deleted', 400);
   }
 
   // Don't allow deleting the last agent

@@ -393,37 +393,45 @@ function AgentConfigDrawer({
 
               <section className="rounded-2xl border border-red-300 bg-red-50 p-4 shadow-sm">
                 <h3 className="text-sm font-semibold text-red-700">Danger Zone</h3>
-                <p className="mt-2 text-xs text-red-600">
-                  Delete this agent permanently. This action cannot be undone.
-                </p>
-                {!confirmDelete ? (
-                  <button
-                    type="button"
-                    onClick={() => setConfirmDelete(true)}
-                    disabled={deleting}
-                    className="mt-3 rounded-lg border border-red-300 bg-white px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
-                  >
-                    Delete Agent
-                  </button>
+                {agent.id === 'main' ? (
+                  <p className="mt-2 text-xs text-red-600">
+                    The main agent is protected and cannot be deleted.
+                  </p>
                 ) : (
-                  <div className="mt-3 flex gap-2">
-                    <button
-                      type="button"
-                      onClick={handleDelete}
-                      disabled={deleting}
-                      className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
-                    >
-                      {deleting ? 'Deleting…' : 'Confirm Delete'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setConfirmDelete(false)}
-                      disabled={deleting}
-                      className="rounded-lg border px-4 py-2 text-sm font-medium disabled:opacity-50"
-                    >
-                      Cancel
-                    </button>
-                  </div>
+                  <>
+                    <p className="mt-2 text-xs text-red-600">
+                      Delete this agent permanently. This action cannot be undone.
+                    </p>
+                    {!confirmDelete ? (
+                      <button
+                        type="button"
+                        onClick={() => setConfirmDelete(true)}
+                        disabled={deleting}
+                        className="mt-3 rounded-lg border border-red-300 bg-white px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
+                      >
+                        Delete Agent
+                      </button>
+                    ) : (
+                      <div className="mt-3 flex gap-2">
+                        <button
+                          type="button"
+                          onClick={handleDelete}
+                          disabled={deleting}
+                          className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+                        >
+                          {deleting ? 'Deleting…' : 'Confirm Delete'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setConfirmDelete(false)}
+                          disabled={deleting}
+                          className="rounded-lg border px-4 py-2 text-sm font-medium disabled:opacity-50"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    )}
+                  </>
                 )}
               </section>
             </div>
