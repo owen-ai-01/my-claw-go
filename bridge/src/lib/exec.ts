@@ -15,7 +15,16 @@ export async function runCommand(command: string, args: string[], timeoutMs = 10
       stdout: result.stdout?.toString() ?? '',
       stderr: result.stderr?.toString() ?? '',
     };
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.code === 'ETIMEDOUT' || error?.killed === true || error?.signal === 'SIGTERM') {
+      throw new BridgeError(
+        'COMMAND_TIMEOUT',
+        `Command timed out after ${timeoutMs}ms: ${command} ${args.join(' ')}`,
+        504,
+        error
+      );
+    }
+
     throw new BridgeError(
       'COMMAND_FAILED',
       `Command failed: ${command} ${args.join(' ')}`,

@@ -686,7 +686,14 @@ function ChatLayout() {
       }
 
       if (!res.ok || data.ok !== true) {
-        const errMsg = typeof data.error === 'string' ? data.error : (data.error as { message?: string })?.message || 'Failed to send message';
+        const rawErr = typeof data.error === 'string' ? data.error : (data.error as { message?: string })?.message;
+        const errMsg = data.code === 'bridge_timeout'
+          ? 'Agent response timed out. Please retry.'
+          : data.code === 'bridge_invalid_response'
+            ? 'Agent returned an invalid response.'
+            : data.code === 'empty_reply'
+              ? 'Agent returned an empty reply.'
+              : rawErr || 'Failed to send message';
         setMessages((m) => [...m, { role: 'assistant', content: `⚠️ ${errMsg}`, createdAt: new Date().toISOString() }]);
         return;
       }

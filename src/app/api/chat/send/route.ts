@@ -173,11 +173,13 @@ export async function POST(req: Request) {
         channel: body.channel || 'direct',
         chatScope: body.chatScope || 'default',
       }),
+      signal: AbortSignal.timeout(60000),
     });
 
     const bridgeFetchDurationMs = Date.now() - bridgeFetchStartedAt;
     const payload = await upstreamRes.json().catch(() => ({
       ok: false,
+      code: 'bridge_invalid_response',
       error: 'Invalid bridge response',
     })) as {
       ok?: boolean;
@@ -246,14 +248,24 @@ export async function POST(req: Request) {
       : payload;
 
     return NextResponse.json(clientPayload, { status: upstreamRes.status });
-  } catch (error) {
+  } catch (error: any) {
+    const isTimeout = error?.name === 'TimeoutError' || error?.name === 'AbortError' || error?.code === 23;
+    const code = isTimeout ? 'bridge_timeout' : 'bridge_request_failed';
+    const message = isTimeout
+      ? 'Runtime response timed out. Please retry.'
+      : error instanceof Error
+        ? error.message
+        : 'Bridge request failed';
+
+    console.error(`[chat/send] ${code}:`, error);
+
     return NextResponse.json(
       {
         ok: false,
-        code: 'bridge_request_failed',
-        error: error instanceof Error ? error.message : 'Bridge request failed',
+        code,
+        error: message,
       },
-      { status: 502 }
+      { status: isTimeout ? 504 : 502 }
     );
   }
 }
