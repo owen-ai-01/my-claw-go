@@ -925,28 +925,28 @@
         },
         "packages": {
           "title": "Credit-Pakete",
-          "description": "Kaufe zusätzliche Credits für dein Videogenerierungs-Kontingent.",
+          "description": "Kaufe zusätzliche Credits für die Nutzung deines persönlichen OpenClaw-Workspaces.",
           "popular": "Beliebt",
           "purchase": "Starten",
           "loading": "Wird geladen…",
-          "videoCapacity": "Ca. {seconds} Sekunden Videogenerierung",
-          "imageCapacity": "ca. {count} Bilder",
+          "videoCapacity": "Ca. {seconds} Sekunden äquivalente Runtime-Nutzung",
+          "imageCapacity": "Ca. {count} bildäquivalente Operationen",
           "checkoutFailed": "Bezahlseite konnte nicht geöffnet werden",
           "basic": {
             "name": "Starter Credits",
-            "description": "Ideal für den ersten Kauf, leichtes Testen und gelegentliche Nutzung."
+            "description": "Ein leichtes Top-up für Erstnutzer und persönliches OpenClaw-Testen."
           },
           "standard": {
             "name": "Growth Credits",
-            "description": "Ein ausgewogenes Paket für regelmäßige Creator mit mehr Iterationsspielraum."
+            "description": "Ein ausgewogenes Paket für regelmäßige Chats, Tool-Nutzung und Workflow-Tests."
           },
           "premium": {
             "name": "Scale Credits",
-            "description": "Für stärkere Produktionslasten mit deutlich besserem Credit-Preis."
+            "description": "Für intensivere OpenClaw-Nutzung mit besserem Gegenwert pro Credit."
           },
           "enterprise": {
             "name": "Power Credits",
-            "description": "Das Paket mit dem besten Gegenwert für Teams und dauerhaft hohes Volumen."
+            "description": "Der beste Gegenwert für Teams oder dauerhaft hohe OpenClaw-Auslastung."
           },
           "rules": {
             "title": "Verbrauchsregeln",

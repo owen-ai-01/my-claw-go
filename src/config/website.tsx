@@ -294,7 +294,7 @@ export const websiteConfig: WebsiteConfig = {
       premium: {
         id: 'premium',
         popular: false,
-        amount: 7980,
+        amount: 5320,
         expireDays: 365,
         price: {
           priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_CREDITS_PREMIUM!,
@@ -303,8 +303,8 @@ export const websiteConfig: WebsiteConfig = {
           allowPromotionCode: true,
         },
         capacity: {
-          videoSeconds: 4788,
-          imageCount: 1596,
+          videoSeconds: 3192,
+          imageCount: 1064,
         },
       },
       enterprise: {

@@ -14,7 +14,7 @@ import { useCurrentUser } from '@/hooks/use-current-user';
 import { useCurrentPlan } from '@/hooks/use-payment';
 import { formatPrice } from '@/lib/formatter';
 import { cn } from '@/lib/utils';
-import { CircleCheckBigIcon, CoinsIcon, Video } from 'lucide-react';
+import { CircleCheckBigIcon, CoinsIcon, Activity } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { CreditCheckoutButton } from './credit-checkout-button';
 
@@ -114,7 +114,7 @@ export function CreditPackages() {
                 {creditPackage.capacity && (
                   <div className="flex flex-col gap-2 py-2">
                     <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-                      <Video className="h-4 w-4 text-blue-500" />
+                      <Activity className="h-4 w-4 text-blue-500" />
                       {t('videoCapacity', {
                         seconds: creditPackage.capacity.videoSeconds,
                       })}
