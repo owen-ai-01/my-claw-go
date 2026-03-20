@@ -1221,7 +1221,7 @@
       "description": "Private AI workspace for solo builders",
       "features": {
         "feature-1": "4,000 Credits / month",
-        "feature-2": "Container: 1 vCPU / 2 GB RAM / 20 GB disk",
+        "feature-2": "Container (max): 1 vCPU / 2 GB RAM / 20 GB disk",
         "feature-3": "Access to all AI models",
         "feature-4": "No VPS or API key setup needed",
         "feature-5": "Credits valid for 1 month",
@@ -1233,7 +1233,7 @@
       "description": "Private AI workspace for solo builders — save 20%",
       "features": {
         "feature-1": "48,000 Credits / year",
-        "feature-2": "Container: 1 vCPU / 2 GB RAM / 20 GB disk",
+        "feature-2": "Container (max): 1 vCPU / 2 GB RAM / 20 GB disk",
         "feature-3": "Access to all AI models",
         "feature-4": "No VPS or API key setup needed",
         "feature-5": "Credits valid for 1 year",
@@ -1245,7 +1245,7 @@
       "description": "More compute and more credits for serious usage",
       "features": {
         "feature-1": "8,000 Credits / month",
-        "feature-2": "Container: 2 vCPU / 4 GB RAM / 40 GB disk",
+        "feature-2": "Container (max): 2 vCPU / 4 GB RAM / 40 GB disk",
         "feature-3": "Access to all AI models",
         "feature-4": "No VPS or API key setup needed",
         "feature-5": "Credits valid for 1 month",
@@ -1257,7 +1257,7 @@
       "description": "More compute and more credits — save 20%",
       "features": {
         "feature-1": "96,000 Credits / year",
-        "feature-2": "Container: 2 vCPU / 4 GB RAM / 40 GB disk",
+        "feature-2": "Container (max): 2 vCPU / 4 GB RAM / 40 GB disk",
         "feature-3": "Access to all AI models",
         "feature-4": "No VPS or API key setup needed",
         "feature-5": "Credits valid for 1 year",
@@ -1269,7 +1269,7 @@
       "description": "Maximum compute and credits for heavy workloads",
       "features": {
         "feature-1": "40,000 Credits / month",
-        "feature-2": "Container: 4 vCPU / 8 GB RAM / 80 GB disk",
+        "feature-2": "Container (max): 4 vCPU / 8 GB RAM / 80 GB disk",
         "feature-3": "Access to all AI models",
         "feature-4": "No VPS or API key setup needed",
         "feature-5": "Credits valid for 1 month",
@@ -1281,7 +1281,7 @@
       "description": "Maximum compute and credits — save 20%",
       "features": {
         "feature-1": "480,000 Credits / year",
-        "feature-2": "Container: 4 vCPU / 8 GB RAM / 80 GB disk",
+        "feature-2": "Container (max): 4 vCPU / 8 GB RAM / 80 GB disk",
         "feature-3": "Access to all AI models",
         "feature-4": "No VPS or API key setup needed",
         "feature-5": "Credits valid for 1 year",

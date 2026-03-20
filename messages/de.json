@@ -1221,7 +1221,7 @@
       "description": "Privater AI-Workspace für Solo-Builder",
       "features": {
         "feature-1": "4.000 Credits pro Monat",
-        "feature-2": "Container: 1 vCPU / 2 GB RAM / 20 GB Speicher",
+        "feature-2": "Container (max.): 1 vCPU / 2 GB RAM / 20 GB Speicher",
         "feature-3": "Zugang zu allen AI-Modellen",
         "feature-4": "Kein VPS- oder API-Key-Setup nötig",
         "feature-5": "Credits 1 Monat gültig",
@@ -1233,7 +1233,7 @@
       "description": "Privater AI-Workspace für Solo-Builder — 20% sparen",
       "features": {
         "feature-1": "48.000 Credits pro Jahr",
-        "feature-2": "Container: 1 vCPU / 2 GB RAM / 20 GB Speicher",
+        "feature-2": "Container (max.): 1 vCPU / 2 GB RAM / 20 GB Speicher",
         "feature-3": "Zugang zu allen AI-Modellen",
         "feature-4": "Kein VPS- oder API-Key-Setup nötig",
         "feature-5": "Credits 1 Jahr gültig",
@@ -1245,7 +1245,7 @@
       "description": "Mehr Rechenleistung und mehr Credits für ernsthafte Nutzung",
       "features": {
         "feature-1": "8.000 Credits pro Monat",
-        "feature-2": "Container: 2 vCPU / 4 GB RAM / 40 GB Speicher",
+        "feature-2": "Container (max.): 2 vCPU / 4 GB RAM / 40 GB Speicher",
         "feature-3": "Zugang zu allen AI-Modellen",
         "feature-4": "Kein VPS- oder API-Key-Setup nötig",
         "feature-5": "Credits 1 Monat gültig",
@@ -1257,7 +1257,7 @@
       "description": "Mehr Rechenleistung und mehr Credits — 20% sparen",
       "features": {
         "feature-1": "96.000 Credits pro Jahr",
-        "feature-2": "Container: 2 vCPU / 4 GB RAM / 40 GB Speicher",
+        "feature-2": "Container (max.): 2 vCPU / 4 GB RAM / 40 GB Speicher",
         "feature-3": "Zugang zu allen AI-Modellen",
         "feature-4": "Kein VPS- oder API-Key-Setup nötig",
         "feature-5": "Credits 1 Jahr gültig",
@@ -1269,7 +1269,7 @@
       "description": "Maximale Rechenleistung und Credits für Heavy-Workloads",
       "features": {
         "feature-1": "40.000 Credits pro Monat",
-        "feature-2": "Container: 4 vCPU / 8 GB RAM / 80 GB Speicher",
+        "feature-2": "Container (max.): 4 vCPU / 8 GB RAM / 80 GB Speicher",
         "feature-3": "Zugang zu allen AI-Modellen",
         "feature-4": "Kein VPS- oder API-Key-Setup nötig",
         "feature-5": "Credits 1 Monat gültig",
@@ -1281,7 +1281,7 @@
       "description": "Maximale Rechenleistung und Credits — 20% sparen",
       "features": {
         "feature-1": "480.000 Credits pro Jahr",
-        "feature-2": "Container: 4 vCPU / 8 GB RAM / 80 GB Speicher",
+        "feature-2": "Container (max.): 4 vCPU / 8 GB RAM / 80 GB Speicher",
         "feature-3": "Zugang zu allen AI-Modellen",
         "feature-4": "Kein VPS- oder API-Key-Setup nötig",
         "feature-5": "Credits 1 Jahr gültig",
