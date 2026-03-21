@@ -17,8 +17,10 @@ chown -R openclaw:openclaw /home/openclaw/.openclaw
 cat > /home/openclaw/.openclaw/keep-gateway.sh <<'EOS'
 #!/usr/bin/env bash
 set -euo pipefail
+export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+export NODE_OPTIONS="${NODE_OPTIONS:-} --max-old-space-size=768"
 while true; do
-  openclaw gateway run --allow-unconfigured --auth none --bind loopback --port 18789 >> /home/openclaw/.openclaw/gateway.log 2>&1 || true
+  /usr/local/bin/openclaw gateway run --allow-unconfigured --auth none --bind loopback --port 18789 >> /home/openclaw/.openclaw/gateway.log 2>&1 || true
   sleep 2
 done
 EOS

@@ -41,9 +41,9 @@ type ContainerLimits = {
 };
 
 const RUNTIME_LIMITS_BY_TIER: Record<RuntimeTier, ContainerLimits> = {
-  pro: { cpus: '0.5', memory: '1g', disk: '10g' },
-  premium: { cpus: '1', memory: '2g', disk: '20g' },
-  ultra: { cpus: '4', memory: '8g', disk: '50g' },
+  pro: { cpus: '1', memory: '2g', disk: '20g' },
+  premium: { cpus: '2', memory: '4g', disk: '40g' },
+  ultra: { cpus: '4', memory: '8g', disk: '80g' },
 };
 
 function priceIdTier(priceId: string | null | undefined): RuntimeTier {
@@ -249,11 +249,13 @@ async function ensureGatewayForContainer(containerName: string) {
   // Write keep-alive script via docker exec --user (avoids permission issues with uid mismatch)
   const scriptContent = [
     '#!/bin/bash',
+    'export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"',
+    'export NODE_OPTIONS="${NODE_OPTIONS:-} --max-old-space-size=768"',
     'while true; do',
-    '  openclaw gateway run --allow-unconfigured --auth none --bind loopback --port 18789 >> /home/openclaw/.openclaw/gateway.log 2>&1',
+    '  /usr/local/bin/openclaw gateway run --allow-unconfigured --auth none --bind loopback --port 18789 >> /home/openclaw/.openclaw/gateway.log 2>&1',
     '  sleep 2',
     'done',
-  ].join('\n');
+  ].join("\n");
   // Write script if not present
   await execFileAsync('docker', [
     'exec',
