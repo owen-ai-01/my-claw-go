@@ -13,7 +13,7 @@ function extractReply(parsed: any) {
 }
 
 export async function checkOpenClawHealth() {
-  const { stdout } = await runCommand('openclaw', ['gateway', 'call', 'health', '--json'], 5000);
+  const { stdout } = await runCommand('su', ['-s', '/bin/bash', 'openclaw', '-c', "cd /home/openclaw && HOME=/home/openclaw USER=openclaw LOGNAME=openclaw openclaw gateway call health --json"], 5000);
   try {
     return JSON.parse(stdout);
   } catch {
@@ -29,9 +29,11 @@ export async function sendChatMessage(params: {
   chatScope?: string;
 }) {
   const { message, agentId, timeoutMs = 90000, channel = 'direct', chatScope = 'default' } = params;
+  const escapedMessage = message.replace(/'/g, `'"'"'`);
+  const command = `cd /home/openclaw && HOME=/home/openclaw USER=openclaw LOGNAME=openclaw openclaw agent --local --agent '${agentId}' --message '${escapedMessage}' --thinking off --json`;
   const { stdout } = await runCommand(
-    'openclaw',
-    ['agent', '--local', '--agent', agentId, '--message', message, '--thinking', 'off', '--json'],
+    'su',
+    ['-s', '/bin/bash', 'openclaw', '-c', command],
     timeoutMs
   );
 
