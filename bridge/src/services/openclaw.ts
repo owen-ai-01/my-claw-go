@@ -31,7 +31,7 @@ export async function sendChatMessage(params: {
   const { message, agentId, timeoutMs = 90000, channel = 'direct', chatScope = 'default' } = params;
   const { stdout } = await runCommand(
     'openclaw',
-    ['agent', '--agent', agentId, '--message', message, '--thinking', 'off', '--json'],
+    ['agent', '--local', '--agent', agentId, '--message', message, '--thinking', 'off', '--json'],
     timeoutMs
   );
 
