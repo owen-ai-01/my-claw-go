@@ -13,7 +13,9 @@ export async function runCommand(command: string, args: string[], timeoutMs = 10
       cwd: process.env.MYCLAWGO_OPENCLAW_CWD || '/home/openclaw',
       env: {
         ...process.env,
-        HOME: process.env.HOME || '/home/openclaw',
+        HOME: '/home/openclaw',
+        USER: 'openclaw',
+        LOGNAME: 'openclaw',
         NODE_OPTIONS: [process.env.NODE_OPTIONS, OPENCLAW_NODE_OPTIONS].filter(Boolean).join(' ').trim(),
       },
     });
