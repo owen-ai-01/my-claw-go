@@ -26,6 +26,8 @@ type ChatMessage = {
   content: string;
   createdAt?: string;
   routedAgentId?: string;
+  status?: 'queued' | 'pending' | 'running' | 'done' | 'failed';
+  taskId?: string | null;
 };
 
 type AgentItem = {
@@ -587,6 +589,7 @@ function ChatLayout() {
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(true);
+  const [activeTaskStatus, setActiveTaskStatus] = useState<string | null>(null);
   const [insufficientCredits, setInsufficientCredits] = useState(false);
   const [configOpen, setConfigOpen] = useState(false);
   const [addAgentOpen, setAddAgentOpen] = useState(false);
@@ -636,10 +639,11 @@ function ChatLayout() {
         const res = await fetch(`/api/chat/history?${queryParam}`, { cache: 'no-store' });
         const data = (await res.json().catch(() => ({}))) as {
           ok?: boolean;
-          data?: { messages?: ChatMessage[] };
+          data?: { messages?: ChatMessage[]; task?: { status?: string } | null };
         };
         if (data.ok && data.data?.messages) {
           setMessages(data.data.messages);
+          setActiveTaskStatus(data.data.task?.status || null);
         } else {
           setMessages([]);
         }
@@ -656,12 +660,32 @@ function ChatLayout() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, sending, selectedAgentId]);
 
+  useEffect(() => {
+    if (!selectedGroupId && (activeTaskStatus === 'queued' || activeTaskStatus === 'running')) {
+      const timer = setInterval(async () => {
+        try {
+          const res = await fetch(`/api/chat/history?agentId=${encodeURIComponent(selectedAgentId)}`, { cache: 'no-store' });
+          const data = await res.json().catch(() => ({})) as {
+            ok?: boolean;
+            data?: { messages?: ChatMessage[]; task?: { status?: string } | null };
+          };
+          if (data.ok && data.data?.messages) {
+            setMessages(data.data.messages);
+            setActiveTaskStatus(data.data.task?.status || null);
+          }
+        } catch {}
+      }, 2500);
+      return () => clearInterval(timer);
+    }
+  }, [activeTaskStatus, selectedAgentId, selectedGroupId]);
+
   async function onSend() {
     const text = input.trim();
     if (!text || sending) return;
-    const clientStartedAt = performance.now();
-
-    setMessages((m) => [...m, { role: 'user', content: text, createdAt: new Date().toISOString() }]);
+    setMessages((m) => [...m,
+      { role: 'user', content: text, createdAt: new Date().toISOString(), status: 'done' },
+      { role: 'assistant', content: 'Thinking…', createdAt: new Date().toISOString(), status: 'queued' },
+    ]);
     setInput('');
     setSending(true);
     setInsufficientCredits(false);
@@ -683,13 +707,13 @@ function ChatLayout() {
       const data = (await res.json().catch(() => ({}))) as {
         ok?: boolean;
         code?: string;
-        data?: { reply?: string; routedAgentId?: string; timing?: Record<string, unknown> };
+        data?: { taskId?: string; assistantMessageId?: string; status?: string };
         error?: string | { message?: string };
       };
 
       if (res.status === 402 && data.code === 'insufficient_credits') {
         setInsufficientCredits(true);
-        setMessages((m) => m.slice(0, -1));
+        setMessages((m) => m.slice(0, -2));
         return;
       }
 
@@ -706,21 +730,22 @@ function ChatLayout() {
         return;
       }
 
-      const browserRoundTripMs = Math.round(performance.now() - clientStartedAt);
-      console.debug('[chat/send timing]', {
-        browserRoundTripMs,
-        ...(data.data?.timing || {}),
-      });
-
-      setMessages((m) => [...m, {
-        role: 'assistant',
-        content: data.data?.reply || '⚠️ Empty reply',
-        createdAt: new Date().toISOString(),
-        routedAgentId: data.data?.routedAgentId,
-      }]);
+      setActiveTaskStatus(data.data?.status || 'queued');
+      await fetch(`/api/chat/history?agentId=${encodeURIComponent(selectedAgentId)}`, { cache: 'no-store' })
+        .then((r) => r.json())
+        .then((history) => {
+          if (history?.ok && history?.data?.messages) {
+            setMessages(history.data.messages);
+            setActiveTaskStatus(history.data.task?.status || null);
+          }
+        })
+        .catch(() => {});
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'Failed to send message';
-      setMessages((m) => [...m, { role: 'assistant', content: `⚠️ ${msg}`, createdAt: new Date().toISOString() }]);
+      setMessages((m) => [
+        ...m.slice(0, -1),
+        { role: 'assistant', content: `⚠️ ${msg}`, createdAt: new Date().toISOString(), status: 'failed' },
+      ]);
     } finally {
       setSending(false);
     }
@@ -872,7 +897,7 @@ function ChatLayout() {
                           {agentLabel(routedAgent)} · @{msg.routedAgentId}
                         </div>
                       ) : null}
-                      <div className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap break-words [overflow-wrap:anywhere] ${msg.role === 'user' ? 'bg-primary text-primary-foreground rounded-br-sm' : 'bg-muted text-foreground rounded-bl-sm'}`}>
+                      <div className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap break-words [overflow-wrap:anywhere] ${msg.role === 'user' ? 'bg-primary text-primary-foreground rounded-br-sm' : 'bg-muted text-foreground rounded-bl-sm'} ${msg.status === 'running' || msg.status === 'queued' ? 'opacity-70' : ''}`}>
                         {msg.content}
                       </div>
                     </div>

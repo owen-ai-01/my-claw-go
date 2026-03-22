@@ -71,6 +71,13 @@
       "when": 1773575520700,
       "tag": "0009_user_chat_billing_audit",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1774165200000,
+      "tag": "0010_user_chat_task",
+      "breakpoints": true
     }
   ]
 }

@@ -1,121 +1,12 @@
-import crypto from 'node:crypto';
 import { auth } from '@/lib/auth';
-import { getDb } from '@/db';
-import { userChatBillingAudit } from '@/db/schema';
-import { consumeCredits } from '@/credits/credits';
-import {
-  type BridgeUsage,
-  calcUsdCostFromBridgeUsage,
-  creditsFromUsd,
-  estimateUsage,
-  estimateUsdCostByModel,
-  normalizeBridgeUsage,
-  resolvePricingModelKey,
-} from '@/lib/myclawgo/billing';
 import { checkUserCredits } from '@/lib/myclawgo/membership';
-import { resolveUserBridgeTarget } from '@/lib/myclawgo/bridge-target';
+import { createDirectChatTask } from '@/lib/myclawgo/user-chat';
 import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 
 const MIN_CREDITS_PER_MESSAGE = 1;
-const BRIDGE_CHAT_TIMEOUT_MS = 60000;
-const BRIDGE_CHAT_RETRIES = 1;
-
-/**
- * Deduct credits in the background — does NOT block the HTTP response.
- * Formula: credits = ceil(openrouter_usd_cost / 0.001)
- * e.g. $1 USD cost → 1000 credits deducted
- */
-function deductCreditsAsync(params: {
-  userId: string;
-  agentId: string;
-  message: string;
-  reply: string;
-  model: string;
-  usage: BridgeUsage | null;
-}) {
-  const { userId, agentId, message, reply, model, usage } = params;
-
-  // fire-and-forget — intentionally not awaited
-  Promise.resolve().then(async () => {
-    const db = await getDb();
-    const auditBase = {
-      id: crypto.randomUUID(),
-      userId,
-      agentId,
-      model: model || null,
-      pricingModelKey: model ? resolvePricingModelKey(model) : null,
-      source: 'fallback',
-      status: 'ok',
-      inputTokens: 0,
-      outputTokens: 0,
-      cacheReadTokens: 0,
-      usdCost: null as string | null,
-      creditsDeducted: null as number | null,
-      error: null as string | null,
-      metaJson: null as Record<string, unknown> | null,
-    };
-
-    try {
-      let usdCost: number;
-      let source: string;
-      let tokens = { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0 };
-
-      if (model && usage && (usage.input != null || usage.output != null || usage.total != null)) {
-        // Priority 1: actual token usage from bridge (most accurate)
-        usdCost = calcUsdCostFromBridgeUsage({ model, usage });
-        tokens = normalizeBridgeUsage(usage);
-        source = 'actual';
-      } else if (model) {
-        // Priority 2: estimate from text length
-        const est = estimateUsage(message, reply);
-        usdCost = estimateUsdCostByModel({ model, inputTokens: est.inputTokens, outputTokens: est.outputTokens });
-        tokens = { inputTokens: est.inputTokens, outputTokens: est.outputTokens, cacheReadTokens: 0 };
-        source = 'estimated';
-      } else {
-        usdCost = 0;
-        source = 'fallback';
-      }
-
-      const creditsToDeduct = usdCost > 0 ? creditsFromUsd(usdCost) : MIN_CREDITS_PER_MESSAGE;
-
-      console.log(
-        `[chat/send] user=${userId} model=${model} pricingKey=${auditBase.pricingModelKey}` +
-        ` source=${source} in=${tokens.inputTokens} out=${tokens.outputTokens}` +
-        ` cache=${tokens.cacheReadTokens} usd=${usdCost.toFixed(6)} credits=${creditsToDeduct}`
-      );
-
-      await consumeCredits({
-        userId,
-        amount: creditsToDeduct,
-        description: `Chat [${model || 'unknown'}]: ${creditsToDeduct} credits (${source})`,
-      });
-
-      await db.insert(userChatBillingAudit).values({
-        ...auditBase,
-        source,
-        status: 'ok',
-        inputTokens: tokens.inputTokens,
-        outputTokens: tokens.outputTokens,
-        cacheReadTokens: tokens.cacheReadTokens,
-        usdCost: usdCost.toFixed(6),
-        creditsDeducted: creditsToDeduct,
-        metaJson: usage ? { usage } : null,
-      }).catch(() => null);
-    } catch (err) {
-      console.error('[chat/send] async credit deduction failed:', err);
-      await db.insert(userChatBillingAudit).values({
-        ...auditBase,
-        status: 'failed',
-        error: err instanceof Error ? err.message : String(err),
-        metaJson: usage ? { usage } : null,
-      }).catch(() => null);
-    }
-  });
-}
 
 export async function POST(req: Request) {
-  const requestStartedAt = Date.now();
   const session = await auth.api.getSession({ headers: await headers() });
   const userId = session?.user?.id;
   if (!userId) {
@@ -125,10 +16,7 @@ export async function POST(req: Request) {
   const body = (await req.json().catch(() => ({}))) as {
     message?: string;
     agentId?: string;
-    groupId?: string;
     timeoutMs?: number;
-    channel?: string;
-    chatScope?: string;
   };
 
   const message = String(body.message || '').trim();
@@ -138,7 +26,6 @@ export async function POST(req: Request) {
 
   const agentId = String(body.agentId || 'main');
 
-  // ── Pre-flight: block users with zero credits ────────────────────────────
   const creditCheck = await checkUserCredits(userId, MIN_CREDITS_PER_MESSAGE);
   if (!creditCheck.hasCredits) {
     return NextResponse.json(
@@ -152,147 +39,31 @@ export async function POST(req: Request) {
     );
   }
 
-  const target = await resolveUserBridgeTarget(userId);
-  if (!target.ok) {
-    return NextResponse.json(target, { status: 503 });
-  }
-
-  const db = await getDb();
-
   try {
-    const requestBody = JSON.stringify({
-      message,
+    const task = await createDirectChatTask({
+      userId,
       agentId,
-      groupId: body.groupId,
-      timeoutMs: body.timeoutMs || 90000,
-      channel: body.channel || 'direct',
-      chatScope: body.chatScope || 'default',
+      message,
+      timeoutMs: body.timeoutMs || 180000,
     });
 
-    let upstreamRes: Response | null = null;
-    let bridgeFetchDurationMs = 0;
-    let lastFetchError: unknown = null;
-
-    for (let attempt = 0; attempt <= BRIDGE_CHAT_RETRIES; attempt += 1) {
-      const bridgeFetchStartedAt = Date.now();
-      try {
-        upstreamRes = await fetch(`${target.bridge.baseUrl}/chat/send`, {
-          method: 'POST',
-          headers: {
-            'content-type': 'application/json',
-            authorization: `Bearer ${target.bridge.token}`,
-          },
-          body: requestBody,
-          signal: AbortSignal.timeout(BRIDGE_CHAT_TIMEOUT_MS),
-        });
-        bridgeFetchDurationMs = Date.now() - bridgeFetchStartedAt;
-        lastFetchError = null;
-        break;
-      } catch (error) {
-        bridgeFetchDurationMs = Date.now() - bridgeFetchStartedAt;
-        lastFetchError = error;
-        const isLastAttempt = attempt === BRIDGE_CHAT_RETRIES;
-        const isTimeout = (error as any)?.name === 'TimeoutError' || (error as any)?.name === 'AbortError' || (error as any)?.code === 23;
-        console.error(`[chat/send] bridge fetch attempt ${attempt + 1} failed (timeout=${isTimeout})`, error);
-        if (isLastAttempt) {
-          throw error;
-        }
-      }
-    }
-
-    if (!upstreamRes) {
-      throw lastFetchError instanceof Error ? lastFetchError : new Error('Bridge response missing');
-    }
-    const payload = await upstreamRes.json().catch(() => ({
-      ok: false,
-      code: 'bridge_invalid_response',
-      error: 'Invalid bridge response',
-    })) as {
-      ok?: boolean;
-      data?: {
-        reply?: string;
-        model?: string;
-        usage?: BridgeUsage;
-        routedAgentId?: string;
-        groupId?: string;
-        timing?: { bridgeRouteMs?: number; openclawAgentMs?: number };
-      };
-      error?: string;
-    };
-
-    if (payload.ok === true && payload.data?.reply) {
-      const reply = payload.data.reply;
-      const model = payload.data.model || '';
-      const usage = payload.data.usage || null;
-
-      // Deduct credits AFTER response is ready — fire-and-forget, zero latency impact
-      deductCreditsAsync({ userId, agentId, message, reply, model, usage });
-    }
-
-    if (payload.ok === true && !payload.data?.reply?.trim()) {
-      return NextResponse.json(
-        {
-          ok: false,
-          code: 'empty_reply',
-          error: 'Agent returned an empty reply',
-        },
-        { status: 502 }
-      );
-    }
-
-    const totalDurationMs = Date.now() - requestStartedAt;
-    const apiOverheadMs = Math.max(0, totalDurationMs - bridgeFetchDurationMs);
-
-    console.log(
-      `[chat/send timing] user=${userId} agent=${agentId}` +
-      `${body.groupId ? ` group=${body.groupId}` : ''}` +
-      ` totalMs=${totalDurationMs}` +
-      ` apiOverheadMs=${apiOverheadMs}` +
-      ` bridgeHttpMs=${bridgeFetchDurationMs}` +
-      ` bridgeRouteMs=${payload.data?.timing?.bridgeRouteMs ?? 'n/a'}` +
-      ` openclawAgentMs=${payload.data?.timing?.openclawAgentMs ?? 'n/a'}` +
-      ` retries=${BRIDGE_CHAT_RETRIES}`
-    );
-
-    // Strip internal data before returning to client
-    const clientPayload = payload.ok === true && payload.data
-      ? {
-          ok: true,
-          data: {
-            reply: payload.data.reply,
-            routedAgentId: payload.data.routedAgentId,
-            groupId: payload.data.groupId,
-            timing: {
-              totalMs: totalDurationMs,
-              platformApiMs: totalDurationMs,
-              bridgeHttpMs: bridgeFetchDurationMs,
-              platformOverheadMs: apiOverheadMs,
-              bridgeRouteMs: payload.data.timing?.bridgeRouteMs,
-              openclawAgentMs: payload.data.timing?.openclawAgentMs,
-            },
-          },
-        }
-      : payload;
-
-    return NextResponse.json(clientPayload, { status: upstreamRes.status });
-  } catch (error: any) {
-    const isTimeout = error?.name === 'TimeoutError' || error?.name === 'AbortError' || error?.code === 23;
-    const code = isTimeout ? 'bridge_timeout' : 'bridge_request_failed';
-    const message = isTimeout
-      ? 'Runtime response timed out. Please retry.'
-      : error instanceof Error
-        ? error.message
-        : 'Bridge request failed';
-
-    console.error(`[chat/send] ${code}:`, error);
-
+    return NextResponse.json({
+      ok: true,
+      data: {
+        taskId: task.taskId,
+        userMessageId: task.userMessageId,
+        assistantMessageId: task.assistantMessageId,
+        status: 'queued',
+      },
+    });
+  } catch (error) {
     return NextResponse.json(
       {
         ok: false,
-        code,
-        error: message,
+        code: 'chat_task_create_failed',
+        error: error instanceof Error ? error.message : 'Failed to create chat task',
       },
-      { status: isTimeout ? 504 : 502 }
+      { status: 500 }
     );
   }
 }

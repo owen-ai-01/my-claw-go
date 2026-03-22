@@ -1,5 +1,5 @@
 import { auth } from '@/lib/auth';
-import { resolveUserBridgeTarget } from '@/lib/myclawgo/bridge-target';
+import { getLatestChatTask, listUserChatMessages } from '@/lib/myclawgo/user-chat';
 import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 
@@ -12,31 +12,43 @@ export async function GET(req: Request) {
 
   const url = new URL(req.url);
   const agentId = url.searchParams.get('agentId') || 'main';
-  const channel = url.searchParams.get('channel') || 'direct';
-  const chatScope = url.searchParams.get('chatScope') || 'default';
-
-  const target = await resolveUserBridgeTarget(userId);
-  if (!target.ok) {
-    return NextResponse.json(target, { status: 503 });
-  }
 
   try {
-    const upstream = await fetch(
-      `${target.bridge.baseUrl}/chat/history?agentId=${encodeURIComponent(agentId)}&channel=${encodeURIComponent(channel)}&chatScope=${encodeURIComponent(chatScope)}`,
-      {
-        headers: { authorization: `Bearer ${target.bridge.token}` },
-      }
-    );
-    const payload = await upstream.json().catch(() => ({ ok: false, error: 'Invalid bridge response' }));
-    return NextResponse.json(payload, { status: upstream.status });
+    const [messages, latestTask] = await Promise.all([
+      listUserChatMessages(userId, agentId),
+      getLatestChatTask(userId, agentId),
+    ]);
+
+    return NextResponse.json({
+      ok: true,
+      data: {
+        messages: messages.map((message) => ({
+          id: message.id,
+          role: message.role,
+          content: message.content,
+          createdAt: message.createdAt,
+          status: message.status,
+          taskId: message.taskId,
+        })),
+        task: latestTask
+          ? {
+              id: latestTask.id,
+              status: latestTask.status,
+              error: latestTask.error,
+              startedAt: latestTask.startedAt,
+              finishedAt: latestTask.finishedAt,
+            }
+          : null,
+      },
+    });
   } catch (error) {
     return NextResponse.json(
       {
         ok: false,
-        code: 'bridge-history-failed',
-        error: error instanceof Error ? error.message : 'Bridge history failed',
+        code: 'chat_history_failed',
+        error: error instanceof Error ? error.message : 'Chat history failed',
       },
-      { status: 502 }
+      { status: 500 }
     );
   }
 }

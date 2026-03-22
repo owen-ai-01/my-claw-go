@@ -190,11 +190,33 @@ export const userChatMessage = pgTable("user_chat_message", {
   agentId: text("agent_id").notNull().default("main"),
   role: text("role").notNull(), // 'user' | 'assistant'
   content: text("content").notNull(),
+  status: text("status").notNull().default('done'), // pending | running | done | failed
+  taskId: text("task_id"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => ({
   userChatMessageUserIdx: index("user_chat_message_user_idx").on(table.userId),
   userChatMessageUserAgentIdx: index("user_chat_message_user_agent_idx").on(table.userId, table.agentId),
   userChatMessageCreatedAtIdx: index("user_chat_message_created_at_idx").on(table.createdAt),
+}));
+
+export const userChatTask = pgTable("user_chat_task", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => user.id, { onDelete: 'cascade' }),
+  agentId: text("agent_id").notNull().default("main"),
+  status: text("status").notNull().default('queued'),
+  userMessageId: text("user_message_id").notNull().references(() => userChatMessage.id, { onDelete: 'cascade' }),
+  assistantMessageId: text("assistant_message_id").notNull().references(() => userChatMessage.id, { onDelete: 'cascade' }),
+  error: text("error"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  startedAt: timestamp("started_at", { withTimezone: true }),
+  finishedAt: timestamp("finished_at", { withTimezone: true }),
+}, (table) => ({
+  userChatTaskUserIdx: index("user_chat_task_user_idx").on(table.userId),
+  userChatTaskUserAgentIdx: index("user_chat_task_user_agent_idx").on(table.userId, table.agentId),
+  userChatTaskStatusIdx: index("user_chat_task_status_idx").on(table.status),
+  userChatTaskCreatedAtIdx: index("user_chat_task_created_at_idx").on(table.createdAt),
 }));
 
 export const userChatBillingAudit = pgTable("user_chat_billing_audit", {
