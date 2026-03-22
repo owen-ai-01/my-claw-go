@@ -10,8 +10,10 @@ export async function runCommand(command: string, args: string[], timeoutMs = 10
     const result = await execFileAsync(command, args, {
       timeout: timeoutMs,
       maxBuffer: 4 * 1024 * 1024,
+      cwd: process.env.MYCLAWGO_OPENCLAW_CWD || '/home/openclaw',
       env: {
         ...process.env,
+        HOME: process.env.HOME || '/home/openclaw',
         NODE_OPTIONS: [process.env.NODE_OPTIONS, OPENCLAW_NODE_OPTIONS].filter(Boolean).join(' ').trim(),
       },
     });
