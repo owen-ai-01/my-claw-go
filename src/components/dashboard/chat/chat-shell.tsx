@@ -658,7 +658,7 @@ function ChatLayout() {
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, sending, selectedAgentId]);
+  }, [messages, activeTaskStatus, sending, selectedAgentId]);
 
   useEffect(() => {
     if (!selectedGroupId && (activeTaskStatus === 'queued' || activeTaskStatus === 'running')) {
@@ -674,7 +674,7 @@ function ChatLayout() {
             setActiveTaskStatus(data.data.task?.status || null);
           }
         } catch {}
-      }, 2500);
+      }, 1000); // 1s polling: model finishes ~28s, we want to show reply within 1s of it landing
       return () => clearInterval(timer);
     }
   }, [activeTaskStatus, selectedAgentId, selectedGroupId]);
@@ -682,9 +682,9 @@ function ChatLayout() {
   async function onSend() {
     const text = input.trim();
     if (!text || sending) return;
+    // Only add user message optimistically — bounce indicator handles the waiting state
     setMessages((m) => [...m,
       { role: 'user', content: text, createdAt: new Date().toISOString(), status: 'done' },
-      { role: 'assistant', content: 'Thinking…', createdAt: new Date().toISOString(), status: 'queued' },
     ]);
     setInput('');
     setSending(true);
@@ -713,7 +713,7 @@ function ChatLayout() {
 
       if (res.status === 402 && data.code === 'insufficient_credits') {
         setInsufficientCredits(true);
-        setMessages((m) => m.slice(0, -2));
+        setMessages((m) => m.slice(0, -1)); // remove the optimistic user message
         return;
       }
 
@@ -743,7 +743,7 @@ function ChatLayout() {
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'Failed to send message';
       setMessages((m) => [
-        ...m.slice(0, -1),
+        ...m,
         { role: 'assistant', content: `⚠️ ${msg}`, createdAt: new Date().toISOString(), status: 'failed' },
       ]);
     } finally {
@@ -761,6 +761,14 @@ function ChatLayout() {
   const inputPlaceholder = selectedGroup
     ? `Message ${selectedGroup.name}… Use @agentId to route to a member`
     : `Message ${agentLabel(selectedAgent)}… (Enter to send)`;
+
+  // Show bounce indicator while: (a) API call in flight, or (b) background task running
+  const isWaiting = sending || activeTaskStatus === 'queued' || activeTaskStatus === 'running';
+
+  // Filter out placeholder assistant messages (status=queued/running) — shown as bounce instead
+  const visibleMessages = messages.filter(
+    (msg) => !(msg.role === 'assistant' && (msg.status === 'queued' || msg.status === 'running'))
+  );
 
   function switchToAgent(agentId: string) {
     setSelectedAgentId(agentId);
@@ -876,13 +884,13 @@ function ChatLayout() {
           <div className="flex flex-1 flex-col gap-3 overflow-y-auto px-4 py-6 sm:px-6">
             {historyLoading ? (
               <div className="m-auto text-sm text-muted-foreground">Loading…</div>
-            ) : messages.length === 0 ? (
+            ) : visibleMessages.length === 0 && !isWaiting ? (
               <div className="m-auto max-w-sm text-center">
                 <p className="text-2xl mb-2">👋</p>
                 <p className="text-sm text-muted-foreground">Start a conversation with {selectedGroup ? selectedGroup.name : agentLabel(selectedAgent)}.</p>
               </div>
             ) : (
-              messages.map((msg, idx) => {
+              visibleMessages.map((msg, idx) => {
                 const routedAgent = msg.routedAgentId ? agents.find((agent) => agent.id === msg.routedAgentId) || selectedAgent : selectedAgent;
                 return (
                   <div key={msg.id || `${selectedAgentId}-${msg.role}-${idx}`} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -897,7 +905,7 @@ function ChatLayout() {
                           {agentLabel(routedAgent)} · @{msg.routedAgentId}
                         </div>
                       ) : null}
-                      <div className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap break-words [overflow-wrap:anywhere] ${msg.role === 'user' ? 'bg-primary text-primary-foreground rounded-br-sm' : 'bg-muted text-foreground rounded-bl-sm'} ${msg.status === 'running' || msg.status === 'queued' ? 'opacity-70' : ''}`}>
+                      <div className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap break-words [overflow-wrap:anywhere] ${msg.role === 'user' ? 'bg-primary text-primary-foreground rounded-br-sm' : 'bg-muted text-foreground rounded-bl-sm'}`}>
                         {msg.content}
                       </div>
                     </div>
@@ -906,7 +914,8 @@ function ChatLayout() {
               })
             )}
 
-            {sending && (
+            {/* Typing indicator — shown while sending OR while background task is running */}
+            {isWaiting && (
               <div className="flex justify-start">
                 <div className="mr-2 mt-1 flex-shrink-0 w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary select-none">
                   {agentEmoji(selectedAgent)}
