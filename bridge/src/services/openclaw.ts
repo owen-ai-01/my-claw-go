@@ -69,6 +69,14 @@ type ChatHistoryPayload = {
   messages?: ChatHistoryMessage[];
 };
 
+type GatewayTiming = {
+  connectMs: number;
+  chatSendMs: number;
+  agentWaitMs: number;
+  chatHistoryMs: number;
+  totalGatewayMs: number;
+};
+
 function b64url(buf: Buffer) {
   return Buffer.from(buf).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
 }
@@ -300,8 +308,11 @@ async function sendChatViaGateway(params: {
   timeoutMs: number;
 }) {
   const sessionKey = `agent:${params.agentId}:main`;
+  const gatewayStartAt = Date.now();
   const gateway = await openGatewaySession(Math.max(params.timeoutMs, 65000));
+  const connectMs = Date.now() - gatewayStartAt;
   try {
+    const chatSendStartedAt = Date.now();
     const started = await gateway.sendReq<ChatSendStartedPayload>('chat.send', {
       sessionKey,
       message: params.message,
@@ -310,24 +321,29 @@ async function sendChatViaGateway(params: {
       idempotencyKey: randomUUID(),
       timeoutMs: params.timeoutMs,
     }, params.timeoutMs + 5000);
+    const chatSendMs = Date.now() - chatSendStartedAt;
 
     if (!started?.runId) {
       throw new BridgeError('OPENCLAW_GATEWAY_ERROR', 'Gateway chat.send did not return runId', 502);
     }
 
+    const agentWaitStartedAt = Date.now();
     const waitResult = await gateway.sendReq<AgentWaitPayload>('agent.wait', {
       runId: started.runId,
       timeoutMs: params.timeoutMs,
     }, params.timeoutMs + 5000);
+    const agentWaitMs = Date.now() - agentWaitStartedAt;
 
     if (waitResult?.status !== 'ok') {
       throw new BridgeError('OPENCLAW_GATEWAY_ERROR', `Gateway run did not complete successfully: ${waitResult?.status || 'unknown'}`, 502);
     }
 
+    const chatHistoryStartedAt = Date.now();
     const history = await gateway.sendReq<ChatHistoryPayload>('chat.history', {
       sessionKey,
       limit: 30,
     }, 10000);
+    const chatHistoryMs = Date.now() - chatHistoryStartedAt;
 
     const messages = Array.isArray(history?.messages) ? history.messages : [];
     const assistant = [...messages].reverse().find((message) => message?.role === 'assistant');
@@ -336,11 +352,29 @@ async function sendChatViaGateway(params: {
       throw new BridgeError('OPENCLAW_GATEWAY_ERROR', 'Gateway returned no assistant reply', 502);
     }
 
+    const timing: GatewayTiming = {
+      connectMs,
+      chatSendMs,
+      agentWaitMs,
+      chatHistoryMs,
+      totalGatewayMs: connectMs + chatSendMs + agentWaitMs + chatHistoryMs,
+    };
+
+    console.info(
+      `[bridge/openclaw timing] agent=${params.agentId}` +
+      ` connectMs=${timing.connectMs}` +
+      ` chatSendMs=${timing.chatSendMs}` +
+      ` agentWaitMs=${timing.agentWaitMs}` +
+      ` chatHistoryMs=${timing.chatHistoryMs}` +
+      ` totalGatewayMs=${timing.totalGatewayMs}`
+    );
+
     return {
       raw: assistant,
       reply,
       model: assistant?.model,
       usage: assistant?.usage,
+      timing,
     };
   } finally {
     gateway.close();

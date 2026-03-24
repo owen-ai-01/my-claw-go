@@ -88,7 +88,8 @@ export async function chatRoutes(app: FastifyInstance) {
         `[bridge/chat/send timing] targetAgent=${targetAgentId}` +
         `${groupId ? ` group=${groupId}` : ''}` +
         ` bridgeRouteMs=${routeDurationMs}` +
-        ` openclawAgentMs=${agentDurationMs}`
+        ` openclawAgentMs=${agentDurationMs}` +
+        `${result.timing ? ` connectMs=${result.timing.connectMs} chatSendMs=${result.timing.chatSendMs} agentWaitMs=${result.timing.agentWaitMs} chatHistoryMs=${result.timing.chatHistoryMs} totalGatewayMs=${result.timing.totalGatewayMs}` : ''}`
       );
 
       return ok(reply, {
@@ -102,6 +103,7 @@ export async function chatRoutes(app: FastifyInstance) {
         timing: {
           bridgeRouteMs: routeDurationMs,
           openclawAgentMs: agentDurationMs,
+          ...(result.timing || {}),
         },
       });
     } catch (error: any) {
