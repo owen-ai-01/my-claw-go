@@ -662,20 +662,34 @@ function ChatLayout() {
 
   useEffect(() => {
     if (!selectedGroupId && (activeTaskStatus === 'queued' || activeTaskStatus === 'running')) {
-      const timer = setInterval(async () => {
+      let cancelled = false;
+      let pollCount = 0;
+      let timer: ReturnType<typeof setTimeout> | null = null;
+
+      const poll = async () => {
         try {
           const res = await fetch(`/api/chat/history?agentId=${encodeURIComponent(selectedAgentId)}`, { cache: 'no-store' });
           const data = await res.json().catch(() => ({})) as {
             ok?: boolean;
             data?: { messages?: ChatMessage[]; task?: { status?: string } | null };
           };
-          if (data.ok && data.data?.messages) {
+          if (!cancelled && data.ok && data.data?.messages) {
             setMessages(data.data.messages);
             setActiveTaskStatus(data.data.task?.status || null);
           }
         } catch {}
-      }, 1000); // 1s polling: model finishes ~28s, we want to show reply within 1s of it landing
-      return () => clearInterval(timer);
+
+        if (cancelled) return;
+        pollCount += 1;
+        const nextDelayMs = pollCount < 10 ? 250 : 800;
+        timer = setTimeout(poll, nextDelayMs);
+      };
+
+      timer = setTimeout(poll, 150);
+      return () => {
+        cancelled = true;
+        if (timer) clearTimeout(timer);
+      };
     }
   }, [activeTaskStatus, selectedAgentId, selectedGroupId]);
 
