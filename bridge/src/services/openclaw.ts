@@ -4,7 +4,8 @@ import { runCommand } from '../lib/exec.js';
 
 function extractReply(parsed: any) {
   if (typeof parsed?.reply === 'string' && parsed.reply.trim()) return parsed.reply;
-  const payloads = parsed?.result?.payloads;
+  // openclaw agent --json returns { payloads: [{text}], meta: {...} }
+  const payloads = parsed?.payloads ?? parsed?.result?.payloads;
   if (Array.isArray(payloads)) {
     return payloads.map((item: any) => item?.text || '').filter(Boolean).join('\n\n').trim();
   }
@@ -45,11 +46,13 @@ export async function sendChatMessage(params: {
     const fallbackReply = reply || parsed?.error || parsed?.result?.error || '';
     await appendChatTranscript({ role: 'user', text: message, agentId, channel, chatScope });
     await appendChatTranscript({ role: 'assistant', text: fallbackReply || '', agentId, channel, chatScope, meta: { model: parsed?.result?.meta?.agentMeta?.model } });
+    // openclaw --json: { payloads, meta: { agentMeta: { model, usage, lastCallUsage } } }
+    const agentMeta = parsed?.meta?.agentMeta ?? parsed?.result?.meta?.agentMeta;
     return {
       raw: parsed,
       reply: fallbackReply,
-      model: parsed?.result?.meta?.agentMeta?.model,
-      usage: parsed?.result?.meta?.agentMeta?.lastCallUsage || parsed?.result?.meta?.agentMeta?.usage,
+      model: agentMeta?.model,
+      usage: agentMeta?.lastCallUsage ?? agentMeta?.usage,
     };
   } catch {
     await appendChatTranscript({ role: 'user', text: message, agentId, channel, chatScope });
