@@ -13,7 +13,7 @@ import type { UserSession } from './session-store';
 const execFileAsync = promisify(execFile);
 
 const OPENCLAW_IMAGE =
-  process.env.MYCLAWGO_OPENCLAW_IMAGE || 'myclawgo-openclaw:2026.3.8';
+  process.env.MYCLAWGO_OPENCLAW_IMAGE || 'myclawgo-openclaw:2026.3.13';
 const HOST_OPENCLAW_CONFIG =
   process.env.MYCLAWGO_SEED_CONFIG_PATH ||
   '/home/openclaw/docker-openclaw-seed/openclaw.json';
@@ -25,7 +25,7 @@ const HOST_PW_DIR =
 const HOST_BRIDGE_ROOT =
   process.env.MYCLAWGO_BRIDGE_ROOT || '/home/openclaw/myclawgo-bridge';
 const DEFAULT_RUNTIME_MODEL =
-  process.env.MYCLAWGO_RUNTIME_MODEL || 'openrouter/minimax/minimax-m2.5';
+  process.env.MYCLAWGO_RUNTIME_MODEL || 'openrouter/openai/gpt-4o-mini';
 const OPENCLAW_NPM_SPEC = process.env.MYCLAWGO_OPENCLAW_NPM_SPEC || 'latest';
 const ALLOW_LEGACY_BOOTSTRAP =
   process.env.MYCLAWGO_ALLOW_LEGACY_BOOTSTRAP === 'true';
@@ -250,7 +250,7 @@ async function ensureGatewayForContainer(containerName: string) {
   const scriptContent = [
     '#!/bin/bash',
     'export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"',
-    'export NODE_OPTIONS="${NODE_OPTIONS:-} --max-old-space-size=768"',
+    'export NODE_OPTIONS="${NODE_OPTIONS:-} --max-old-space-size=1536"',
     'while true; do',
     '  /usr/local/bin/openclaw gateway run --allow-unconfigured --auth none --bind loopback --port 18789 >> /home/openclaw/.openclaw/gateway.log 2>&1',
     '  sleep 2',
@@ -360,7 +360,7 @@ export async function ensureUserContainer(session: UserSession) {
       '-v',
       `${HOST_BRIDGE_ROOT}:/opt/myclawgo-bridge:ro`,
       '-w',
-      '/root',
+      '/home/openclaw',
     ];
 
     for (const env of envs) {
