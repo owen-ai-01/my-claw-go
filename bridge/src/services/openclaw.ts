@@ -13,7 +13,8 @@ function extractReply(parsed: any) {
 }
 
 export async function checkOpenClawHealth() {
-  const { stdout } = await runCommand('su', ['-s', '/bin/bash', 'openclaw', '-c', "cd /home/openclaw && HOME=/home/openclaw USER=openclaw LOGNAME=openclaw openclaw gateway call health --json"], 5000);
+  // Bridge already runs as openclaw user — no need for `su`
+  const { stdout } = await runCommand('bash', ['-c', 'cd /home/openclaw && openclaw gateway call health --json'], 5000);
   try {
     return JSON.parse(stdout);
   } catch {
@@ -30,10 +31,11 @@ export async function sendChatMessage(params: {
 }) {
   const { message, agentId, timeoutMs = 90000, channel = 'direct', chatScope = 'default' } = params;
   const escapedMessage = message.replace(/'/g, `'"'"'`);
+  // Bridge runs as openclaw user — run openclaw CLI directly without `su`
   const command = `cd /home/openclaw && HOME=/home/openclaw USER=openclaw LOGNAME=openclaw openclaw agent --local --agent '${agentId}' --message '${escapedMessage}' --thinking off --json`;
   const { stdout } = await runCommand(
-    'su',
-    ['-s', '/bin/bash', 'openclaw', '-c', command],
+    'bash',
+    ['-c', command],
     timeoutMs
   );
 
