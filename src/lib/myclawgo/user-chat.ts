@@ -1,6 +1,13 @@
 import crypto from 'node:crypto';
 import { getDb } from '@/db';
-import { userChatMessage, userChatTask } from '@/db/schema';
+import { userChatBillingAudit, userChatMessage, userChatTask } from '@/db/schema';
+import { consumeCredits } from '@/credits/credits';
+import {
+  calcUsdCostFromBridgeUsage,
+  creditsFromUsd,
+  estimateUsage,
+  resolvePricingModelKey,
+} from '@/lib/myclawgo/billing';
 import { and, asc, desc, eq } from 'drizzle-orm';
 import { resolveUserBridgeTarget } from '@/lib/myclawgo/bridge-target';
 
@@ -77,6 +84,114 @@ export async function getLatestChatTask(userId: string, agentId: string) {
   return rows[0] ?? null;
 }
 
+type DirectChatUsage = {
+  input?: number;
+  output?: number;
+  cacheRead?: number;
+  cacheWrite?: number;
+  total?: number;
+  input_tokens?: number;
+  output_tokens?: number;
+  prompt_tokens?: number;
+  completion_tokens?: number;
+};
+
+function extractBillingTokenCounts(usage?: DirectChatUsage) {
+  return {
+    inputTokens: Math.max(0, Number(usage?.input ?? usage?.input_tokens ?? usage?.prompt_tokens ?? 0)),
+    outputTokens: Math.max(0, Number(usage?.output ?? usage?.output_tokens ?? usage?.completion_tokens ?? 0)),
+    cacheReadTokens: Math.max(0, Number(usage?.cacheRead ?? 0)),
+  };
+}
+
+async function settleDirectChatBilling(params: {
+  taskId: string;
+  userId: string;
+  agentId: string;
+  message: string;
+  reply: string;
+  model?: string;
+  usage?: DirectChatUsage;
+  bridgeRaw?: unknown;
+}) {
+  const db = await getDb();
+  const modelUsed = params.model || 'openrouter/minimax/minimax-m2.5';
+  const pricingModelKey = resolvePricingModelKey(modelUsed);
+
+  try {
+    const hasActualUsage = !!params.usage;
+    const source = hasActualUsage ? 'actual' : 'estimated';
+    const usageForBilling = hasActualUsage
+      ? params.usage!
+      : (() => {
+          const estimated = estimateUsage(params.message, params.reply);
+          return {
+            input: estimated.inputTokens,
+            output: estimated.outputTokens,
+            total: estimated.totalTokens,
+          };
+        })();
+
+    const usdCost = calcUsdCostFromBridgeUsage({
+      model: modelUsed,
+      usage: usageForBilling,
+    });
+
+    const creditsDeducted = creditsFromUsd(usdCost);
+    const tokenCounts = extractBillingTokenCounts(usageForBilling);
+
+    await consumeCredits({
+      userId: params.userId,
+      amount: creditsDeducted,
+      paymentId: `chat-task:${params.taskId}`,
+      description:
+        `MyClawGo direct chat usage: agent=${params.agentId}, model=${modelUsed}, ` +
+        `source=${source}, usd_cost=$${usdCost.toFixed(6)}`,
+    });
+
+    await db.insert(userChatBillingAudit).values({
+      id: crypto.randomUUID(),
+      userId: params.userId,
+      agentId: params.agentId,
+      model: modelUsed,
+      pricingModelKey,
+      source,
+      status: 'ok',
+      inputTokens: tokenCounts.inputTokens,
+      outputTokens: tokenCounts.outputTokens,
+      cacheReadTokens: tokenCounts.cacheReadTokens,
+      usdCost: usdCost.toFixed(8),
+      creditsDeducted,
+      metaJson: {
+        taskId: params.taskId,
+        bridgeRaw: params.bridgeRaw ?? null,
+      },
+      createdAt: new Date(),
+    });
+  } catch (error) {
+    const tokenCounts = extractBillingTokenCounts(params.usage);
+    await db.insert(userChatBillingAudit).values({
+      id: crypto.randomUUID(),
+      userId: params.userId,
+      agentId: params.agentId,
+      model: modelUsed,
+      pricingModelKey,
+      source: params.usage ? 'actual' : 'estimated',
+      status: 'failed',
+      inputTokens: tokenCounts.inputTokens,
+      outputTokens: tokenCounts.outputTokens,
+      cacheReadTokens: tokenCounts.cacheReadTokens,
+      error: error instanceof Error ? error.message : 'billing failed',
+      metaJson: {
+        taskId: params.taskId,
+        bridgeRaw: params.bridgeRaw ?? null,
+      },
+      createdAt: new Date(),
+    });
+    console.error('settleDirectChatBilling failed:', error instanceof Error ? error.message : error);
+  }
+}
+
 async function runDirectChatTask(params: {
   taskId: string;
   userId: string;
@@ -119,7 +234,22 @@ async function runDirectChatTask(params: {
 
     const payload = await upstreamRes.json().catch(() => ({ ok: false, error: 'Invalid bridge response' })) as {
       ok?: boolean;
-      data?: { reply?: string };
+      data?: {
+        reply?: string;
+        model?: string;
+        usage?: {
+          input?: number;
+          output?: number;
+          cacheRead?: number;
+          cacheWrite?: number;
+          total?: number;
+          input_tokens?: number;
+          output_tokens?: number;
+          prompt_tokens?: number;
+          completion_tokens?: number;
+        };
+        raw?: unknown;
+      };
       error?: string | { message?: string };
     };
 
@@ -130,6 +260,17 @@ async function runDirectChatTask(params: {
     await db.update(userChatMessage)
       .set({ content: payload.data.reply, status: 'done', updatedAt: new Date() })
       .where(eq(userChatMessage.id, task.assistantMessageId));
+
+    await settleDirectChatBilling({
+      taskId,
+      userId,
+      agentId,
+      message,
+      reply: payload.data.reply,
+      model: payload.data.model,
+      usage: payload.data.usage,
+      bridgeRaw: payload.data.raw,
+    });
 
     await db.update(userChatTask)
       .set({ status: 'done', finishedAt: new Date(), updatedAt: new Date(), error: null })
