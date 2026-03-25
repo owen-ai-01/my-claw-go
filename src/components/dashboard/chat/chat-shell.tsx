@@ -35,6 +35,10 @@ type AgentItem = {
   name?: string;
   workspace?: string;
   model?: string;
+  enabled?: boolean;
+  role?: string;
+  description?: string;
+  department?: string;
   isDefault?: boolean;
   identity?: {
     name?: string;
@@ -108,6 +112,11 @@ function AgentConfigDrawer({
   const [agent, setAgent] = useState<AgentDetail | null>(null);
   const [agentsMd, setAgentsMd] = useState('');
   const [draftAgentsMd, setDraftAgentsMd] = useState('');
+  const [draftName, setDraftName] = useState('');
+  const [draftRole, setDraftRole] = useState('');
+  const [draftDescription, setDraftDescription] = useState('');
+  const [draftDepartment, setDraftDepartment] = useState('');
+  const [draftEnabled, setDraftEnabled] = useState(true);
   const [draftModel, setDraftModel] = useState('');
   const [draftTelegramEnabled, setDraftTelegramEnabled] = useState(false);
   const [draftTelegramBindingEnabled, setDraftTelegramBindingEnabled] = useState(false);
@@ -145,6 +154,11 @@ function AgentConfigDrawer({
         setAgent(agentPayload.data);
         setAgentsMd(nextAgentsMd);
         setDraftAgentsMd(nextAgentsMd);
+        setDraftName(agentPayload.data.name || agentPayload.data.identity?.name || '');
+        setDraftRole(agentPayload.data.role || '');
+        setDraftDescription(agentPayload.data.description || '');
+        setDraftDepartment(agentPayload.data.department || '');
+        setDraftEnabled(agentPayload.data.enabled !== false);
         setDraftModel(agentPayload.data.model || '');
         setDraftTelegramEnabled(agentPayload.data.telegram?.enabled ?? false);
         setDraftTelegramBindingEnabled(agentPayload.data.telegram?.bindingEnabled ?? false);
@@ -157,6 +171,11 @@ function AgentConfigDrawer({
         setAgent(null);
         setAgentsMd('');
         setDraftAgentsMd('');
+        setDraftName('');
+        setDraftRole('');
+        setDraftDescription('');
+        setDraftDepartment('');
+        setDraftEnabled(true);
         setDraftModel('');
         setDraftTelegramEnabled(false);
         setDraftTelegramBindingEnabled(false);
@@ -184,7 +203,14 @@ function AgentConfigDrawer({
         fetch(`/api/agents/${encodeURIComponent(agent.id)}`, {
           method: 'PATCH',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ model: draftModel }),
+          body: JSON.stringify({
+            name: draftName,
+            role: draftRole,
+            description: draftDescription,
+            department: draftDepartment,
+            enabled: draftEnabled,
+            model: draftModel,
+          }),
         }),
         fetch(`/api/agents/${encodeURIComponent(agent.id)}/agents-md`, {
           method: 'PUT',
@@ -291,6 +317,49 @@ function AgentConfigDrawer({
                     <p className="text-xs text-muted-foreground">Agent ID</p>
                     <p className="mt-1 font-medium">@{agent.id}</p>
                   </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Display Name</p>
+                    <input
+                      value={draftName}
+                      onChange={(e) => setDraftName(e.target.value)}
+                      placeholder="e.g. Growth Analyst"
+                      className="mt-1 w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none"
+                    />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Role</p>
+                    <input
+                      value={draftRole}
+                      onChange={(e) => setDraftRole(e.target.value)}
+                      placeholder="e.g. SEO strategist"
+                      className="mt-1 w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none"
+                    />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Department</p>
+                    <input
+                      value={draftDepartment}
+                      onChange={(e) => setDraftDepartment(e.target.value)}
+                      placeholder="e.g. Marketing"
+                      className="mt-1 w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none"
+                    />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Description</p>
+                    <textarea
+                      value={draftDescription}
+                      onChange={(e) => setDraftDescription(e.target.value)}
+                      placeholder="What this agent is responsible for"
+                      className="mt-1 min-h-[84px] w-full resize-none rounded-xl border bg-background px-3 py-2 text-sm outline-none"
+                    />
+                  </div>
+                  <label className="flex items-center justify-between rounded-xl border px-3 py-2">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Enabled</p>
+                      <p className="mt-1 text-sm font-medium">{draftEnabled ? 'This agent can be used' : 'Disabled from active use'}</p>
+                    </div>
+                    <input type="checkbox" checked={draftEnabled} onChange={(e) => setDraftEnabled(e.target.checked)} className="h-4 w-4" />
+                  </label>
                   <div>
                     <p className="text-xs text-muted-foreground">Model</p>
                     <input

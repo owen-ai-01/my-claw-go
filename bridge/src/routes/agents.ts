@@ -25,9 +25,9 @@ export async function agentRoutes(app: FastifyInstance) {
 
   app.post('/agents', async (req: any, reply) => {
     try {
-      const { agentId, name, workspace, model } = req.body || {};
+      const { agentId, name, workspace, model, role, description, department, enabled } = req.body || {};
       if (!agentId) return fail(reply, 'INVALID_PARAMS', 'agentId is required', 400);
-      const data = await createAgent({ agentId, name, workspace, model });
+      const data = await createAgent({ agentId, name, workspace, model, role, description, department, enabled });
       return ok(reply, data);
     } catch (error: any) {
       return fail(reply, error.code || 'INTERNAL_ERROR', error.message || 'create agent failed', error.statusCode || 500);
@@ -65,7 +65,7 @@ export async function agentRoutes(app: FastifyInstance) {
       const agent = await getAgent(agentId);
       const status = {
         agentId,
-        online: true, // 简化版先假设都在线
+        online: agent.enabled !== false, // 简化版：disabled agent 视为不在线
         lastActivity: new Date().toISOString(),
         currentTask: null,
         recentErrors: [],
@@ -106,6 +106,11 @@ export async function agentRoutes(app: FastifyInstance) {
       if (!agentId) return fail(reply, 'INVALID_PARAMS', 'agentId is required', 400);
       const patch = {
         model: typeof req.body?.model === 'string' ? req.body.model : undefined,
+        name: typeof req.body?.name === 'string' ? req.body.name : undefined,
+        role: typeof req.body?.role === 'string' ? req.body.role : undefined,
+        description: typeof req.body?.description === 'string' ? req.body.description : undefined,
+        department: typeof req.body?.department === 'string' ? req.body.department : undefined,
+        enabled: typeof req.body?.enabled === 'boolean' ? req.body.enabled : undefined,
       };
       const data = await updateAgent(agentId, patch);
       return ok(reply, data);

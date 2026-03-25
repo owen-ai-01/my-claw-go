@@ -4,6 +4,10 @@ export type AgentRecord = {
   workspace?: string;
   agentDir?: string;
   model?: string;
+  enabled?: boolean;
+  role?: string;
+  description?: string;
+  department?: string;
   isDefault?: boolean;
   identity?: {
     name?: string;

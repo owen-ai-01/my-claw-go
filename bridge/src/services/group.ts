@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
+import path from 'node:path';
 import { BridgeError } from '../lib/errors.js';
-import { OPENCLAW_CONFIG_PATH } from '../lib/paths.js';
+import { OPENCLAW_CONFIG_PATH, OPENCLAW_HOME } from '../lib/paths.js';
 
 type GroupType = 'project' | 'department' | 'temporary';
 
@@ -28,6 +29,13 @@ type OpenClawConfig = {
   [key: string]: unknown;
 };
 
+type GroupStore = {
+  version: 1;
+  groups: Group[];
+};
+
+const GROUPS_STORE_PATH = path.join(OPENCLAW_HOME, 'myclawgo-groups.json');
+
 async function readConfig(): Promise<OpenClawConfig> {
   const raw = await fs.readFile(OPENCLAW_CONFIG_PATH, 'utf8');
   return JSON.parse(raw);
@@ -37,15 +45,51 @@ async function writeConfig(config: OpenClawConfig) {
   await fs.writeFile(OPENCLAW_CONFIG_PATH, JSON.stringify(config, null, 2), 'utf8');
 }
 
-export async function listGroups() {
+async function readGroupStore(): Promise<GroupStore> {
+  try {
+    const raw = await fs.readFile(GROUPS_STORE_PATH, 'utf8');
+    const parsed = JSON.parse(raw) as Partial<GroupStore>;
+    return {
+      version: 1,
+      groups: Array.isArray(parsed.groups) ? parsed.groups : [],
+    };
+  } catch (error: any) {
+    if (error?.code === 'ENOENT') {
+      return { version: 1, groups: [] };
+    }
+    throw error;
+  }
+}
+
+async function writeGroupStore(store: GroupStore) {
+  await fs.writeFile(GROUPS_STORE_PATH, JSON.stringify(store, null, 2), 'utf8');
+}
+
+async function ensureGroupStore() {
   const config = await readConfig();
-  const groups = config.groups?.list || [];
-  return { groups };
+  const configGroups = config.groups?.list || [];
+  const store = await readGroupStore();
+
+  if (configGroups.length > 0 && store.groups.length === 0) {
+    await writeGroupStore({ version: 1, groups: configGroups });
+  }
+
+  if (config.groups !== undefined) {
+    delete config.groups;
+    await writeConfig(config);
+  }
+
+  return readGroupStore();
+}
+
+export async function listGroups() {
+  const store = await ensureGroupStore();
+  return { groups: store.groups };
 }
 
 export async function getGroup(groupId: string) {
-  const config = await readConfig();
-  const group = config.groups?.list?.find((g) => g.id === groupId);
+  const store = await ensureGroupStore();
+  const group = store.groups.find((g) => g.id === groupId);
   if (!group) {
     throw new BridgeError('GROUP_NOT_FOUND', `Group not found: ${groupId}`, 404);
   }
@@ -78,11 +122,8 @@ export async function createGroup(params: {
     throw new BridgeError('INVALID_MEMBERS', 'Group must have at least 2 members', 400);
   }
 
-  const config = await readConfig();
-  config.groups = config.groups || {};
-  config.groups.list = config.groups.list || [];
-
-  const exists = config.groups.list.some((g) => g.id === id);
+  const store = await ensureGroupStore();
+  const exists = store.groups.some((g) => g.id === id);
   if (exists) {
     throw new BridgeError('GROUP_EXISTS', `Group ${id} already exists`, 409);
   }
@@ -94,13 +135,13 @@ export async function createGroup(params: {
     description: description?.trim(),
     type,
     leaderId,
-    members: [...new Set(members)], // 去重
+    members: [...new Set(members)],
     createdAt: now,
     updatedAt: now,
   };
 
-  config.groups.list.push(newGroup);
-  await writeConfig(config);
+  store.groups.push(newGroup);
+  await writeGroupStore(store);
 
   return newGroup;
 }
@@ -112,15 +153,14 @@ export async function updateGroup(groupId: string, patch: {
   leaderId?: string;
   members?: string[];
 }) {
-  const config = await readConfig();
-  const groups = config.groups?.list || [];
-  const index = groups.findIndex((g) => g.id === groupId);
+  const store = await ensureGroupStore();
+  const index = store.groups.findIndex((g) => g.id === groupId);
 
   if (index < 0) {
     throw new BridgeError('GROUP_NOT_FOUND', `Group not found: ${groupId}`, 404);
   }
 
-  const group = { ...groups[index] };
+  const group = { ...store.groups[index] };
 
   if (patch.name !== undefined) {
     if (!patch.name.trim()) {
@@ -152,25 +192,22 @@ export async function updateGroup(groupId: string, patch: {
   }
 
   group.updatedAt = new Date().toISOString();
-  groups[index] = group;
-  config.groups = { ...config.groups, list: groups };
-  await writeConfig(config);
+  store.groups[index] = group;
+  await writeGroupStore(store);
 
   return group;
 }
 
 export async function deleteGroup(groupId: string) {
-  const config = await readConfig();
-  const groups = config.groups?.list || [];
-  const index = groups.findIndex((g) => g.id === groupId);
+  const store = await ensureGroupStore();
+  const index = store.groups.findIndex((g) => g.id === groupId);
 
   if (index < 0) {
     throw new BridgeError('GROUP_NOT_FOUND', `Group not found: ${groupId}`, 404);
   }
 
-  groups.splice(index, 1);
-  config.groups = { ...config.groups, list: groups };
-  await writeConfig(config);
+  store.groups.splice(index, 1);
+  await writeGroupStore(store);
 
   return { deleted: true, groupId };
 }

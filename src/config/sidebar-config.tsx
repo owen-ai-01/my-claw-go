@@ -13,6 +13,7 @@ import {
   CreditCardIcon,
   LayoutDashboardIcon,
   LockKeyholeIcon,
+  ListTodoIcon,
   Settings2Icon,
   SettingsIcon,
   UsersRoundIcon,
@@ -53,6 +54,12 @@ export function useSidebarLinks(): NestedMenuItem[] {
       title: 'Office',
       icon: <BriefcaseIcon className="size-4 shrink-0" />,
       href: Routes.Office,
+      external: false,
+    },
+    {
+      title: 'Tasks',
+      icon: <ListTodoIcon className="size-4 shrink-0" />,
+      href: Routes.Tasks,
       external: false,
     },
     {

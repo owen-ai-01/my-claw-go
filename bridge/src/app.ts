@@ -5,6 +5,7 @@ import { configRoutes } from './routes/config.js';
 import { healthRoutes } from './routes/health.js';
 import { logRoutes } from './routes/logs.js';
 import { groupRoutes } from './routes/groups.js';
+import { taskRoutes } from './routes/tasks.js';
 
 export async function buildApp() {
   const app = Fastify({ logger: true });
@@ -26,6 +27,7 @@ export async function buildApp() {
   await chatRoutes(app);
   await agentRoutes(app);
   await groupRoutes(app);
+  await taskRoutes(app);
   await configRoutes(app);
   await logRoutes(app);
 

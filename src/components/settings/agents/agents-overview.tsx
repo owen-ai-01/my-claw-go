@@ -15,6 +15,8 @@ type AgentsResponse = {
 type CreateAgentPayload = {
   agentId: string;
   name?: string;
+  role?: string;
+  department?: string;
   model?: string;
 };
 
@@ -43,6 +45,8 @@ function agentEmoji(agent: AgentRecord) {
 function CreateAgentModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
   const [agentId, setAgentId] = useState('');
   const [name, setName] = useState('');
+  const [role, setRole] = useState('');
+  const [department, setDepartment] = useState('');
   const [model, setModel] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -62,6 +66,8 @@ function CreateAgentModal({ onClose, onCreated }: { onClose: () => void; onCreat
     try {
       const body: CreateAgentPayload = { agentId: agentId.trim() };
       if (name.trim()) body.name = name.trim();
+      if (role.trim()) body.role = role.trim();
+      if (department.trim()) body.department = department.trim();
       if (model.trim()) body.model = model.trim();
       const res = await fetch('/api/agents', {
         method: 'POST',
@@ -123,6 +129,28 @@ function CreateAgentModal({ onClose, onCreated }: { onClose: () => void; onCreat
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Sales Bot"
+              className="w-full rounded-xl border bg-muted/30 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/50"
+            />
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-sm font-medium">Role (optional)</label>
+            <input
+              type="text"
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+              placeholder="e.g. SEO strategist"
+              className="w-full rounded-xl border bg-muted/30 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/50"
+            />
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-sm font-medium">Department (optional)</label>
+            <input
+              type="text"
+              value={department}
+              onChange={(e) => setDepartment(e.target.value)}
+              placeholder="e.g. Marketing"
               className="w-full rounded-xl border bg-muted/30 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/50"
             />
           </div>
@@ -308,12 +336,20 @@ export function AgentsOverview() {
                     </div>
                   </div>
                 </div>
-                <span className="shrink-0 rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-600">
-                  active
+                <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${agent.enabled === false ? 'bg-gray-200 text-gray-600' : 'bg-emerald-500/10 text-emerald-600'}`}>
+                  {agent.enabled === false ? 'disabled' : 'active'}
                 </span>
               </div>
 
               <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="rounded-xl border p-3">
+                  <p className="text-xs text-muted-foreground">Role</p>
+                  <p className="mt-1 truncate text-sm font-medium">{agent.role || '—'}</p>
+                </div>
+                <div className="rounded-xl border p-3">
+                  <p className="text-xs text-muted-foreground">Department</p>
+                  <p className="mt-1 truncate text-sm font-medium">{agent.department || '—'}</p>
+                </div>
                 <div className="rounded-xl border p-3">
                   <p className="text-xs text-muted-foreground">Model</p>
                   <p className="mt-1 truncate text-sm font-medium">{agent.model || 'Default'}</p>
@@ -329,6 +365,13 @@ export function AgentsOverview() {
                   </p>
                 </div>
               </div>
+
+              {agent.description ? (
+                <div className="mt-3 rounded-xl border p-3">
+                  <p className="text-xs text-muted-foreground">Description</p>
+                  <p className="mt-1 text-sm font-medium text-foreground/80">{agent.description}</p>
+                </div>
+              ) : null}
 
               <div className="mt-5 flex flex-wrap gap-2">
                 <Link

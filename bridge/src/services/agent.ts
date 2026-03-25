@@ -38,6 +38,10 @@ type AgentConfigEntry = {
   agentDir?: string;
   model?: string;
   default?: boolean;
+  enabled?: boolean;
+  role?: string;
+  description?: string;
+  department?: string;
   identity?: AgentIdentity;
 };
 
@@ -71,6 +75,10 @@ export type AgentListItem = {
   workspace?: string;
   agentDir?: string;
   model?: string;
+  enabled?: boolean;
+  role?: string;
+  description?: string;
+  department?: string;
   isDefault: boolean;
   identity?: AgentIdentity;
   telegram?: {
@@ -118,6 +126,10 @@ function toAgentListItem(config: OpenClawConfig, defaultAgentId: string | undefi
     workspace: agent.workspace,
     agentDir: agent.agentDir,
     model: agent.model,
+    enabled: agent.enabled !== false,
+    role: agent.role,
+    description: agent.description,
+    department: agent.department,
     isDefault: agent.default === true || agent.id === defaultAgentId,
     identity: agent.identity,
     telegram: telegramAccount
@@ -204,7 +216,7 @@ export async function updateAgentMarkdown(agentId: string, content: string) {
   };
 }
 
-export async function updateAgent(agentId: string, patch: { model?: string }) {
+export async function updateAgent(agentId: string, patch: { model?: string; name?: string; role?: string; description?: string; department?: string; enabled?: boolean }) {
   const config = await readConfig();
   const agents = config.agents?.list || [];
   const index = agents.findIndex((agent) => agent.id === agentId);
@@ -220,6 +232,34 @@ export async function updateAgent(agentId: string, patch: { model?: string }) {
     } else {
       next.model = trimmed;
     }
+  }
+  if (typeof patch.name === 'string') {
+    const trimmed = patch.name.trim();
+    if (!trimmed) {
+      delete next.name;
+      if (next.identity) delete next.identity.name;
+    } else {
+      next.name = trimmed;
+      next.identity = { ...(next.identity || {}), name: trimmed };
+    }
+  }
+  if (typeof patch.role === 'string') {
+    const trimmed = patch.role.trim();
+    if (!trimmed) delete next.role;
+    else next.role = trimmed;
+  }
+  if (typeof patch.description === 'string') {
+    const trimmed = patch.description.trim();
+    if (!trimmed) delete next.description;
+    else next.description = trimmed;
+  }
+  if (typeof patch.department === 'string') {
+    const trimmed = patch.department.trim();
+    if (!trimmed) delete next.department;
+    else next.department = trimmed;
+  }
+  if (typeof patch.enabled === 'boolean') {
+    next.enabled = patch.enabled;
   }
 
   agents[index] = next;
@@ -272,8 +312,8 @@ export async function deleteAgent(agentId: string) {
   return { deleted: true, agentId };
 }
 
-export async function createAgent(params: { agentId: string; name?: string; workspace?: string; model?: string }) {
-  const { agentId, name, workspace, model } = params;
+export async function createAgent(params: { agentId: string; name?: string; workspace?: string; model?: string; role?: string; description?: string; department?: string; enabled?: boolean }) {
+  const { agentId, name, workspace, model, role, description, department, enabled } = params;
 
   if (!agentId || !/^[a-z0-9_-]+$/i.test(agentId)) {
     throw new BridgeError('INVALID_AGENT_ID', 'Agent ID must be alphanumeric with hyphens/underscores', 400);
@@ -296,7 +336,7 @@ export async function createAgent(params: { agentId: string; name?: string; work
     `You are @${agentId}.`,
     '',
     '## Role',
-    '- Newly created agent in MyClawGo',
+    `- ${role?.trim() || 'Newly created agent in MyClawGo'}`,
     '',
     '## Behavior',
     '- Be helpful, concise, and action-oriented.',
@@ -314,6 +354,10 @@ export async function createAgent(params: { agentId: string; name?: string; work
     newAgent.identity = { ...(newAgent.identity || {}), name };
   }
   if (model) newAgent.model = model;
+  if (role?.trim()) newAgent.role = role.trim();
+  if (description?.trim()) newAgent.description = description.trim();
+  if (department?.trim()) newAgent.department = department.trim();
+  if (typeof enabled === 'boolean') newAgent.enabled = enabled;
 
   config.agents = config.agents || {};
   config.agents.list = config.agents.list || [];

@@ -112,6 +112,22 @@ export function AgentDetails({ agentId }: { agentId: string }) {
             <h2 className="text-lg font-semibold">Agent Basics</h2>
             <dl className="mt-4 space-y-3 text-sm">
               <div>
+                <dt className="text-muted-foreground">Role</dt>
+                <dd className="mt-1 break-all font-medium">{agent.role || '—'}</dd>
+              </div>
+              <div>
+                <dt className="text-muted-foreground">Department</dt>
+                <dd className="mt-1 break-all font-medium">{agent.department || '—'}</dd>
+              </div>
+              <div>
+                <dt className="text-muted-foreground">Description</dt>
+                <dd className="mt-1 break-all font-medium">{agent.description || '—'}</dd>
+              </div>
+              <div>
+                <dt className="text-muted-foreground">Enabled</dt>
+                <dd className="mt-1 break-all font-medium">{agent.enabled === false ? 'No' : 'Yes'}</dd>
+              </div>
+              <div>
                 <dt className="text-muted-foreground">Model</dt>
                 <dd className="mt-1 break-all font-medium">{agent.model || 'Use default'}</dd>
               </div>
