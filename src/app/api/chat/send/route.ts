@@ -1,10 +1,23 @@
 import { auth } from '@/lib/auth';
 import { checkUserCredits } from '@/lib/myclawgo/membership';
-import { createDirectChatTask } from '@/lib/myclawgo/user-chat';
+import { createDirectChatTask, settleDirectChatBilling, type DirectChatUsage } from '@/lib/myclawgo/user-chat';
+import { requireUserBridgeTarget } from '@/lib/myclawgo/bridge-fetch';
 import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 
 const MIN_CREDITS_PER_MESSAGE = 1;
+
+type GroupChatResponse = {
+  ok?: boolean;
+  data?: {
+    reply?: string;
+    model?: string;
+    routedAgentId?: string;
+    usage?: DirectChatUsage;
+    raw?: unknown;
+  };
+  error?: string | { message?: string };
+};
 
 export async function POST(req: Request) {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -16,6 +29,7 @@ export async function POST(req: Request) {
   const body = (await req.json().catch(() => ({}))) as {
     message?: string;
     agentId?: string;
+    groupId?: string;
     timeoutMs?: number;
   };
 
@@ -25,6 +39,7 @@ export async function POST(req: Request) {
   }
 
   const agentId = String(body.agentId || 'main');
+  const groupId = String(body.groupId || '').trim();
 
   const creditCheck = await checkUserCredits(userId, MIN_CREDITS_PER_MESSAGE);
   if (!creditCheck.hasCredits) {
@@ -40,6 +55,66 @@ export async function POST(req: Request) {
   }
 
   try {
+    if (groupId) {
+      const bridge = await requireUserBridgeTarget();
+      if (!bridge.ok) return bridge.response;
+
+      const upstreamRes = await fetch(`${bridge.target.bridge.baseUrl}/chat/send`, {
+        method: 'POST',
+        headers: {
+          authorization: `Bearer ${bridge.target.bridge.token}`,
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          message,
+          groupId,
+          agentId,
+          timeoutMs: body.timeoutMs || 90000,
+        }),
+        cache: 'no-store',
+        signal: AbortSignal.timeout(body.timeoutMs || 90000),
+      });
+
+      const payload = (await upstreamRes.json().catch(() => ({ ok: false, error: 'Invalid bridge response' }))) as GroupChatResponse;
+
+      if (!upstreamRes.ok || payload.ok !== true || !payload.data?.reply?.trim()) {
+        return NextResponse.json(
+          {
+            ok: false,
+            code: 'group_chat_failed',
+            error: typeof payload.error === 'string' ? payload.error : payload.error?.message || 'Group chat failed',
+          },
+          { status: upstreamRes.ok ? 502 : upstreamRes.status }
+        );
+      }
+
+      await settleDirectChatBilling({
+        taskId: `group:${groupId}:${Date.now()}`,
+        userId,
+        agentId: payload.data.routedAgentId || agentId,
+        message,
+        reply: payload.data.reply,
+        model: payload.data.model,
+        usage: payload.data.usage,
+        bridgeRaw: {
+          kind: 'group_chat',
+          groupId,
+          routedAgentId: payload.data.routedAgentId || null,
+          raw: payload.data.raw ?? null,
+        },
+      });
+
+      return NextResponse.json({
+        ok: true,
+        data: {
+          status: 'done',
+          reply: payload.data.reply,
+          model: payload.data.model,
+          routedAgentId: payload.data.routedAgentId || agentId,
+        },
+      });
+    }
+
     const task = await createDirectChatTask({
       userId,
       agentId,

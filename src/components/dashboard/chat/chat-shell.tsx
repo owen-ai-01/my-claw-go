@@ -585,12 +585,10 @@ function CreateGroupModal({
   agents,
   onClose,
   onCreated,
-  onGroupDeleted,
 }: {
   agents: AgentItem[];
   onClose: () => void;
   onCreated: () => Promise<void>;
-  onGroupDeleted: (groupId: string) => void;
 }) {
   const [groupId, setGroupId] = useState('');
   const [name, setName] = useState('');
@@ -772,6 +770,205 @@ function CreateGroupModal({
   );
 }
 
+function EditGroupModal({
+  group,
+  agents,
+  onClose,
+  onUpdated,
+  onDeleted,
+}: {
+  group: Group;
+  agents: AgentItem[];
+  onClose: () => void;
+  onUpdated: () => Promise<void>;
+  onDeleted: (groupId: string) => Promise<void> | void;
+}) {
+  const [name, setName] = useState(group.name);
+  const [description, setDescription] = useState(group.description || '');
+  const [type, setType] = useState<Group['type']>(group.type);
+  const [leaderId, setLeaderId] = useState(group.leaderId);
+  const [memberIds, setMemberIds] = useState<string[]>(group.members);
+  const [submitting, setSubmitting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [error, setError] = useState('');
+
+  function toggleMember(agentId: string) {
+    setMemberIds((prev) =>
+      prev.includes(agentId) ? prev.filter((id) => id !== agentId) : [...prev, agentId]
+    );
+  }
+
+  useEffect(() => {
+    if (!memberIds.includes(leaderId)) {
+      setLeaderId(memberIds[0] || group.leaderId);
+    }
+  }, [memberIds, leaderId, group.leaderId]);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!name.trim() || memberIds.length < 2 || !leaderId) return;
+    setSubmitting(true);
+    setError('');
+    try {
+      const res = await fetch(`/api/groups/${encodeURIComponent(group.id)}`, {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          name: name.trim(),
+          description: description.trim() || undefined,
+          type,
+          leaderId,
+          members: memberIds,
+        }),
+      });
+      const data = await res.json().catch(() => ({})) as { ok?: boolean; error?: string };
+      if (!res.ok || data.ok !== true) throw new Error(data.error || 'Failed to update group');
+      await onUpdated();
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update group');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handleDelete() {
+    if (!confirm(`Delete group \"${group.name}\"? This cannot be undone.`)) return;
+    setDeleting(true);
+    setError('');
+    try {
+      const res = await fetch(`/api/groups/${encodeURIComponent(group.id)}`, { method: 'DELETE' });
+      const data = await res.json().catch(() => ({})) as { ok?: boolean; error?: string };
+      if (!res.ok || data.ok !== true) throw new Error(data.error || 'Failed to delete group');
+      await onDeleted(group.id);
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete group');
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={onClose}>
+      <div className="flex max-h-[90vh] w-full max-w-lg flex-col rounded-2xl border bg-card shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between border-b px-5 py-4">
+          <div>
+            <h2 className="text-base font-semibold">Manage Group</h2>
+            <p className="mt-0.5 text-xs text-muted-foreground">Update members, leader and group info</p>
+          </div>
+          <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted">✕</button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-5 py-4">
+          <form id="edit-group-form" onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="mb-1.5 block text-sm font-medium">Group ID</label>
+                <input value={group.id} disabled className="w-full rounded-xl border bg-muted/50 px-3 py-2 text-sm text-muted-foreground" />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-sm font-medium">Type</label>
+                <select
+                  value={type}
+                  onChange={(e) => setType(e.target.value as Group['type'])}
+                  className="w-full rounded-xl border bg-muted/30 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/50"
+                >
+                  <option value="project">Project</option>
+                  <option value="department">Department</option>
+                  <option value="temporary">Temporary</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="mb-1.5 block text-sm font-medium">Group Name</label>
+              <input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="w-full rounded-xl border bg-muted/30 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/50"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="mb-1.5 block text-sm font-medium">Description</label>
+              <input
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="w-full rounded-xl border bg-muted/30 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/50"
+                placeholder="What does this group work on?"
+              />
+            </div>
+
+            <div>
+              <label className="mb-1.5 block text-sm font-medium">Members <span className="ml-1.5 text-xs font-normal text-muted-foreground">(min 2)</span></label>
+              <div className="grid grid-cols-2 gap-2">
+                {agents.map((agent) => {
+                  const checked = memberIds.includes(agent.id);
+                  return (
+                    <button
+                      key={agent.id}
+                      type="button"
+                      onClick={() => toggleMember(agent.id)}
+                      className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-left text-sm transition-colors ${
+                        checked ? 'border-primary bg-primary/5 font-medium' : 'border-border hover:bg-muted/60'
+                      }`}
+                    >
+                      <span className="text-base">{agentEmoji(agent)}</span>
+                      <span className="truncate">{agentLabel(agent)}</span>
+                      {checked && <span className="ml-auto text-primary">✓</span>}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div>
+              <label className="mb-1.5 block text-sm font-medium">Leader</label>
+              <select
+                value={leaderId}
+                onChange={(e) => setLeaderId(e.target.value)}
+                className="w-full rounded-xl border bg-muted/30 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/50"
+              >
+                {memberIds.map((id) => {
+                  const agent = agents.find((a) => a.id === id);
+                  return <option key={id} value={id}>{agent ? agentLabel(agent) : id}</option>;
+                })}
+              </select>
+            </div>
+          </form>
+        </div>
+
+        <div className="border-t px-5 py-4">
+          {error && <div className="mb-3 rounded-xl border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
+          <div className="flex items-center justify-between gap-2">
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={deleting || submitting}
+              className="rounded-xl border border-red-300 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
+            >
+              {deleting ? 'Deleting…' : 'Delete Group'}
+            </button>
+            <div className="flex gap-2">
+              <button type="button" onClick={onClose} className="rounded-xl border px-4 py-2 text-sm font-medium hover:bg-muted">Cancel</button>
+              <button
+                type="submit"
+                form="edit-group-form"
+                disabled={!name.trim() || memberIds.length < 2 || !leaderId || deleting || submitting}
+                className="rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+              >
+                {submitting ? 'Saving…' : 'Save Changes'}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ChatLayout() {
   const [agents, setAgents] = useState<AgentItem[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
@@ -787,6 +984,7 @@ function ChatLayout() {
   const [configOpen, setConfigOpen] = useState(false);
   const [addAgentOpen, setAddAgentOpen] = useState(false);
   const [createGroupOpen, setCreateGroupOpen] = useState(false);
+  const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
@@ -915,7 +1113,13 @@ function ChatLayout() {
       const data = (await res.json().catch(() => ({}))) as {
         ok?: boolean;
         code?: string;
-        data?: { taskId?: string; assistantMessageId?: string; status?: string };
+        data?: {
+          taskId?: string;
+          assistantMessageId?: string;
+          status?: string;
+          reply?: string;
+          routedAgentId?: string;
+        };
         error?: string | { message?: string };
       };
 
@@ -938,16 +1142,30 @@ function ChatLayout() {
         return;
       }
 
-      setActiveTaskStatus(data.data?.status || 'queued');
-      await fetch(`/api/chat/history?agentId=${encodeURIComponent(selectedAgentId)}`, { cache: 'no-store' })
-        .then((r) => r.json())
-        .then((history) => {
-          if (history?.ok && history?.data?.messages) {
-            setMessages(history.data.messages);
-            setActiveTaskStatus(history.data.task?.status || null);
-          }
-        })
-        .catch(() => {});
+      if (selectedGroupId) {
+        setActiveTaskStatus(null);
+        setMessages((m) => [
+          ...m,
+          {
+            role: 'assistant',
+            content: data.data?.reply || '',
+            createdAt: new Date().toISOString(),
+            status: 'done',
+            routedAgentId: data.data?.routedAgentId,
+          },
+        ]);
+      } else {
+        setActiveTaskStatus(data.data?.status || 'queued');
+        await fetch(`/api/chat/history?agentId=${encodeURIComponent(selectedAgentId)}`, { cache: 'no-store' })
+          .then((r) => r.json())
+          .then((history) => {
+            if (history?.ok && history?.data?.messages) {
+              setMessages(history.data.messages);
+              setActiveTaskStatus(history.data.task?.status || null);
+            }
+          })
+          .catch(() => {});
+      }
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'Failed to send message';
       setMessages((m) => [
@@ -961,6 +1179,7 @@ function ChatLayout() {
 
   const selectedAgent = agents.find((agent) => agent.id === selectedAgentId) || { id: selectedAgentId, name: selectedAgentId };
   const selectedGroup = groups.find((g) => g.id === selectedGroupId);
+  const editingGroup = groups.find((g) => g.id === editingGroupId) || null;
   const selectedGroupLeader = selectedGroup ? agents.find((agent) => agent.id === selectedGroup.leaderId) : null;
   const currentTitle = selectedGroup ? selectedGroup.name : agentLabel(selectedAgent);
   const currentSubtitle = selectedGroup
@@ -987,13 +1206,16 @@ function ChatLayout() {
     setSelectedGroupId(groupId);
   }
 
-  async function handleGroupCreated() {
-    // Reload groups after creation
+  async function reloadGroups() {
     try {
       const res = await fetch('/api/groups', { cache: 'no-store' });
       const data = await res.json().catch(() => ({})) as { ok?: boolean; data?: { groups?: Group[] } };
       if (data.ok && data.data?.groups) setGroups(data.data.groups);
     } catch {}
+  }
+
+  async function handleGroupCreated() {
+    await reloadGroups();
   }
 
   async function handleGroupDeleted(groupId: string) {
@@ -1011,7 +1233,18 @@ function ChatLayout() {
           agents={agents}
           onClose={() => setCreateGroupOpen(false)}
           onCreated={async () => { await handleGroupCreated(); setCreateGroupOpen(false); }}
-          onGroupDeleted={handleGroupDeleted}
+        />
+      )}
+      {editingGroup && (
+        <EditGroupModal
+          group={editingGroup}
+          agents={agents}
+          onClose={() => setEditingGroupId(null)}
+          onUpdated={reloadGroups}
+          onDeleted={async (groupId) => {
+            await handleGroupDeleted(groupId);
+            setEditingGroupId(null);
+          }}
         />
       )}
       <div className="grid h-[calc(100vh-10rem)] grid-cols-1 gap-4 lg:grid-cols-[280px_minmax(0,1fr)]">
@@ -1155,7 +1388,15 @@ function ChatLayout() {
                   </div>
                 )}
               </div>
-              {!selectedGroup && (
+              {selectedGroup ? (
+                <button
+                  type="button"
+                  onClick={() => setEditingGroupId(selectedGroup.id)}
+                  className="rounded-lg border px-3 py-1.5 text-xs font-medium hover:bg-muted"
+                >
+                  Manage Group
+                </button>
+              ) : (
                 <button
                   type="button"
                   onClick={() => setConfigOpen(true)}

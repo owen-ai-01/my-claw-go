@@ -84,7 +84,7 @@ export async function getLatestChatTask(userId: string, agentId: string) {
   return rows[0] ?? null;
 }
 
-type DirectChatUsage = {
+export type DirectChatUsage = {
   input?: number;
   output?: number;
   cacheRead?: number;
@@ -104,7 +104,7 @@ function extractBillingTokenCounts(usage?: DirectChatUsage) {
   };
 }
 
-async function settleDirectChatBilling(params: {
+export async function settleDirectChatBilling(params: {
   taskId: string;
   userId: string;
   agentId: string;
