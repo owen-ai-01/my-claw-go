@@ -246,11 +246,12 @@ function AgentCard({ agent }: { agent: EnrichedAgent }) {
   const colors = presenceColors(presence);
   const s = agent.statusData;
   const hasErrors = (s?.recentErrors?.length ?? 0) > 0;
+  const hasTaskFailure = agent.latestTaskRun?.status === 'error';
 
   return (
-    <div className={`group relative rounded-2xl border bg-card p-5 shadow-sm transition-all hover:shadow-md ${colors.ring}`}>
+    <div className={`group relative rounded-2xl border bg-card p-5 shadow-sm transition-all hover:shadow-md ${hasTaskFailure ? 'border-red-300 ring-1 ring-red-200 bg-red-50/30' : colors.ring}`}>
       {/* Error indicator */}
-      {hasErrors && (
+      {(hasErrors || hasTaskFailure) && (
         <div className="absolute right-3 top-3">
           <span className="flex h-2.5 w-2.5 items-center justify-center">
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
@@ -345,6 +346,12 @@ function AgentCard({ agent }: { agent: EnrichedAgent }) {
                 <span className="line-clamp-2">
                   Last task run {agent.latestTaskRun.status === 'error' ? 'failed' : 'succeeded'} {relativeTimeMs(agent.latestTaskRun.finishedAtMs || agent.latestTaskRun.startedAtMs)}
                 </span>
+              </div>
+            ) : null}
+            {hasTaskFailure && agent.latestTaskRun?.error ? (
+              <div className="flex items-start gap-1.5 text-red-700">
+                <span className="mt-0.5 shrink-0">🧾</span>
+                <span className="line-clamp-2">Failure: {agent.latestTaskRun.error}</span>
               </div>
             ) : null}
 

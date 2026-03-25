@@ -73,6 +73,7 @@ export function TasksShell() {
   const [runsTaskId, setRunsTaskId] = useState<string | null>(null);
   const [runsText, setRunsText] = useState('');
   const [creating, setCreating] = useState(false);
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
 
   const [name, setName] = useState('');
   const [scheduleKind, setScheduleKind] = useState<'every' | 'cron' | 'at'>('every');
@@ -121,27 +122,35 @@ export function TasksShell() {
     if (!message.trim()) return;
     setCreating(true);
     try {
-      const res = await fetch(`/api/agents/${encodeURIComponent(selectedAgentId)}/tasks`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          name: name.trim() || undefined,
-          scheduleKind,
-          scheduleValue: scheduleValue.trim(),
-          message: message.trim(),
-          model: model.trim() || undefined,
-        }),
-      });
+      const payload = {
+        name: name.trim() || undefined,
+        scheduleKind,
+        scheduleValue: scheduleValue.trim(),
+        message: message.trim(),
+        model: model.trim() || undefined,
+      };
+      const isEditing = Boolean(editingTaskId);
+      const res = await fetch(
+        isEditing
+          ? `/api/agents/${encodeURIComponent(selectedAgentId)}/tasks/${encodeURIComponent(editingTaskId!)}`
+          : `/api/agents/${encodeURIComponent(selectedAgentId)}/tasks`,
+        {
+          method: isEditing ? 'PATCH' : 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(payload),
+        }
+      );
       const data = await res.json().catch(() => ({})) as { ok?: boolean; error?: string | { message?: string } };
-      if (!res.ok || data.ok !== true) throw new Error(typeof data.error === 'string' ? data.error : data.error?.message || 'Failed to create task');
+      if (!res.ok || data.ok !== true) throw new Error(typeof data.error === 'string' ? data.error : data.error?.message || `Failed to ${isEditing ? 'update' : 'create'} task`);
       setName('');
       setScheduleKind('every');
       setScheduleValue('1h');
       setMessage('');
       setModel('');
+      setEditingTaskId(null);
       await loadTasks(selectedAgentId);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create task');
+      setError(err instanceof Error ? err.message : 'Failed to save task');
     } finally {
       setCreating(false);
     }
@@ -243,7 +252,25 @@ export function TasksShell() {
 
         <div className="space-y-6">
           <section className="rounded-2xl border bg-card p-4 shadow-sm">
-            <h2 className="text-sm font-semibold">Create Task</h2>
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-sm font-semibold">{editingTaskId ? 'Edit Task' : 'Create Task'}</h2>
+              {editingTaskId ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingTaskId(null);
+                    setName('');
+                    setScheduleKind('every');
+                    setScheduleValue('1h');
+                    setMessage('');
+                    setModel('');
+                  }}
+                  className="rounded-lg border px-3 py-1.5 text-xs hover:bg-muted"
+                >
+                  Cancel Edit
+                </button>
+              ) : null}
+            </div>
             <form onSubmit={createTask} className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
               <div>
                 <p className="text-xs text-muted-foreground">Name</p>
@@ -271,7 +298,7 @@ export function TasksShell() {
               </div>
               <div className="md:col-span-2 flex justify-end">
                 <button type="submit" disabled={creating || !selectedAgentId || !message.trim() || !scheduleValue.trim()} className="rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50">
-                  {creating ? 'Creating…' : 'Create Task'}
+                  {creating ? (editingTaskId ? 'Saving…' : 'Creating…') : (editingTaskId ? 'Save Task' : 'Create Task')}
                 </button>
               </div>
             </form>
@@ -301,6 +328,32 @@ export function TasksShell() {
                   </div>
                   <div className="mt-4 flex flex-wrap gap-2">
                     <button type="button" onClick={() => toggleTask(task)} className="rounded-lg border px-3 py-1.5 text-xs hover:bg-muted">{task.enabled !== false ? 'Disable' : 'Enable'}</button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingTaskId(task.id);
+                        setName(task.name || '');
+                        if (task.schedule?.kind === 'cron') {
+                          setScheduleKind('cron');
+                          setScheduleValue(task.schedule.expr || '');
+                        } else if (task.schedule?.kind === 'at') {
+                          setScheduleKind('at');
+                          setScheduleValue(task.schedule.at || '');
+                        } else {
+                          setScheduleKind('every');
+                          const everyMs = task.schedule?.everyMs || 3600000;
+                          if (everyMs % 3600000 === 0) setScheduleValue(`${everyMs / 3600000}h`);
+                          else if (everyMs % 60000 === 0) setScheduleValue(`${everyMs / 60000}m`);
+                          else setScheduleValue(`${Math.round(everyMs / 1000)}s`);
+                        }
+                        setMessage(task.payload?.message || task.payload?.text || '');
+                        setModel(task.payload?.model || '');
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                      className="rounded-lg border px-3 py-1.5 text-xs hover:bg-muted"
+                    >
+                      Edit
+                    </button>
                     <button type="button" onClick={() => runTask(task.id)} className="rounded-lg border px-3 py-1.5 text-xs hover:bg-muted">Run now</button>
                     <button type="button" onClick={() => loadRuns(task.id)} className="rounded-lg border px-3 py-1.5 text-xs hover:bg-muted">View runs</button>
                     <button type="button" onClick={() => deleteTask(task.id)} className="rounded-lg border border-red-200 px-3 py-1.5 text-xs text-red-600 hover:bg-red-50">Delete</button>
