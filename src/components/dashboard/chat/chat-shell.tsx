@@ -579,6 +579,199 @@ type Group = {
   members: string[];
 };
 
+const GROUP_ID_RE = /^[a-z0-9][a-z0-9_-]{0,29}[a-z0-9]$|^[a-z0-9]{2,30}$/;
+
+function CreateGroupModal({
+  agents,
+  onClose,
+  onCreated,
+  onGroupDeleted,
+}: {
+  agents: AgentItem[];
+  onClose: () => void;
+  onCreated: () => Promise<void>;
+  onGroupDeleted: (groupId: string) => void;
+}) {
+  const [groupId, setGroupId] = useState('');
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [type, setType] = useState<'project' | 'department' | 'temporary'>('project');
+  const [leaderId, setLeaderId] = useState(agents[0]?.id || 'main');
+  const [memberIds, setMemberIds] = useState<string[]>(agents.slice(0, 1).map((a) => a.id));
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+
+  const idValid = GROUP_ID_RE.test(groupId);
+  const canSubmit = idValid && name.trim().length > 0 && memberIds.length >= 2 && !submitting;
+
+  function toggleMember(agentId: string) {
+    setMemberIds((prev) =>
+      prev.includes(agentId) ? prev.filter((id) => id !== agentId) : [...prev, agentId]
+    );
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!canSubmit) return;
+    setSubmitting(true);
+    setError('');
+    try {
+      const res = await fetch('/api/groups', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          id: groupId.trim(),
+          name: name.trim(),
+          description: description.trim() || undefined,
+          type,
+          leaderId,
+          members: memberIds,
+        }),
+      });
+      const data = await res.json().catch(() => ({})) as { ok?: boolean; error?: string };
+      if (!res.ok || data.ok !== true) throw new Error(data.error || 'Failed to create group');
+      await onCreated();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create group');
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={onClose}>
+      <div className="flex max-h-[90vh] w-full max-w-lg flex-col rounded-2xl border bg-card shadow-xl" onClick={(e) => e.stopPropagation()}>
+        {/* Header */}
+        <div className="flex items-center justify-between border-b px-5 py-4">
+          <div>
+            <h2 className="text-base font-semibold">New Group</h2>
+            <p className="mt-0.5 text-xs text-muted-foreground">Let agents collaborate in a shared space</p>
+          </div>
+          <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted">✕</button>
+        </div>
+
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto px-5 py-4">
+          <form id="create-group-form" onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="mb-1.5 block text-sm font-medium">Group ID <span className="text-red-500">*</span></label>
+                <input
+                  type="text"
+                  value={groupId}
+                  onChange={(e) => setGroupId(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ''))}
+                  placeholder="e.g. tech-team"
+                  className="w-full rounded-xl border bg-muted/30 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/50"
+                  required
+                />
+                {groupId && !idValid && (
+                  <p className="mt-1 text-xs text-red-500">2–32 chars, lowercase / numbers / hyphens</p>
+                )}
+              </div>
+              <div>
+                <label className="mb-1.5 block text-sm font-medium">Type</label>
+                <select
+                  value={type}
+                  onChange={(e) => setType(e.target.value as typeof type)}
+                  className="w-full rounded-xl border bg-muted/30 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/50"
+                >
+                  <option value="project">Project</option>
+                  <option value="department">Department</option>
+                  <option value="temporary">Temporary</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="mb-1.5 block text-sm font-medium">Group Name <span className="text-red-500">*</span></label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g. Tech Team"
+                className="w-full rounded-xl border bg-muted/30 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/50"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="mb-1.5 block text-sm font-medium">Description (optional)</label>
+              <input
+                type="text"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="What does this group work on?"
+                className="w-full rounded-xl border bg-muted/30 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/50"
+              />
+            </div>
+
+            <div>
+              <label className="mb-1.5 block text-sm font-medium">
+                Members <span className="text-red-500">*</span>
+                <span className="ml-1.5 text-xs font-normal text-muted-foreground">(min 2)</span>
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                {agents.map((agent) => {
+                  const checked = memberIds.includes(agent.id);
+                  return (
+                    <button
+                      key={agent.id}
+                      type="button"
+                      onClick={() => toggleMember(agent.id)}
+                      className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-left text-sm transition-colors ${
+                        checked ? 'border-primary bg-primary/5 font-medium' : 'border-border hover:bg-muted/60'
+                      }`}
+                    >
+                      <span className="text-base">{agentEmoji(agent)}</span>
+                      <span className="truncate">{agentLabel(agent)}</span>
+                      {checked && <span className="ml-auto text-primary">✓</span>}
+                    </button>
+                  );
+                })}
+              </div>
+              {agents.length < 2 && (
+                <p className="mt-2 text-xs text-amber-600">⚠️ You need at least 2 agents to create a group. Add more agents first.</p>
+              )}
+            </div>
+
+            <div>
+              <label className="mb-1.5 block text-sm font-medium">Leader (responds to messages)</label>
+              <select
+                value={leaderId}
+                onChange={(e) => setLeaderId(e.target.value)}
+                className="w-full rounded-xl border bg-muted/30 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/50"
+              >
+                {memberIds.map((id) => {
+                  const agent = agents.find((a) => a.id === id);
+                  return (
+                    <option key={id} value={id}>{agent ? agentLabel(agent) : id}</option>
+                  );
+                })}
+              </select>
+              <p className="mt-1 text-xs text-muted-foreground">The leader agent receives and routes messages in this group.</p>
+            </div>
+          </form>
+        </div>
+
+        {/* Footer */}
+        <div className="border-t px-5 py-4">
+          {error && <div className="mb-3 rounded-xl border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
+          <div className="flex justify-end gap-2">
+            <button type="button" onClick={onClose} className="rounded-xl border px-4 py-2 text-sm font-medium hover:bg-muted">Cancel</button>
+            <button
+              type="submit"
+              form="create-group-form"
+              disabled={!canSubmit}
+              className="rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+            >
+              {submitting ? 'Creating…' : 'Create Group'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ChatLayout() {
   const [agents, setAgents] = useState<AgentItem[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
@@ -593,6 +786,7 @@ function ChatLayout() {
   const [insufficientCredits, setInsufficientCredits] = useState(false);
   const [configOpen, setConfigOpen] = useState(false);
   const [addAgentOpen, setAddAgentOpen] = useState(false);
+  const [createGroupOpen, setCreateGroupOpen] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
@@ -793,8 +987,33 @@ function ChatLayout() {
     setSelectedGroupId(groupId);
   }
 
+  async function handleGroupCreated() {
+    // Reload groups after creation
+    try {
+      const res = await fetch('/api/groups', { cache: 'no-store' });
+      const data = await res.json().catch(() => ({})) as { ok?: boolean; data?: { groups?: Group[] } };
+      if (data.ok && data.data?.groups) setGroups(data.data.groups);
+    } catch {}
+  }
+
+  async function handleGroupDeleted(groupId: string) {
+    setGroups((prev) => prev.filter((g) => g.id !== groupId));
+    if (selectedGroupId === groupId) {
+      setSelectedGroupId(null);
+      setSelectedAgentId('main');
+    }
+  }
+
   return (
     <>
+      {createGroupOpen && (
+        <CreateGroupModal
+          agents={agents}
+          onClose={() => setCreateGroupOpen(false)}
+          onCreated={async () => { await handleGroupCreated(); setCreateGroupOpen(false); }}
+          onGroupDeleted={handleGroupDeleted}
+        />
+      )}
       <div className="grid h-[calc(100vh-10rem)] grid-cols-1 gap-4 lg:grid-cols-[280px_minmax(0,1fr)]">
         <div className="flex min-h-0 flex-col rounded-2xl border bg-card shadow-sm overflow-hidden">
           <div className="border-b px-4 py-3">
@@ -810,10 +1029,20 @@ function ChatLayout() {
             {agentsLoading ? (
               <div className="px-2 py-3 text-sm text-muted-foreground">Loading…</div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {/* Agents Section */}
                 <div>
-                  <div className="px-2 pb-2 text-xs font-semibold text-muted-foreground">Agents</div>
+                  <div className="mb-2 flex items-center justify-between px-1">
+                    <span className="text-xs font-semibold text-muted-foreground">Agents</span>
+                    <button
+                      type="button"
+                      onClick={() => setAddAgentOpen(true)}
+                      className="rounded-lg px-2 py-0.5 text-[11px] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                      title="Add agent"
+                    >
+                      + Add
+                    </button>
+                  </div>
                   <div className="space-y-2">
                     {agents.map((agent) => {
                       const active = !selectedGroupId && agent.id === selectedAgentId;
@@ -824,25 +1053,81 @@ function ChatLayout() {
                           onClick={() => switchToAgent(agent.id)}
                           className={`w-full rounded-xl border px-3 py-3 text-left transition-colors ${active ? 'border-primary bg-primary/5 shadow-sm' : 'border-border hover:bg-muted/60'}`}
                         >
-                      <div className="flex items-start gap-3">
-                        <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-base">
-                          {agentEmoji(agent)}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2">
-                            <p className="truncate text-sm font-medium">{agentLabel(agent)}</p>
-                            {agent.isDefault && <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">default</span>}
+                          <div className="flex items-start gap-3">
+                            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-base">
+                              {agentEmoji(agent)}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2">
+                                <p className="truncate text-sm font-medium">{agentLabel(agent)}</p>
+                                {agent.isDefault && <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">default</span>}
+                              </div>
+                              <p className="mt-1 truncate text-xs text-muted-foreground">@{agent.id}</p>
+                              {agent.model && <p className="mt-1 truncate text-[11px] text-muted-foreground/80">{agent.model}</p>}
+                            </div>
                           </div>
-                          <p className="mt-1 truncate text-xs text-muted-foreground">@{agent.id}</p>
-                          {agent.model && <p className="mt-1 truncate text-[11px] text-muted-foreground/80">{agent.model}</p>}
-                        </div>
-                      </div>
-                    </button>
-                  );
-                })}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
 
+                {/* Groups Section */}
+                <div>
+                  <div className="mb-2 flex items-center justify-between px-1">
+                    <span className="text-xs font-semibold text-muted-foreground">Groups</span>
+                    <button
+                      type="button"
+                      onClick={() => setCreateGroupOpen(true)}
+                      className="rounded-lg px-2 py-0.5 text-[11px] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                      title="Create group"
+                    >
+                      + New
+                    </button>
+                  </div>
+                  {groups.length === 0 ? (
+                    <button
+                      type="button"
+                      onClick={() => setCreateGroupOpen(true)}
+                      className="w-full rounded-xl border border-dashed border-muted-foreground/30 px-3 py-3 text-left text-xs text-muted-foreground hover:border-muted-foreground/60 hover:bg-muted/30 transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-base">👥</span>
+                        <span>Create a group to let agents collaborate</span>
+                      </div>
+                    </button>
+                  ) : (
+                    <div className="space-y-2">
+                      {groups.map((group) => {
+                        const active = selectedGroupId === group.id;
+                        const leaderAgent = agents.find((a) => a.id === group.leaderId);
+                        return (
+                          <button
+                            key={group.id}
+                            type="button"
+                            onClick={() => switchToGroup(group.id)}
+                            className={`w-full rounded-xl border px-3 py-3 text-left transition-colors ${active ? 'border-primary bg-primary/5 shadow-sm' : 'border-border hover:bg-muted/60'}`}
+                          >
+                            <div className="flex items-start gap-3">
+                              <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-purple-100 text-base">
+                                👥
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-1.5">
+                                  <p className="truncate text-sm font-medium">{group.name}</p>
+                                  <span className="shrink-0 rounded-full bg-purple-100 px-1.5 py-0.5 text-[10px] text-purple-700">{group.type}</span>
+                                </div>
+                                <p className="mt-0.5 text-xs text-muted-foreground">
+                                  {group.members.length} members · Leader: {leaderAgent ? agentLabel(leaderAgent) : `@${group.leaderId}`}
+                                </p>
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
