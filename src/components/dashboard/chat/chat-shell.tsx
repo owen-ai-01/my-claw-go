@@ -11,7 +11,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { useEffect, useRef, useState } from 'react';
 
@@ -579,7 +579,44 @@ type Group = {
   members: string[];
 };
 
+type AgentStatus = {
+  agentId: string;
+  online: boolean;
+  lastActivity: string | null;
+  currentTask: { id?: string; description?: string; status?: string } | null;
+  recentErrors: string[];
+};
+
 const GROUP_ID_RE = /^[a-z0-9][a-z0-9_-]{0,29}[a-z0-9]$|^[a-z0-9]{2,30}$/;
+
+function resolvePresence(status?: AgentStatus | null): 'busy' | 'online' | 'idle' | 'offline' {
+  if (!status) return 'offline';
+  if (status.currentTask) return 'busy';
+  if (!status.online) return 'offline';
+  if (status.lastActivity) {
+    const ageMs = Date.now() - new Date(status.lastActivity).getTime();
+    if (ageMs < 5 * 60 * 1000) return 'online';
+  }
+  return 'idle';
+}
+
+function presenceTone(presence: 'busy' | 'online' | 'idle' | 'offline') {
+  return {
+    busy: 'bg-blue-500',
+    online: 'bg-green-500',
+    idle: 'bg-gray-400',
+    offline: 'bg-gray-300',
+  }[presence];
+}
+
+function presenceLabel(presence: 'busy' | 'online' | 'idle' | 'offline') {
+  return {
+    busy: 'Busy',
+    online: 'Online',
+    idle: 'Idle',
+    offline: 'Offline',
+  }[presence];
+}
 
 function CreateGroupModal({
   agents,
@@ -970,8 +1007,10 @@ function EditGroupModal({
 }
 
 function ChatLayout() {
+  const searchParams = useSearchParams();
   const [agents, setAgents] = useState<AgentItem[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
+  const [agentStatuses, setAgentStatuses] = useState<Record<string, AgentStatus | null>>({});
   const [selectedAgentId, setSelectedAgentId] = useState('main');
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [agentsLoading, setAgentsLoading] = useState(true);
@@ -1000,16 +1039,37 @@ function ChatLayout() {
         if (agentsData.ok && agentsData.data?.agents?.length) {
           const nextAgents = agentsData.data.agents;
           setAgents(nextAgents);
-          const preferred = agentsData.data.defaultAgentId || nextAgents.find((agent) => agent.isDefault)?.id || nextAgents[0]?.id || 'main';
+          const requestedAgentId = searchParams.get('agentId');
+          const preferred = requestedAgentId && nextAgents.some((agent) => agent.id === requestedAgentId)
+            ? requestedAgentId
+            : agentsData.data.defaultAgentId || nextAgents.find((agent) => agent.isDefault)?.id || nextAgents[0]?.id || 'main';
           setSelectedAgentId(preferred);
+
+          void Promise.all(
+            nextAgents.map(async (agent) => {
+              try {
+                const sr = await fetch(`/api/agents/${encodeURIComponent(agent.id)}/status`, { cache: 'no-store' });
+                const sd = await sr.json().catch(() => ({})) as { ok?: boolean; data?: { status?: AgentStatus } };
+                return [agent.id, sd.data?.status ?? null] as const;
+              } catch {
+                return [agent.id, null] as const;
+              }
+            })
+          ).then((entries) => {
+            setAgentStatuses(Object.fromEntries(entries));
+          });
         } else {
           setAgents([{ id: 'main', name: 'main', isDefault: true }]);
           setSelectedAgentId('main');
         }
 
-        const groupsData = await groupsRes.json().catch(() => ({}));
+        const groupsData = await groupsRes.json().catch(() => ({})) as { ok?: boolean; data?: { groups?: Group[] } };
         if (groupsData.ok && groupsData.data?.groups) {
           setGroups(groupsData.data.groups);
+          const requestedGroupId = searchParams.get('groupId');
+          if (requestedGroupId && groupsData.data.groups.some((group) => group.id === requestedGroupId)) {
+            setSelectedGroupId(requestedGroupId);
+          }
         }
       } catch {
         setAgents([{ id: 'main', name: 'main', isDefault: true }]);
@@ -1019,7 +1079,7 @@ function ChatLayout() {
       }
     };
     loadData();
-  }, []);
+  }, [searchParams]);
 
   useEffect(() => {
     if (!selectedAgentId && !selectedGroupId) return;
@@ -1181,6 +1241,9 @@ function ChatLayout() {
   const selectedGroup = groups.find((g) => g.id === selectedGroupId);
   const editingGroup = groups.find((g) => g.id === editingGroupId) || null;
   const selectedGroupLeader = selectedGroup ? agents.find((agent) => agent.id === selectedGroup.leaderId) : null;
+  const selectedGroupMembers = selectedGroup
+    ? selectedGroup.members.map((id) => agents.find((agent) => agent.id === id) || { id, name: id })
+    : [];
   const currentTitle = selectedGroup ? selectedGroup.name : agentLabel(selectedAgent);
   const currentSubtitle = selectedGroup
     ? `Group · ${selectedGroup.members.length} members · Leader ${selectedGroupLeader ? agentLabel(selectedGroupLeader) : `@${selectedGroup?.leaderId}`}`
@@ -1380,12 +1443,36 @@ function ChatLayout() {
                   </div>
                 </div>
                 {selectedGroup && (
-                  <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                    <span className="rounded-full bg-muted px-2.5 py-1">Type: {selectedGroup.type}</span>
-                    <span className="rounded-full bg-muted px-2.5 py-1">Members: {selectedGroup.members.length}</span>
-                    <span className="rounded-full bg-muted px-2.5 py-1">Leader: {selectedGroupLeader ? agentLabel(selectedGroupLeader) : `@${selectedGroup.leaderId}`}</span>
-                    {selectedGroup.description ? <span className="max-w-full truncate rounded-full bg-muted px-2.5 py-1">{selectedGroup.description}</span> : null}
-                  </div>
+                  <>
+                    <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                      <span className="rounded-full bg-muted px-2.5 py-1">Type: {selectedGroup.type}</span>
+                      <span className="rounded-full bg-muted px-2.5 py-1">Members: {selectedGroup.members.length}</span>
+                      <span className="rounded-full bg-muted px-2.5 py-1">Leader: {selectedGroupLeader ? agentLabel(selectedGroupLeader) : `@${selectedGroup.leaderId}`}</span>
+                      {selectedGroup.description ? <span className="max-w-full truncate rounded-full bg-muted px-2.5 py-1">{selectedGroup.description}</span> : null}
+                    </div>
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                      {selectedGroupMembers.map((member) => {
+                        const status = agentStatuses[member.id] || null;
+                        const presence = resolvePresence(status);
+                        return (
+                          <button
+                            key={member.id}
+                            type="button"
+                            onClick={() => switchToAgent(member.id)}
+                            className="inline-flex items-center gap-2 rounded-full border bg-background px-2.5 py-1 text-xs hover:bg-muted"
+                            title={`${agentLabel(member)} · ${presenceLabel(presence)}`}
+                          >
+                            <span className="relative inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-sm">
+                              {agentEmoji(member)}
+                              <span className={`absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border border-background ${presenceTone(presence)}`} />
+                            </span>
+                            <span className="max-w-[84px] truncate">{agentLabel(member)}</span>
+                            <span className="text-[10px] text-muted-foreground">{presenceLabel(presence)}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </>
                 )}
               </div>
               {selectedGroup ? (

@@ -40,6 +40,15 @@ type EnrichedAgent = AgentItem & {
   statusLoading: boolean;
 };
 
+type Group = {
+  id: string;
+  name: string;
+  description?: string;
+  type: 'project' | 'department' | 'temporary';
+  leaderId: string;
+  members: string[];
+};
+
 type PresenceCategory = 'busy' | 'online' | 'idle' | 'offline';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -293,7 +302,7 @@ function AgentCard({ agent }: { agent: EnrichedAgent }) {
           <div className="mt-4 flex flex-wrap gap-2">
             <button
               type="button"
-              onClick={() => router.push(Routes.Chat)}
+              onClick={() => router.push(`${Routes.Chat}?agentId=${encodeURIComponent(agent.id)}`)}
               className="rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"
             >
               Chat
@@ -315,7 +324,9 @@ function AgentCard({ agent }: { agent: EnrichedAgent }) {
 // ─── Shell ────────────────────────────────────────────────────────────────────
 
 export function OfficeShell() {
+  const router = useRouter();
   const [agents, setAgents] = useState<EnrichedAgent[]>([]);
+  const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
@@ -324,14 +335,22 @@ export function OfficeShell() {
 
   async function loadAgents() {
     try {
-      const res = await fetch('/api/agents', { cache: 'no-store' });
+      const [res, groupsRes] = await Promise.all([
+        fetch('/api/agents', { cache: 'no-store' }),
+        fetch('/api/groups', { cache: 'no-store' }),
+      ]);
       const data = await res.json().catch(() => ({})) as {
         ok?: boolean;
         data?: { agents?: AgentItem[] };
       };
+      const groupsData = await groupsRes.json().catch(() => ({})) as {
+        ok?: boolean;
+        data?: { groups?: Group[] };
+      };
       if (!data.ok || !data.data?.agents) throw new Error('Failed to load agents');
+      setGroups(groupsData.ok && groupsData.data?.groups ? groupsData.data.groups : []);
 
-      const base = data.data.agents.map<EnrichedAgent>((a) => ({
+      const base = data.data.agents.map<EnrichedAgent>((a) => ({ 
         ...a,
         statusData: null,
         statusLoading: true,
@@ -438,6 +457,86 @@ export function OfficeShell() {
             </div>
           ))}
         </div>
+      )}
+
+      {/* Group overview */}
+      {!loading && !error && groups.length > 0 && (
+        <section className="space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-semibold">Groups</h2>
+              <p className="text-xs text-muted-foreground">Jump into active team spaces from Office.</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => router.push(Routes.Chat)}
+              className="rounded-lg border px-3 py-1.5 text-xs font-medium hover:bg-muted"
+            >
+              Open Chat
+            </button>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {groups.map((group) => {
+              const leader = agents.find((agent) => agent.id === group.leaderId);
+              const members = group.members
+                .map((id) => agents.find((agent) => agent.id === id))
+                .filter(Boolean) as EnrichedAgent[];
+              return (
+                <div key={group.id} className="rounded-2xl border bg-card p-5 shadow-sm">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-purple-100 text-lg">👥</div>
+                        <div className="min-w-0">
+                          <h3 className="truncate text-sm font-semibold">{group.name}</h3>
+                          <p className="truncate text-xs text-muted-foreground">@{group.id}</p>
+                        </div>
+                      </div>
+                    </div>
+                    <span className="rounded-full bg-purple-100 px-2 py-0.5 text-[10px] font-medium text-purple-700">{group.type}</span>
+                  </div>
+
+                  <div className="mt-4 space-y-2 text-xs text-muted-foreground">
+                    <div>Leader: {leader ? agentLabel(leader) : `@${group.leaderId}`}</div>
+                    <div>Members: {group.members.length}</div>
+                    {group.description ? <div className="line-clamp-2">{group.description}</div> : null}
+                  </div>
+
+                  <div className="mt-4 flex flex-wrap items-center gap-2">
+                    {members.slice(0, 5).map((member) => {
+                      const presence = resolvePresence(member);
+                      const colors = presenceColors(presence);
+                      return (
+                        <div
+                          key={member.id}
+                          className="inline-flex items-center gap-1.5 rounded-full border bg-background px-2 py-1 text-[11px]"
+                          title={`${agentLabel(member)} · ${presenceLabel(presence)}`}
+                        >
+                          <span className="relative inline-flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-xs">
+                            {agentEmoji(member)}
+                            <span className={`absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full border border-background ${colors.dot}`} />
+                          </span>
+                          <span className="max-w-[72px] truncate">{agentLabel(member)}</span>
+                        </div>
+                      );
+                    })}
+                    {group.members.length > 5 ? <span className="text-[11px] text-muted-foreground">+{group.members.length - 5}</span> : null}
+                  </div>
+
+                  <div className="mt-4 flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => router.push(`${Routes.Chat}?groupId=${encodeURIComponent(group.id)}`)}
+                      className="rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
+                    >
+                      Open Group Chat
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
       )}
 
       {/* Content */}
