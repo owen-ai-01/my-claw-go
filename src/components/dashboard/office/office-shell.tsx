@@ -1,8 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Routes } from '@/routes';
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 type AgentItem = {
   id: string;
@@ -25,21 +27,22 @@ type AgentItem = {
   } | null;
 };
 
-type AgentsResponse = {
-  ok?: boolean;
-  data?: {
-    defaultAgentId?: string;
-    agents?: AgentItem[];
-  };
+type AgentStatus = {
+  agentId: string;
+  online: boolean;
+  lastActivity: string | null;
+  currentTask: { id?: string; description?: string; status?: string } | null;
+  recentErrors: string[];
 };
 
-type AgentStatus = 'online' | 'idle' | 'busy' | 'offline' | 'error';
-
-type AgentWithStatus = AgentItem & {
-  status: AgentStatus;
-  statusText: string;
-  lastActivity?: string;
+type EnrichedAgent = AgentItem & {
+  statusData: AgentStatus | null;
+  statusLoading: boolean;
 };
+
+type PresenceCategory = 'busy' | 'online' | 'idle' | 'offline';
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function agentLabel(agent: Partial<AgentItem>) {
   return agent.name?.trim() || agent.identity?.name?.trim() || agent.id || 'Agent';
@@ -49,90 +52,249 @@ function agentEmoji(agent: Partial<AgentItem>) {
   return agent.identity?.emoji?.trim() || '🤖';
 }
 
-function getAgentStatus(agent: AgentItem): { status: AgentStatus; statusText: string } {
-  // 简化版状态判断逻辑
-  // 第一版只判断基本状态，后续可以扩展
-  
-  if (agent.telegram?.enabled && agent.telegram?.hasBotToken && agent.telegram?.bindingEnabled) {
-    return { status: 'online', statusText: 'Online - Telegram connected' };
-  }
-  
-  if (agent.telegram?.enabled && agent.telegram?.hasBotToken) {
-    return { status: 'idle', statusText: 'Idle - Telegram configured but not bound' };
-  }
-
-  return { status: 'idle', statusText: 'Idle - Ready to work' };
+function relativeTime(iso: string | null | undefined): string {
+  if (!iso) return 'Never';
+  const diff = Date.now() - new Date(iso).getTime();
+  if (diff < 0) return 'Just now';
+  const seconds = Math.floor(diff / 1000);
+  if (seconds < 60) return `${seconds}s ago`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
 }
 
-function StatusBadge({ status }: { status: AgentStatus }) {
-  const colors = {
-    online: 'bg-green-100 text-green-700 border-green-300',
-    idle: 'bg-gray-100 text-gray-700 border-gray-300',
-    busy: 'bg-blue-100 text-blue-700 border-blue-300',
-    offline: 'bg-gray-100 text-gray-500 border-gray-300',
-    error: 'bg-red-100 text-red-700 border-red-300',
-  };
+function resolvePresence(agent: EnrichedAgent): PresenceCategory {
+  const s = agent.statusData;
+  if (!s) return 'offline';
+  if (s.currentTask) return 'busy';
+  if (!s.online) return 'offline';
+  if (s.lastActivity) {
+    const ageMs = Date.now() - new Date(s.lastActivity).getTime();
+    if (ageMs < 5 * 60 * 1000) return 'online';
+  }
+  return 'idle';
+}
 
-  const labels = {
-    online: 'Online',
-    idle: 'Idle',
-    busy: 'Busy',
-    offline: 'Offline',
-    error: 'Error',
-  };
+function presenceLabel(p: PresenceCategory) {
+  return { busy: 'Busy', online: 'Online', idle: 'Idle', offline: 'Offline' }[p];
+}
+
+function presenceColors(p: PresenceCategory) {
+  return {
+    busy: {
+      badge: 'bg-blue-100 text-blue-700 border-blue-300',
+      dot: 'bg-blue-500',
+      border: 'border-blue-200',
+      ring: 'ring-1 ring-blue-200',
+    },
+    online: {
+      badge: 'bg-green-100 text-green-700 border-green-300',
+      dot: 'bg-green-500',
+      border: 'border-green-200',
+      ring: 'ring-1 ring-green-200',
+    },
+    idle: {
+      badge: 'bg-gray-100 text-gray-600 border-gray-200',
+      dot: 'bg-gray-400',
+      border: 'border-border',
+      ring: '',
+    },
+    offline: {
+      badge: 'bg-gray-100 text-gray-400 border-gray-200',
+      dot: 'bg-gray-300',
+      border: 'border-border',
+      ring: '',
+    },
+  }[p];
+}
+
+// ─── Create Agent Modal ───────────────────────────────────────────────────────
+
+const AGENT_ID_RE = /^[a-z0-9][a-z0-9_-]{0,29}[a-z0-9]$|^[a-z0-9]{2,30}$/;
+
+function CreateAgentModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
+  const [agentId, setAgentId] = useState('');
+  const [name, setName] = useState('');
+  const [model, setModel] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  const idRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => { idRef.current?.focus(); }, []);
+
+  const idValid = AGENT_ID_RE.test(agentId);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!idValid) return;
+    setSubmitting(true);
+    setError('');
+    try {
+      const body: Record<string, string> = { agentId: agentId.trim() };
+      if (name.trim()) body.name = name.trim();
+      if (model.trim()) body.model = model.trim();
+      const res = await fetch('/api/agents', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json().catch(() => ({})) as { ok?: boolean; error?: string };
+      if (!res.ok || data.ok !== true) throw new Error(data.error || 'Failed to create agent');
+      onCreated();
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create agent');
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium ${colors[status]}`}>
-      <span className="h-1.5 w-1.5 rounded-full bg-current"></span>
-      {labels[status]}
-    </span>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={onClose}>
+      <div className="w-full max-w-md rounded-2xl border bg-card p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-lg font-semibold">Add New Agent</h2>
+          <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted">✕</button>
+        </div>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div>
+            <label className="mb-1.5 block text-sm font-medium">Agent ID <span className="text-red-500">*</span></label>
+            <input
+              ref={idRef}
+              type="text"
+              value={agentId}
+              onChange={(e) => setAgentId(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ''))}
+              placeholder="e.g. sales-bot"
+              className="w-full rounded-xl border bg-muted/30 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/50"
+              required
+            />
+            {agentId && !idValid && (
+              <p className="mt-1 text-xs text-red-500">2–32 chars, lowercase letters / numbers / hyphens / underscores.</p>
+            )}
+          </div>
+          <div>
+            <label className="mb-1.5 block text-sm font-medium">Name (optional)</label>
+            <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Sales Bot"
+              className="w-full rounded-xl border bg-muted/30 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/50" />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-sm font-medium">Model (optional)</label>
+            <input type="text" value={model} onChange={(e) => setModel(e.target.value)} placeholder="e.g. openai/gpt-4o-mini"
+              className="w-full rounded-xl border bg-muted/30 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/50" />
+          </div>
+          {error && <div className="rounded-xl border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
+          <div className="mt-1 flex justify-end gap-2">
+            <button type="button" onClick={onClose} className="rounded-xl border px-4 py-2 text-sm font-medium hover:bg-muted">Cancel</button>
+            <button type="submit" disabled={!idValid || submitting}
+              className="rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50">
+              {submitting ? 'Creating…' : 'Create Agent'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   );
 }
 
-function AgentCard({ agent }: { agent: AgentWithStatus }) {
+// ─── Agent Card ───────────────────────────────────────────────────────────────
+
+function AgentCard({ agent }: { agent: EnrichedAgent }) {
   const router = useRouter();
+  const presence = resolvePresence(agent);
+  const colors = presenceColors(presence);
+  const s = agent.statusData;
+  const hasErrors = (s?.recentErrors?.length ?? 0) > 0;
 
   return (
-    <div className="group rounded-2xl border bg-card p-5 shadow-sm transition-all hover:shadow-md">
-      <div className="flex items-start gap-4">
-        <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-2xl">
-          {agentEmoji(agent)}
+    <div className={`group relative rounded-2xl border bg-card p-5 shadow-sm transition-all hover:shadow-md ${colors.ring}`}>
+      {/* Error indicator */}
+      {hasErrors && (
+        <div className="absolute right-3 top-3">
+          <span className="flex h-2.5 w-2.5 items-center justify-center">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
+          </span>
         </div>
+      )}
+
+      <div className="flex items-start gap-4">
+        {/* Avatar */}
+        <div className="relative flex-shrink-0">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-2xl">
+            {agentEmoji(agent)}
+          </div>
+          {/* Online dot */}
+          <span className={`absolute bottom-0.5 right-0.5 h-3.5 w-3.5 rounded-full border-2 border-card ${colors.dot}`} />
+        </div>
+
+        {/* Info */}
         <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
               <h3 className="truncate text-base font-semibold">{agentLabel(agent)}</h3>
-              <p className="mt-0.5 truncate text-sm text-muted-foreground">@{agent.id}</p>
+              <p className="mt-0.5 truncate text-xs text-muted-foreground">@{agent.id}</p>
             </div>
-            <StatusBadge status={agent.status} />
+            <span className={`shrink-0 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium ${colors.badge}`}>
+              <span className={`h-1.5 w-1.5 rounded-full ${colors.dot}`} />
+              {presenceLabel(presence)}
+            </span>
           </div>
 
-          <div className="mt-3 space-y-2 text-sm">
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <span className="text-xs">📊</span>
-              <span className="truncate">{agent.statusText}</span>
-            </div>
+          {/* Status details */}
+          <div className="mt-3 space-y-1.5 text-xs text-muted-foreground">
+            {/* Current task */}
+            {s?.currentTask ? (
+              <div className="flex items-start gap-1.5">
+                <span className="mt-0.5 shrink-0">⚙️</span>
+                <span className="line-clamp-2">{s.currentTask.description || `Task ${s.currentTask.id || ''} running…`}</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5">
+                <span>🕐</span>
+                <span>Last active: {relativeTime(s?.lastActivity)}</span>
+              </div>
+            )}
 
+            {/* Model */}
             {agent.model && (
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <span className="text-xs">🤖</span>
-                <span className="truncate text-xs">{agent.model}</span>
+              <div className="flex items-center gap-1.5">
+                <span>🤖</span>
+                <span className="truncate font-mono text-[10px] opacity-70">{agent.model}</span>
               </div>
             )}
 
-            {agent.telegram?.enabled && (
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <span className="text-xs">💬</span>
-                <span className="text-xs">Telegram {agent.telegram.bindingEnabled ? 'active' : 'configured'}</span>
+            {/* Telegram */}
+            {agent.telegram ? (
+              <div className="flex items-center gap-1.5">
+                <span>💬</span>
+                <span>
+                  {agent.telegram.bindingEnabled
+                    ? 'Telegram connected'
+                    : agent.telegram.hasBotToken
+                    ? 'Telegram configured (not bound)'
+                    : 'Telegram not set up'}
+                </span>
+              </div>
+            ) : null}
+
+            {/* Recent errors */}
+            {hasErrors && (
+              <div className="flex items-start gap-1.5 text-red-600">
+                <span className="mt-0.5 shrink-0">⚠️</span>
+                <span className="line-clamp-1">{s!.recentErrors[0]}</span>
               </div>
             )}
           </div>
 
-          <div className="mt-4 flex gap-2">
+          {/* Actions */}
+          <div className="mt-4 flex flex-wrap gap-2">
             <button
               type="button"
               onClick={() => router.push(Routes.Chat)}
-              className="rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors hover:bg-muted"
+              className="rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"
             >
               Chat
             </button>
@@ -150,137 +312,182 @@ function AgentCard({ agent }: { agent: AgentWithStatus }) {
   );
 }
 
+// ─── Shell ────────────────────────────────────────────────────────────────────
+
 export function OfficeShell() {
-  const [agents, setAgents] = useState<AgentWithStatus[]>([]);
+  const [agents, setAgents] = useState<EnrichedAgent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    loadAgents();
-    const interval = setInterval(loadAgents, 10000); // 每10秒刷新
-    return () => clearInterval(interval);
-  }, []);
+  const [showCreate, setShowCreate] = useState(false);
+  const [countdown, setCountdown] = useState(15);
+  const refreshInterval = 15;
 
   async function loadAgents() {
     try {
       const res = await fetch('/api/agents', { cache: 'no-store' });
-      const data = (await res.json().catch(() => ({}))) as AgentsResponse;
-      
-      if (data.ok && data.data?.agents?.length) {
-        const agentsWithStatus = data.data.agents.map((agent) => ({
-          ...agent,
-          ...getAgentStatus(agent),
-        }));
-        setAgents(agentsWithStatus);
-        setError(null);
-      } else {
-        setAgents([]);
-        setError('No agents found');
-      }
+      const data = await res.json().catch(() => ({})) as {
+        ok?: boolean;
+        data?: { agents?: AgentItem[] };
+      };
+      if (!data.ok || !data.data?.agents) throw new Error('Failed to load agents');
+
+      const base = data.data.agents.map<EnrichedAgent>((a) => ({
+        ...a,
+        statusData: null,
+        statusLoading: true,
+      }));
+      setAgents(base);
+      setError(null);
+
+      // Fetch status for each agent in parallel
+      const enriched = await Promise.all(
+        base.map(async (agent) => {
+          try {
+            const sr = await fetch(`/api/agents/${encodeURIComponent(agent.id)}/status`, { cache: 'no-store' });
+            const sd = await sr.json().catch(() => ({})) as { ok?: boolean; data?: { status?: AgentStatus } };
+            return { ...agent, statusData: sd.data?.status ?? null, statusLoading: false };
+          } catch {
+            return { ...agent, statusData: null, statusLoading: false };
+          }
+        })
+      );
+      setAgents(enriched);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load agents');
+      setError(err instanceof Error ? err.message : 'Failed to load');
     } finally {
       setLoading(false);
     }
   }
 
-  const onlineAgents = agents.filter((a) => a.status === 'online');
-  const busyAgents = agents.filter((a) => a.status === 'busy');
-  const idleAgents = agents.filter((a) => a.status === 'idle');
-  const offlineAgents = agents.filter((a) => a.status === 'offline' || a.status === 'error');
+  useEffect(() => {
+    loadAgents();
+  }, []);
+
+  // Auto-refresh every 15s with countdown
+  useEffect(() => {
+    const tick = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          loadAgents();
+          return refreshInterval;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(tick);
+  }, []);
+
+  const categorize = (cat: PresenceCategory) =>
+    agents.filter((a) => resolvePresence(a) === cat);
+
+  const busy = categorize('busy');
+  const online = categorize('online');
+  const idle = categorize('idle');
+  const offline = categorize('offline');
+
+  const stats = [
+    { label: 'Total', value: agents.length, color: 'text-foreground' },
+    { label: 'Busy', value: busy.length, color: 'text-blue-600' },
+    { label: 'Online', value: online.length, color: 'text-green-600' },
+    { label: 'Idle', value: idle.length, color: 'text-gray-500' },
+  ];
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
+      {showCreate && (
+        <CreateAgentModal
+          onClose={() => setShowCreate(false)}
+          onCreated={() => { loadAgents(); setCountdown(refreshInterval); }}
+        />
+      )}
+
+      {/* Header */}
+      <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Office</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Your AI team at a glance - see who's working, what they're doing, and their current status.
+            Your AI team at a glance — who's working, who's idle, and what's happening right now.
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="rounded-xl border bg-card px-3 py-1.5 text-xs text-muted-foreground">
-            {agents.length} {agents.length === 1 ? 'agent' : 'agents'}
-          </div>
+        <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={loadAgents}
+            onClick={() => { loadAgents(); setCountdown(refreshInterval); }}
             disabled={loading}
-            className="rounded-lg border bg-card px-3 py-1.5 text-xs font-medium transition-colors hover:bg-muted disabled:opacity-50"
+            className="rounded-lg border bg-card px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted disabled:opacity-50"
           >
-            {loading ? 'Refreshing...' : 'Refresh'}
+            {loading ? 'Loading…' : `Refresh (${countdown}s)`}
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowCreate(true)}
+            className="rounded-xl bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+          >
+            + New Agent
           </button>
         </div>
       </div>
 
+      {/* Stats bar */}
+      {!loading && !error && (
+        <div className="flex flex-wrap gap-3">
+          {stats.map((s) => (
+            <div key={s.label} className="rounded-xl border bg-card px-4 py-2.5 text-center shadow-sm">
+              <p className={`text-xl font-bold ${s.color}`}>{s.value}</p>
+              <p className="text-xs text-muted-foreground">{s.label}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Content */}
       {error ? (
         <div className="rounded-xl border border-red-300 bg-red-50 p-4 text-sm text-red-700">{error}</div>
       ) : loading ? (
-        <div className="rounded-xl border bg-card p-8 text-center text-sm text-muted-foreground">
-          Loading agents...
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {[1, 2].map((i) => (
+            <div key={i} className="h-48 animate-pulse rounded-2xl border bg-muted/40" />
+          ))}
+        </div>
+      ) : agents.length === 0 ? (
+        <div className="rounded-2xl border bg-card p-10 text-center shadow-sm">
+          <div className="mb-3 text-4xl">👥</div>
+          <h3 className="text-base font-semibold">No agents yet</h3>
+          <p className="mt-2 text-sm text-muted-foreground">Click <strong>+ New Agent</strong> to hire your first AI employee.</p>
         </div>
       ) : (
         <div className="space-y-6">
-          {onlineAgents.length > 0 && (
+          {busy.length > 0 && (
             <section>
-              <h2 className="mb-3 text-sm font-semibold text-green-700">
-                🟢 Online ({onlineAgents.length})
-              </h2>
+              <h2 className="mb-3 text-sm font-semibold text-blue-700">⚙️ Working ({busy.length})</h2>
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {onlineAgents.map((agent) => (
-                  <AgentCard key={agent.id} agent={agent} />
-                ))}
+                {busy.map((a) => <AgentCard key={a.id} agent={a} />)}
               </div>
             </section>
           )}
-
-          {busyAgents.length > 0 && (
+          {online.length > 0 && (
             <section>
-              <h2 className="mb-3 text-sm font-semibold text-blue-700">
-                🔵 Busy ({busyAgents.length})
-              </h2>
+              <h2 className="mb-3 text-sm font-semibold text-green-700">🟢 Online ({online.length})</h2>
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {busyAgents.map((agent) => (
-                  <AgentCard key={agent.id} agent={agent} />
-                ))}
+                {online.map((a) => <AgentCard key={a.id} agent={a} />)}
               </div>
             </section>
           )}
-
-          {idleAgents.length > 0 && (
+          {idle.length > 0 && (
             <section>
-              <h2 className="mb-3 text-sm font-semibold text-gray-700">
-                ⚪ Idle ({idleAgents.length})
-              </h2>
+              <h2 className="mb-3 text-sm font-semibold text-gray-500">⚪ Idle ({idle.length})</h2>
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {idleAgents.map((agent) => (
-                  <AgentCard key={agent.id} agent={agent} />
-                ))}
+                {idle.map((a) => <AgentCard key={a.id} agent={a} />)}
               </div>
             </section>
           )}
-
-          {offlineAgents.length > 0 && (
+          {offline.length > 0 && (
             <section>
-              <h2 className="mb-3 text-sm font-semibold text-gray-500">
-                ⚫ Offline / Error ({offlineAgents.length})
-              </h2>
+              <h2 className="mb-3 text-sm font-semibold text-gray-400">⚫ Offline ({offline.length})</h2>
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {offlineAgents.map((agent) => (
-                  <AgentCard key={agent.id} agent={agent} />
-                ))}
+                {offline.map((a) => <AgentCard key={a.id} agent={a} />)}
               </div>
             </section>
-          )}
-
-          {agents.length === 0 && (
-            <div className="rounded-xl border bg-card p-8 text-center">
-              <div className="mb-4 text-4xl">👥</div>
-              <h3 className="text-lg font-semibold">No agents yet</h3>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Create your first AI employee to get started.
-              </p>
-            </div>
           )}
         </div>
       )}
