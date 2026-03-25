@@ -11,6 +11,10 @@ type AgentItem = {
   name?: string;
   workspace?: string;
   model?: string;
+  enabled?: boolean;
+  role?: string;
+  description?: string;
+  department?: string;
   isDefault?: boolean;
   identity?: {
     name?: string;
@@ -35,9 +39,30 @@ type AgentStatus = {
   recentErrors: string[];
 };
 
+type TaskItem = {
+  id: string;
+  name?: string;
+  enabled?: boolean;
+  updatedAtMs?: number;
+  createdAtMs?: number;
+  state?: {
+    nextRunAtMs?: number;
+  };
+};
+
+type TaskRun = {
+  status?: 'ok' | 'error';
+  startedAtMs?: number;
+  finishedAtMs?: number;
+  error?: string;
+  reply?: string;
+};
+
 type EnrichedAgent = AgentItem & {
   statusData: AgentStatus | null;
   statusLoading: boolean;
+  tasksData?: TaskItem[];
+  latestTaskRun?: TaskRun | null;
 };
 
 type Group = {
@@ -73,6 +98,11 @@ function relativeTime(iso: string | null | undefined): string {
   if (hours < 24) return `${hours}h ago`;
   const days = Math.floor(hours / 24);
   return `${days}d ago`;
+}
+
+function relativeTimeMs(ms?: number | null): string {
+  if (!ms) return 'Never';
+  return relativeTime(new Date(ms).toISOString());
 }
 
 function resolvePresence(agent: EnrichedAgent): PresenceCategory {
@@ -245,6 +275,7 @@ function AgentCard({ agent }: { agent: EnrichedAgent }) {
             <div className="min-w-0">
               <h3 className="truncate text-base font-semibold">{agentLabel(agent)}</h3>
               <p className="mt-0.5 truncate text-xs text-muted-foreground">@{agent.id}</p>
+              {agent.role ? <p className="mt-1 truncate text-[11px] text-muted-foreground">{agent.role}</p> : null}
             </div>
             <span className={`shrink-0 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium ${colors.badge}`}>
               <span className={`h-1.5 w-1.5 rounded-full ${colors.dot}`} />
@@ -289,6 +320,34 @@ function AgentCard({ agent }: { agent: EnrichedAgent }) {
               </div>
             ) : null}
 
+            {/* Task summary */}
+            <div className="flex items-center gap-1.5">
+              <span>🗂️</span>
+              <span>
+                {agent.tasksData?.length ? `${agent.tasksData.filter((t) => t.enabled !== false).length}/${agent.tasksData.length} tasks enabled` : 'No tasks yet'}
+              </span>
+            </div>
+            {agent.tasksData?.find((task) => task.enabled !== false && task.state?.nextRunAtMs) ? (
+              <div className="flex items-center gap-1.5">
+                <span>⏭️</span>
+                <span>
+                  Next run: {relativeTimeMs(
+                    [...agent.tasksData]
+                      .filter((task) => task.enabled !== false && task.state?.nextRunAtMs)
+                      .sort((a, b) => (a.state?.nextRunAtMs || 0) - (b.state?.nextRunAtMs || 0))[0]?.state?.nextRunAtMs
+                  )}
+                </span>
+              </div>
+            ) : null}
+            {agent.latestTaskRun ? (
+              <div className={`flex items-start gap-1.5 ${agent.latestTaskRun.status === 'error' ? 'text-red-600' : 'text-emerald-700'}`}>
+                <span className="mt-0.5 shrink-0">{agent.latestTaskRun.status === 'error' ? '⚠️' : '✅'}</span>
+                <span className="line-clamp-2">
+                  Last task run {agent.latestTaskRun.status === 'error' ? 'failed' : 'succeeded'} {relativeTimeMs(agent.latestTaskRun.finishedAtMs || agent.latestTaskRun.startedAtMs)}
+                </span>
+              </div>
+            ) : null}
+
             {/* Recent errors */}
             {hasErrors && (
               <div className="flex items-start gap-1.5 text-red-600">
@@ -313,6 +372,13 @@ function AgentCard({ agent }: { agent: EnrichedAgent }) {
               className="rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors hover:bg-muted"
             >
               Configure
+            </button>
+            <button
+              type="button"
+              onClick={() => router.push(`${Routes.SettingsAgents}/${agent.id}`)}
+              className="rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors hover:bg-muted"
+            >
+              Tasks
             </button>
           </div>
         </div>
@@ -354,6 +420,8 @@ export function OfficeShell() {
         ...a,
         statusData: null,
         statusLoading: true,
+        tasksData: [],
+        latestTaskRun: null,
       }));
       setAgents(base);
       setError(null);
@@ -362,11 +430,35 @@ export function OfficeShell() {
       const enriched = await Promise.all(
         base.map(async (agent) => {
           try {
-            const sr = await fetch(`/api/agents/${encodeURIComponent(agent.id)}/status`, { cache: 'no-store' });
+            const [sr, tr] = await Promise.all([
+              fetch(`/api/agents/${encodeURIComponent(agent.id)}/status`, { cache: 'no-store' }),
+              fetch(`/api/agents/${encodeURIComponent(agent.id)}/tasks`, { cache: 'no-store' }),
+            ]);
             const sd = await sr.json().catch(() => ({})) as { ok?: boolean; data?: { status?: AgentStatus } };
-            return { ...agent, statusData: sd.data?.status ?? null, statusLoading: false };
+            const td = await tr.json().catch(() => ({})) as { ok?: boolean; data?: { jobs?: TaskItem[] } };
+            const tasksData = td.ok && td.data?.jobs ? td.data.jobs : [];
+
+            let latestTaskRun: TaskRun | null = null;
+            if (tasksData.length > 0) {
+              const runResults = await Promise.all(
+                tasksData.slice(0, 5).map(async (task) => {
+                  try {
+                    const rr = await fetch(`/api/agents/${encodeURIComponent(agent.id)}/tasks/${encodeURIComponent(task.id)}/runs?limit=1`, { cache: 'no-store' });
+                    const rd = await rr.json().catch(() => ({})) as { ok?: boolean; data?: { runs?: TaskRun[] } };
+                    return Array.isArray(rd.data?.runs) ? rd.data?.runs?.[0] || null : null;
+                  } catch {
+                    return null;
+                  }
+                })
+              );
+              latestTaskRun = runResults
+                .filter(Boolean)
+                .sort((a, b) => ((b?.finishedAtMs || b?.startedAtMs || 0) - (a?.finishedAtMs || a?.startedAtMs || 0)))[0] || null;
+            }
+
+            return { ...agent, statusData: sd.data?.status ?? null, statusLoading: false, tasksData, latestTaskRun };
           } catch {
-            return { ...agent, statusData: null, statusLoading: false };
+            return { ...agent, statusData: null, statusLoading: false, tasksData: [], latestTaskRun: null };
           }
         })
       );
