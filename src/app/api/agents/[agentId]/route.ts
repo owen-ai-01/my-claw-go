@@ -1,4 +1,4 @@
-import { forwardBridgeGet, forwardBridgeJson } from '@/lib/myclawgo/bridge-fetch';
+import { forwardBridgeDelete, forwardBridgeGet, forwardBridgeJson } from '@/lib/myclawgo/bridge-fetch';
 
 export async function GET(_req: Request, { params }: { params: Promise<{ agentId: string }> }) {
   const { agentId } = await params;
@@ -9,4 +9,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ agentI
   const { agentId } = await params;
   const body = await req.json().catch(() => ({}));
   return forwardBridgeJson('PATCH', `/agents/${encodeURIComponent(agentId)}`, body);
+}
+
+export async function DELETE(_req: Request, { params }: { params: Promise<{ agentId: string }> }) {
+  const { agentId } = await params;
+  return forwardBridgeDelete(`/agents/${encodeURIComponent(agentId)}`);
 }
