@@ -186,6 +186,10 @@ export function resolvePricingModelKey(model: string): string | null {
   return resolved?.key || null;
 }
 
+export function getPricingModelKeys(): string[] {
+  return Object.keys(parsePricingFromEnv());
+}
+
 // ─── Usage type returned by bridge ───────────────────────────────────────────
 
 export type BridgeUsage = {

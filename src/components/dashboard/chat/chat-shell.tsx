@@ -3,6 +3,7 @@
 import { useCurrentUser } from '@/hooks/use-current-user';
 import { useCurrentPlan } from '@/hooks/use-payment';
 import { useCreditBalance } from '@/hooks/use-credits';
+import { ModelSelect } from '@/components/ui/model-select';
 import { Routes } from '@/routes';
 import {
   Sheet,
@@ -362,12 +363,9 @@ function AgentConfigDrawer({
                   </label>
                   <div>
                     <p className="text-xs text-muted-foreground">Model</p>
-                    <input
-                      value={draftModel}
-                      onChange={(e) => setDraftModel(e.target.value)}
-                      placeholder="openrouter/openai/gpt-4o-mini"
-                      className="mt-1 w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none"
-                    />
+                    <div className="mt-1">
+                      <ModelSelect value={draftModel} onChange={setDraftModel} placeholder="Default model" />
+                    </div>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Workspace</p>
@@ -606,12 +604,9 @@ function AddAgentDrawer({
 
             <div>
               <label className="text-sm font-medium">Model</label>
-              <input
-                value={model}
-                onChange={(e) => setModel(e.target.value)}
-                placeholder="openrouter/anthropic/claude-sonnet-4.6"
-                className="mt-1 w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none"
-              />
+              <div className="mt-1">
+                <ModelSelect value={model} onChange={setModel} placeholder="Default model" />
+              </div>
               <p className="mt-1 text-xs text-muted-foreground">Optional: Leave blank to use default model</p>
             </div>
           </div>

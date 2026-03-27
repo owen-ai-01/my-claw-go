@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
+import { ModelSelect } from '@/components/ui/model-select';
 import type { AgentRecord } from './types';
 
 type AgentsResponse = {
@@ -157,13 +158,7 @@ function CreateAgentModal({ onClose, onCreated }: { onClose: () => void; onCreat
 
           <div>
             <label className="mb-1.5 block text-sm font-medium">Model (optional)</label>
-            <input
-              type="text"
-              value={model}
-              onChange={(e) => setModel(e.target.value)}
-              placeholder="e.g. openai/gpt-4o-mini"
-              className="w-full rounded-xl border bg-muted/30 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/50"
-            />
+            <ModelSelect value={model} onChange={setModel} placeholder="Default model" selectClassName="bg-muted/30" inputClassName="bg-muted/30" />
             <p className="mt-1 text-xs text-muted-foreground">Leave blank to use the default model.</p>
           </div>
 
