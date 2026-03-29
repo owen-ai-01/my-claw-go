@@ -9,6 +9,7 @@ import { getSession } from '../src/lib/myclawgo/session-store';
 const execFileAsync = promisify(execFile);
 const PORT = Number(process.env.MYCLAWGO_CHAT_PROXY_PORT || 3020);
 const PATHNAME = process.env.MYCLAWGO_CHAT_PROXY_PATH || '/api/chat/gateway-proxy';
+const FALLBACK_GATEWAY_WS = process.env.MYCLAWGO_CHAT_PROXY_FALLBACK_WS || 'ws://127.0.0.1:18789';
 
 async function ensureGatewayForContainer(containerName: string) {
   const scriptContent = [
@@ -161,20 +162,26 @@ server.on('upgrade', async (req, socket, head) => {
     console.log('[chat-gateway-proxy] token ok for user', tokenPayload.userId);
 
     const runtimeSession = await getSession(tokenPayload.userId);
-    if (!runtimeSession?.containerName) {
-      socket.write('HTTP/1.1 404 Not Found\r\n\r\n');
-      socket.destroy();
-      return;
+
+    let upstreamUrl: string | null = null;
+    if (runtimeSession?.containerName) {
+      try {
+        const upstreamReady = await waitForGatewayHealth(runtimeSession.containerName, 12);
+        if (upstreamReady) {
+          upstreamUrl = await getContainerGatewayWsUrl(runtimeSession.containerName);
+        }
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.warn('[chat-gateway-proxy] container gateway not available, fallback to host gateway', error);
+      }
     }
 
-    const upstreamReady = await waitForGatewayHealth(runtimeSession.containerName, 12);
-    if (!upstreamReady) {
-      socket.write('HTTP/1.1 503 Service Unavailable\r\n\r\n');
-      socket.destroy();
-      return;
+    if (!upstreamUrl) {
+      upstreamUrl = FALLBACK_GATEWAY_WS;
+      // eslint-disable-next-line no-console
+      console.warn('[chat-gateway-proxy] using fallback gateway', upstreamUrl);
     }
 
-    const upstreamUrl = await getContainerGatewayWsUrl(runtimeSession.containerName);
     const upstreamWs = new WebSocket(upstreamUrl);
 
     upstreamWs.once('open', () => {
