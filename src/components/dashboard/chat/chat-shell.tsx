@@ -15,7 +15,8 @@ import {
 } from '@/components/ui/sheet';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
-import { useEffect, useRef, useState } from 'react';
+import { RefreshCcw, Minimize2, Coins } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 type RuntimeStatus =
   | { ok: true; state: 'not_created'; reason: string; containerName?: string }
@@ -92,6 +93,10 @@ function agentLabel(agent: Partial<AgentItem>) {
 
 function agentEmoji(agent: Partial<AgentItem>) {
   return agent.identity?.emoji?.trim() || '🤖';
+}
+
+function estimateTextTokens(text: string) {
+  return Math.max(1, Math.ceil((text || '').length / 4));
 }
 
 function AgentConfigDrawer({
@@ -1348,6 +1353,48 @@ function ChatLayout() {
     }
   }
 
+  async function handleContextReset() {
+    const confirmed = window.confirm(
+      'Reset context will start a brand-new session for this chat.\n\nWhat will happen:\n- A new session will be created\n- Previous chat context will no longer be used\n- Estimated token count will restart from 0\n\nDo you want to continue?'
+    );
+    if (!confirmed) return;
+
+    try {
+      const payload: any = { message: '/new', timeoutMs: 90000 };
+      if (selectedGroupId) payload.groupId = selectedGroupId;
+      else payload.agentId = selectedAgentId;
+      await fetch('/api/chat/send', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload),
+      }).catch(() => null);
+    } finally {
+      setMessages([]);
+      setActiveTaskStatus(null);
+      toast.success('Context reset complete. New session started.');
+    }
+  }
+
+  async function handleContextCompress() {
+    const confirmed = window.confirm(
+      'Compress context will summarize and trim older chat context.\n\nWhat will happen:\n- Older context is compacted to save tokens\n- Recent messages are kept for continuity\n- Estimated token count should decrease\n\nDo you want to continue?'
+    );
+    if (!confirmed) return;
+
+    const payload: any = { message: '/compact', timeoutMs: 90000 };
+    if (selectedGroupId) payload.groupId = selectedGroupId;
+    else payload.agentId = selectedAgentId;
+
+    await fetch('/api/chat/send', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(payload),
+    }).catch(() => null);
+
+    setMessages((prev) => prev.slice(-12));
+    toast.success('Context compressed.');
+  }
+
   const selectedAgent = agents.find((agent) => agent.id === selectedAgentId) || { id: selectedAgentId, name: selectedAgentId };
   const selectedGroup = groups.find((g) => g.id === selectedGroupId);
   const editingGroup = groups.find((g) => g.id === editingGroupId) || null;
@@ -1369,6 +1416,11 @@ function ChatLayout() {
   // Filter out placeholder assistant messages (status=queued/running) — shown as bounce instead
   const visibleMessages = messages.filter(
     (msg) => !(msg.role === 'assistant' && (msg.status === 'queued' || msg.status === 'running'))
+  );
+
+  const estimatedTokens = useMemo(
+    () => visibleMessages.reduce((sum, msg) => sum + estimateTextTokens(msg.content), 0),
+    [visibleMessages]
   );
 
   function switchToAgent(agentId: string) {
@@ -1677,6 +1729,30 @@ function ChatLayout() {
           </div>
 
           <div className="border-t px-4 py-3 sm:px-6">
+            <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+              <div className="inline-flex items-center gap-2 rounded-lg border bg-muted/30 px-2.5 py-1.5 text-xs text-muted-foreground">
+                <Coins className="h-3.5 w-3.5" />
+                <span>Cumulative tokens: {estimatedTokens.toLocaleString()}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleContextCompress}
+                  className="inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium hover:bg-muted"
+                >
+                  <Minimize2 className="h-3.5 w-3.5" />
+                  Compress
+                </button>
+                <button
+                  type="button"
+                  onClick={handleContextReset}
+                  className="inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium hover:bg-muted"
+                >
+                  <RefreshCcw className="h-3.5 w-3.5" />
+                  Reset Context
+                </button>
+              </div>
+            </div>
             <div className="flex items-end gap-2 rounded-2xl border bg-background px-4 py-2.5">
               <textarea
                 value={input}
