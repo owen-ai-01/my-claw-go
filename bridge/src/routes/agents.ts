@@ -4,9 +4,11 @@ import {
   ensureAgentExists,
   getAgent,
   getAgentMarkdown,
+  getAgentDoc,
   listAgents,
   updateAgent,
   updateAgentMarkdown,
+  updateAgentDoc,
   updateAgentTelegram,
   createAgent,
   deleteAgent,
@@ -97,6 +99,37 @@ export async function agentRoutes(app: FastifyInstance) {
       return ok(reply, data);
     } catch (error: any) {
       return fail(reply, error.code || 'INTERNAL_ERROR', error.message || 'update AGENTS.md failed', error.statusCode || 500);
+    }
+  });
+
+  app.get('/agents/:agentId/docs/:docKey', async (req: any, reply) => {
+    try {
+      const agentId = String(req.params?.agentId || '').trim();
+      const docKey = String(req.params?.docKey || '').trim().toLowerCase() as 'agents' | 'identity' | 'user' | 'soul' | 'tools';
+      if (!agentId) return fail(reply, 'INVALID_PARAMS', 'agentId is required', 400);
+      if (!['agents', 'identity', 'user', 'soul', 'tools'].includes(docKey)) {
+        return fail(reply, 'INVALID_PARAMS', 'Unsupported docKey', 400);
+      }
+      const data = await getAgentDoc(agentId, docKey);
+      return ok(reply, data);
+    } catch (error: any) {
+      return fail(reply, error.code || 'INTERNAL_ERROR', error.message || 'get doc failed', error.statusCode || 500);
+    }
+  });
+
+  app.put('/agents/:agentId/docs/:docKey', async (req: any, reply) => {
+    try {
+      const agentId = String(req.params?.agentId || '').trim();
+      const docKey = String(req.params?.docKey || '').trim().toLowerCase() as 'agents' | 'identity' | 'user' | 'soul' | 'tools';
+      const content = typeof req.body?.content === 'string' ? req.body.content : '';
+      if (!agentId) return fail(reply, 'INVALID_PARAMS', 'agentId is required', 400);
+      if (!['agents', 'identity', 'user', 'soul', 'tools'].includes(docKey)) {
+        return fail(reply, 'INVALID_PARAMS', 'Unsupported docKey', 400);
+      }
+      const data = await updateAgentDoc(agentId, docKey, content);
+      return ok(reply, data);
+    } catch (error: any) {
+      return fail(reply, error.code || 'INTERNAL_ERROR', error.message || 'update doc failed', error.statusCode || 500);
     }
   });
 

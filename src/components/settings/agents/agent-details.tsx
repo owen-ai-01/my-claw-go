@@ -11,10 +11,11 @@ type AgentResponse = {
   data?: AgentDetailRecord;
 };
 
-type AgentsMdResponse = {
+type AgentDocResponse = {
   ok?: boolean;
   data?: {
     agentId: string;
+    docKey?: string;
     path: string;
     content: string;
   };
@@ -261,17 +262,18 @@ function AgentTasksPanel({ agentId }: { agentId: string }) {
 
 export function AgentDetails({ agentId }: { agentId: string }) {
   const [agent, setAgent] = useState<AgentDetailRecord | null>(null);
-  const [agentsMd, setAgentsMd] = useState<string>('');
+  const [docs, setDocs] = useState<Record<string, string>>({ agents: '', identity: '', user: '', soul: '', tools: '' });
+  const [activeDocTab, setActiveDocTab] = useState<'agents' | 'identity' | 'user' | 'soul' | 'tools'>('agents');
+  const [editingDoc, setEditingDoc] = useState(false);
+  const [docDraft, setDocDraft] = useState('');
+  const [savingDoc, setSavingDoc] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const load = async () => {
       try {
-        const [agentRes, agentsMdRes] = await Promise.all([
-          fetch(`/api/agents/${encodeURIComponent(agentId)}`, { cache: 'no-store' }),
-          fetch(`/api/agents/${encodeURIComponent(agentId)}/agents-md`, { cache: 'no-store' }),
-        ]);
+        const agentRes = await fetch(`/api/agents/${encodeURIComponent(agentId)}`, { cache: 'no-store' });
 
         const agentData = (await agentRes.json().catch(() => ({}))) as AgentResponse;
         if (!agentRes.ok || agentData.ok !== true || !agentData.data) {
@@ -279,12 +281,15 @@ export function AgentDetails({ agentId }: { agentId: string }) {
         }
         setAgent(agentData.data);
 
-        if (agentsMdRes.ok) {
-          const agentsMdData = (await agentsMdRes.json().catch(() => ({}))) as AgentsMdResponse;
-          if (agentsMdData.ok === true && agentsMdData.data?.content) {
-            setAgentsMd(agentsMdData.data.content);
-          }
-        }
+        const docKeys: Array<'agents' | 'identity' | 'user' | 'soul' | 'tools'> = ['agents', 'identity', 'user', 'soul', 'tools'];
+        const docResults = await Promise.all(
+          docKeys.map(async (docKey) => {
+            const res = await fetch(`/api/agents/${encodeURIComponent(agentId)}/docs/${docKey}`, { cache: 'no-store' });
+            const data = (await res.json().catch(() => ({}))) as AgentDocResponse;
+            return [docKey, data.ok === true ? (data.data?.content || '') : ''] as const;
+          })
+        );
+        setDocs(Object.fromEntries(docResults));
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load agent');
       } finally {
@@ -293,6 +298,32 @@ export function AgentDetails({ agentId }: { agentId: string }) {
     };
     load();
   }, [agentId]);
+
+  useEffect(() => {
+    setDocDraft(docs[activeDocTab] || '');
+    setEditingDoc(false);
+  }, [activeDocTab, docs]);
+
+  async function saveDoc() {
+    setSavingDoc(true);
+    try {
+      const res = await fetch(`/api/agents/${encodeURIComponent(agentId)}/docs/${activeDocTab}`, {
+        method: 'PUT',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ content: docDraft }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string | { message?: string } };
+      if (!res.ok || data.ok !== true) {
+        throw new Error(typeof data.error === 'string' ? data.error : data.error?.message || 'Failed to save');
+      }
+      setDocs((prev) => ({ ...prev, [activeDocTab]: docDraft }));
+      setEditingDoc(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save document');
+    } finally {
+      setSavingDoc(false);
+    }
+  }
 
   if (loading) {
     return <div className="rounded-2xl border bg-card p-6 text-sm text-muted-foreground shadow-sm">Loading agent…</div>;
@@ -338,13 +369,44 @@ export function AgentDetails({ agentId }: { agentId: string }) {
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
         <div className="rounded-2xl border bg-card p-6 shadow-sm">
-          <div className="mb-4">
-            <h2 className="text-lg font-semibold">AGENTS.md</h2>
-            <p className="mt-1 text-sm text-muted-foreground">Phase 1 currently reads each agent’s core config from its own workspace AGENTS.md.</p>
+          <div className="mb-4 flex items-start justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-semibold">Agent Markdown Files</h2>
+              <p className="mt-1 text-sm text-muted-foreground">Manage AGENTS.md, IDENTITY.md, USER.md, SOUL.md, TOOLS.md.</p>
+            </div>
+            {!editingDoc ? (
+              <button type="button" onClick={() => setEditingDoc(true)} className="rounded-lg border px-3 py-1.5 text-xs hover:bg-muted">Edit</button>
+            ) : (
+              <div className="flex gap-2">
+                <button type="button" onClick={() => { setEditingDoc(false); setDocDraft(docs[activeDocTab] || ''); }} className="rounded-lg border px-3 py-1.5 text-xs hover:bg-muted">Cancel</button>
+                <button type="button" onClick={() => saveDoc()} disabled={savingDoc} className="rounded-lg bg-primary px-3 py-1.5 text-xs text-primary-foreground hover:bg-primary/90 disabled:opacity-50">{savingDoc ? 'Saving…' : 'Save'}</button>
+              </div>
+            )}
           </div>
+
+          <div className="mb-3 flex flex-wrap gap-2">
+            {([
+              ['agents', 'AGENTS.md'],
+              ['identity', 'IDENTITY.md'],
+              ['user', 'USER.md'],
+              ['soul', 'SOUL.md'],
+              ['tools', 'TOOLS.md'],
+            ] as const).map(([key, label]) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setActiveDocTab(key)}
+                className={`rounded-lg border px-3 py-1.5 text-xs ${activeDocTab === key ? 'bg-primary text-primary-foreground border-primary' : 'hover:bg-muted'}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
           <textarea
-            value={agentsMd}
-            readOnly
+            value={editingDoc ? docDraft : (docs[activeDocTab] || '')}
+            onChange={(e) => setDocDraft(e.target.value)}
+            readOnly={!editingDoc}
             className="min-h-[420px] w-full resize-none rounded-xl border bg-muted/30 p-4 font-mono text-xs leading-6 text-foreground outline-none"
           />
         </div>

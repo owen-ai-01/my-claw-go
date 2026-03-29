@@ -287,6 +287,50 @@ export async function updateAgentMarkdown(agentId: string, content: string) {
   };
 }
 
+const AGENT_DOC_FILE_MAP = {
+  agents: 'AGENTS.md',
+  identity: 'IDENTITY.md',
+  user: 'USER.md',
+  soul: 'SOUL.md',
+  tools: 'TOOLS.md',
+} as const;
+
+export type AgentDocKey = keyof typeof AGENT_DOC_FILE_MAP;
+
+function resolveAgentDocPath(workspace: string | undefined, docKey: AgentDocKey) {
+  if (!workspace) {
+    throw new BridgeError('AGENT_WORKSPACE_NOT_FOUND', 'Agent workspace not configured', 404);
+  }
+  return path.join(workspace, AGENT_DOC_FILE_MAP[docKey]);
+}
+
+export async function getAgentDoc(agentId: string, docKey: AgentDocKey) {
+  const agent = await getAgent(agentId);
+  const docPath = resolveAgentDocPath(agent.workspace, docKey);
+  const exists = await pathExists(docPath);
+  const content = exists ? await fs.readFile(docPath, 'utf8') : '';
+  return {
+    agentId,
+    docKey,
+    path: docPath,
+    content,
+    exists,
+  };
+}
+
+export async function updateAgentDoc(agentId: string, docKey: AgentDocKey, content: string) {
+  const agent = await getAgent(agentId);
+  const docPath = resolveAgentDocPath(agent.workspace, docKey);
+  await fs.mkdir(path.dirname(docPath), { recursive: true });
+  await fs.writeFile(docPath, content, 'utf8');
+  return {
+    agentId,
+    docKey,
+    path: docPath,
+    updated: true,
+  };
+}
+
 export async function updateAgent(agentId: string, patch: { model?: string; name?: string; role?: string; description?: string; department?: string; enabled?: boolean; avatar?: string }) {
   const config = await readConfig();
   const agents = config.agents?.list || [];
