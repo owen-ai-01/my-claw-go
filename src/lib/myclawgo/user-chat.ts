@@ -287,7 +287,9 @@ async function runDirectChatTask(params: {
     //   - Routing rules live here in the platform (model-router.ts).
     //   - To update rules: redeploy platform only, no Docker image changes needed.
     //   - To add a new model tier: add env var + update routing table.
-    const routerEnabled = process.env.MYCLAWGO_ROUTER_DISABLED !== 'true';
+    // Auto router is OFF by default. Enable explicitly with:
+    //   MYCLAWGO_ROUTER_ENABLED=true
+    const routerEnabled = process.env.MYCLAWGO_ROUTER_ENABLED === 'true';
 
     const selection = resolveChatModelSelection({
       message,

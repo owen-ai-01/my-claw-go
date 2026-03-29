@@ -121,7 +121,9 @@ export async function POST(req: Request) {
       agentId,
       message,
       timeoutMs: body.timeoutMs || 180000,
-      userModelOverride: body.model || 'auto',
+      // If user didn't explicitly pick a model, keep undefined.
+      // This prevents implicit auto routing when auto feature is disabled.
+      userModelOverride: body.model,
     });
 
     return NextResponse.json({
