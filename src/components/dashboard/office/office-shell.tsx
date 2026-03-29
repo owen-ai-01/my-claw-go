@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { LayoutGroup, motion } from 'motion/react';
+import { AnimatePresence, LayoutGroup, motion } from 'motion/react';
 import { ModelSelect } from '@/components/ui/model-select';
 import { AgentAvatarPicker } from '@/components/settings/agents/agent-avatar-picker';
 
@@ -440,9 +440,20 @@ export function OfficeShell() {
               <section>
                 <h2 className="mb-3 text-sm font-semibold text-purple-700">💬 对话区 {dialogAgent ? '(1)' : '(0)'}</h2>
                 {dialogAgent ? (
-                  <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-2">
-                    <AgentCard key={dialogAgent.id} agent={dialogAgent} zone="dialogue" moved={Date.now() - (movedAt[dialogAgent.id] || 0) < 2000} />
-                  </div>
+                  <motion.div layout className="grid gap-4 sm:grid-cols-2 xl:grid-cols-2">
+                    <AnimatePresence mode="popLayout" initial={false}>
+                      <motion.div
+                        key={`dialogue-${dialogAgent.id}`}
+                        layout
+                        initial={{ opacity: 0, y: -14, scale: 0.98 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 14, scale: 0.98 }}
+                        transition={{ duration: 0.28 }}
+                      >
+                        <AgentCard agent={dialogAgent} zone="dialogue" moved={Date.now() - (movedAt[dialogAgent.id] || 0) < 2000} />
+                      </motion.div>
+                    </AnimatePresence>
+                  </motion.div>
                 ) : (
                   <div className="rounded-xl border bg-card p-4 text-sm text-muted-foreground">No agent in dialogue zone.</div>
                 )}
@@ -451,9 +462,22 @@ export function OfficeShell() {
               <section>
                 <h2 className="mb-3 text-sm font-semibold text-blue-700">⚙️ 办公区 ({officeAgents.length})</h2>
                 {officeAgents.length > 0 ? (
-                  <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-2">
-                    {officeAgents.map((a) => <AgentCard key={a.id} agent={a} zone="office" moved={Date.now() - (movedAt[a.id] || 0) < 2000} />)}
-                  </div>
+                  <motion.div layout className="grid gap-4 sm:grid-cols-2 xl:grid-cols-2">
+                    <AnimatePresence mode="popLayout" initial={false}>
+                      {officeAgents.map((a) => (
+                        <motion.div
+                          key={`office-${a.id}`}
+                          layout
+                          initial={{ opacity: 0, x: 18, scale: 0.98 }}
+                          animate={{ opacity: 1, x: 0, scale: 1 }}
+                          exit={{ opacity: 0, x: -18, scale: 0.98 }}
+                          transition={{ duration: 0.28 }}
+                        >
+                          <AgentCard agent={a} zone="office" moved={Date.now() - (movedAt[a.id] || 0) < 2000} />
+                        </motion.div>
+                      ))}
+                    </AnimatePresence>
+                  </motion.div>
                 ) : (
                   <div className="rounded-xl border bg-card p-4 text-sm text-muted-foreground">No agents are working right now.</div>
                 )}
@@ -462,9 +486,22 @@ export function OfficeShell() {
               <section>
                 <h2 className="mb-3 text-sm font-semibold text-gray-600">🛋️ 休闲区 ({loungeAgents.length})</h2>
                 {loungeAgents.length > 0 ? (
-                  <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-2">
-                    {loungeAgents.map((a) => <AgentCard key={a.id} agent={a} zone="lounge" moved={Date.now() - (movedAt[a.id] || 0) < 2000} />)}
-                  </div>
+                  <motion.div layout className="grid gap-4 sm:grid-cols-2 xl:grid-cols-2">
+                    <AnimatePresence mode="popLayout" initial={false}>
+                      {loungeAgents.map((a) => (
+                        <motion.div
+                          key={`lounge-${a.id}`}
+                          layout
+                          initial={{ opacity: 0, y: 14, scale: 0.98 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: -14, scale: 0.98 }}
+                          transition={{ duration: 0.28 }}
+                        >
+                          <AgentCard agent={a} zone="lounge" moved={Date.now() - (movedAt[a.id] || 0) < 2000} />
+                        </motion.div>
+                      ))}
+                    </AnimatePresence>
+                  </motion.div>
                 ) : (
                   <div className="rounded-xl border bg-card p-4 text-sm text-muted-foreground">No agents in lounge zone.</div>
                 )}
