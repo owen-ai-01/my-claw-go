@@ -209,7 +209,7 @@ function CreateAgentModal({ onClose, onCreated }: { onClose: () => void; onCreat
 
 // ─── Agent Card ───────────────────────────────────────────────────────────────
 
-function AgentCard({ agent, zone }: { agent: EnrichedAgent; zone: 'dialogue' | 'office' | 'lounge' }) {
+function AgentCard({ agent, zone, moved }: { agent: EnrichedAgent; zone: 'dialogue' | 'office' | 'lounge'; moved?: boolean }) {
   const s = agent.statusData;
   const progressText =
     zone === 'dialogue'
@@ -217,7 +217,7 @@ function AgentCard({ agent, zone }: { agent: EnrichedAgent; zone: 'dialogue' | '
       : s?.currentTask?.description || 'Working on task';
 
   return (
-    <div className="rounded-2xl border bg-card p-4 shadow-sm">
+    <div className={`rounded-2xl border bg-card p-4 shadow-sm transition-all duration-500 ${moved ? 'ring-2 ring-primary/40 scale-[1.02]' : ''}`}>
       <div className="flex items-center gap-3">
         <div className="h-12 w-12 overflow-hidden rounded-full bg-primary/10">
           {agent.identity?.avatar ? (
@@ -254,8 +254,10 @@ export function OfficeShell() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
-  const [countdown, setCountdown] = useState(15);
-  const refreshInterval = 15;
+  const [countdown, setCountdown] = useState(5);
+  const [movedAt, setMovedAt] = useState<Record<string, number>>({});
+  const prevZonesRef = useRef<Record<string, 'dialogue' | 'office' | 'lounge'>>({});
+  const refreshInterval = 5;
 
   async function loadAgents() {
     try {
@@ -331,7 +333,21 @@ export function OfficeShell() {
     loadAgents();
   }, [searchParams]);
 
-  // Auto-refresh every 15s with countdown
+  // Realtime: sync active dialogue agent from chat page
+  useEffect(() => {
+    const t = setInterval(async () => {
+      try {
+        const res = await fetch('/api/chat/active-agent', { cache: 'no-store' });
+        const data = await res.json().catch(() => ({})) as { ok?: boolean; data?: { agentId?: string } };
+        if (data?.ok) {
+          setDialogAgentId(data.data?.agentId || '');
+        }
+      } catch {}
+    }, 1500);
+    return () => clearInterval(t);
+  }, []);
+
+  // Auto-refresh agent status every 5s with countdown
   useEffect(() => {
     const tick = setInterval(() => {
       setCountdown((prev) => {
@@ -349,6 +365,25 @@ export function OfficeShell() {
   const nonDialogAgents = agents.filter((a) => a.id !== dialogAgent?.id);
   const officeAgents = nonDialogAgents.filter((a) => resolvePresence(a) === 'busy');
   const loungeAgents = nonDialogAgents.filter((a) => resolvePresence(a) !== 'busy');
+
+  const zoneByAgent: Record<string, 'dialogue' | 'office' | 'lounge'> = {};
+  if (dialogAgent) zoneByAgent[dialogAgent.id] = 'dialogue';
+  for (const a of officeAgents) zoneByAgent[a.id] = 'office';
+  for (const a of loungeAgents) zoneByAgent[a.id] = 'lounge';
+
+  useEffect(() => {
+    const prevZones = prevZonesRef.current;
+    const now = Date.now();
+    const changed: Record<string, number> = {};
+    for (const [id, zone] of Object.entries(zoneByAgent)) {
+      const before = prevZones[id];
+      if (before && before !== zone) changed[id] = now;
+    }
+    prevZonesRef.current = zoneByAgent;
+    if (Object.keys(changed).length > 0) {
+      setMovedAt((prev) => ({ ...prev, ...changed }));
+    }
+  }, [zoneByAgent, dialogAgentId]);
 
 
   return (
@@ -399,7 +434,7 @@ export function OfficeShell() {
               <h2 className="mb-3 text-sm font-semibold text-purple-700">💬 对话区 {dialogAgent ? '(1)' : '(0)'}</h2>
               {dialogAgent ? (
                 <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-2">
-                  <AgentCard key={dialogAgent.id} agent={dialogAgent} zone="dialogue" />
+                  <AgentCard key={dialogAgent.id} agent={dialogAgent} zone="dialogue" moved={Date.now() - (movedAt[dialogAgent.id] || 0) < 2000} />
                 </div>
               ) : (
                 <div className="rounded-xl border bg-card p-4 text-sm text-muted-foreground">No agent in dialogue zone.</div>
@@ -410,7 +445,7 @@ export function OfficeShell() {
               <h2 className="mb-3 text-sm font-semibold text-blue-700">⚙️ 办公区 ({officeAgents.length})</h2>
               {officeAgents.length > 0 ? (
                 <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-2">
-                  {officeAgents.map((a) => <AgentCard key={a.id} agent={a} zone="office" />)}
+                  {officeAgents.map((a) => <AgentCard key={a.id} agent={a} zone="office" moved={Date.now() - (movedAt[a.id] || 0) < 2000} />)}
                 </div>
               ) : (
                 <div className="rounded-xl border bg-card p-4 text-sm text-muted-foreground">No agents are working right now.</div>
@@ -421,7 +456,7 @@ export function OfficeShell() {
               <h2 className="mb-3 text-sm font-semibold text-gray-600">🛋️ 休闲区 ({loungeAgents.length})</h2>
               {loungeAgents.length > 0 ? (
                 <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-2">
-                  {loungeAgents.map((a) => <AgentCard key={a.id} agent={a} zone="lounge" />)}
+                  {loungeAgents.map((a) => <AgentCard key={a.id} agent={a} zone="lounge" moved={Date.now() - (movedAt[a.id] || 0) < 2000} />)}
                 </div>
               ) : (
                 <div className="rounded-xl border bg-card p-4 text-sm text-muted-foreground">No agents in lounge zone.</div>
