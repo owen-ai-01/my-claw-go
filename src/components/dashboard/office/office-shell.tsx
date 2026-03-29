@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Routes } from '@/routes';
+import { ModelSelect } from '@/components/ui/model-select';
+import { AgentAvatarPicker } from '@/components/settings/agents/agent-avatar-picker';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -158,6 +160,10 @@ function CreateAgentModal({ onClose, onCreated }: { onClose: () => void; onCreat
   const [agentId, setAgentId] = useState('');
   const [name, setName] = useState('');
   const [model, setModel] = useState('');
+  const [role, setRole] = useState('');
+  const [description, setDescription] = useState('');
+  const [avatar, setAvatar] = useState('/avatars/agents/robot-main.svg');
+  const [emoji, setEmoji] = useState('🤖');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const idRef = useRef<HTMLInputElement>(null);
@@ -174,6 +180,10 @@ function CreateAgentModal({ onClose, onCreated }: { onClose: () => void; onCreat
     try {
       const body: Record<string, string> = { agentId: agentId.trim() };
       if (name.trim()) body.name = name.trim();
+      if (role.trim()) body.role = role.trim();
+      if (description.trim()) body.description = description.trim();
+      if (avatar.trim()) body.avatar = avatar.trim();
+      if (emoji.trim()) body.emoji = emoji.trim();
       if (model.trim()) body.model = model.trim();
       const res = await fetch('/api/agents', {
         method: 'POST',
@@ -182,6 +192,13 @@ function CreateAgentModal({ onClose, onCreated }: { onClose: () => void; onCreat
       });
       const data = await res.json().catch(() => ({})) as { ok?: boolean; error?: string };
       if (!res.ok || data.ok !== true) throw new Error(data.error || 'Failed to create agent');
+      setAgentId('');
+      setName('');
+      setRole('');
+      setDescription('');
+      setAvatar('/avatars/agents/robot-main.svg');
+      setEmoji('🤖');
+      setModel('');
       onCreated();
       onClose();
     } catch (err) {
@@ -220,9 +237,23 @@ function CreateAgentModal({ onClose, onCreated }: { onClose: () => void; onCreat
               className="w-full rounded-xl border bg-muted/30 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/50" />
           </div>
           <div>
-            <label className="mb-1.5 block text-sm font-medium">Model (optional)</label>
-            <input type="text" value={model} onChange={(e) => setModel(e.target.value)} placeholder="e.g. openai/gpt-4o-mini"
+            <label className="mb-1.5 block text-sm font-medium">Role (optional)</label>
+            <input type="text" value={role} onChange={(e) => setRole(e.target.value)} placeholder="e.g. Product Manager"
               className="w-full rounded-xl border bg-muted/30 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/50" />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-sm font-medium">Bio (optional)</label>
+            <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Brief intro for this agent..."
+              rows={3}
+              className="w-full rounded-xl border bg-muted/30 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/50" />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-sm font-medium">Avatar</label>
+            <AgentAvatarPicker value={avatar} onChange={setAvatar} onEmojiChange={setEmoji} />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-sm font-medium">Model (optional)</label>
+            <ModelSelect value={model} onChange={setModel} placeholder="Default model" selectClassName="bg-muted/30" inputClassName="bg-muted/30" />
           </div>
           {error && <div className="rounded-xl border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
           <div className="mt-1 flex justify-end gap-2">

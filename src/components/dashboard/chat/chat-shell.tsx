@@ -4,6 +4,7 @@ import { useCurrentUser } from '@/hooks/use-current-user';
 import { useCurrentPlan } from '@/hooks/use-payment';
 import { useCreditBalance } from '@/hooks/use-credits';
 import { ModelSelect } from '@/components/ui/model-select';
+import { AgentAvatarPicker } from '@/components/settings/agents/agent-avatar-picker';
 import { Routes } from '@/routes';
 import {
   Sheet,
@@ -522,6 +523,10 @@ function AddAgentDrawer({
 }) {
   const [agentId, setAgentId] = useState('');
   const [name, setName] = useState('');
+  const [role, setRole] = useState('');
+  const [description, setDescription] = useState('');
+  const [avatar, setAvatar] = useState('/avatars/agents/robot-main.svg');
+  const [emoji, setEmoji] = useState('🤖');
   const [model, setModel] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -540,6 +545,10 @@ function AddAgentDrawer({
         body: JSON.stringify({
           agentId: agentId.trim(),
           name: name.trim() || undefined,
+          role: role.trim() || undefined,
+          description: description.trim() || undefined,
+          avatar: avatar.trim() || undefined,
+          emoji: emoji.trim() || undefined,
           model: model.trim() || undefined,
         }),
       });
@@ -552,6 +561,10 @@ function AddAgentDrawer({
       toast.success(`Agent ${agentId} created successfully`);
       setAgentId('');
       setName('');
+      setRole('');
+      setDescription('');
+      setAvatar('/avatars/agents/robot-main.svg');
+      setEmoji('🤖');
       setModel('');
       await Promise.resolve(onSuccess());
       onOpenChange(false);
@@ -603,11 +616,39 @@ function AddAgentDrawer({
             </div>
 
             <div>
+              <label className="text-sm font-medium">Avatar</label>
+              <div className="mt-1">
+                <AgentAvatarPicker value={avatar} onChange={setAvatar} onEmojiChange={setEmoji} />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium">Role</label>
+              <input
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
+                placeholder="e.g. Technical Developer"
+                className="mt-1 w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium">Bio</label>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Brief intro for this agent..."
+                rows={3}
+                className="mt-1 w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none"
+              />
+            </div>
+
+            <div>
               <label className="text-sm font-medium">Model</label>
               <div className="mt-1">
                 <ModelSelect value={model} onChange={setModel} placeholder="Default model" />
               </div>
-              <p className="mt-1 text-xs text-muted-foreground">Optional: Leave blank to use default model</p>
+              <p className="mt-1 text-xs text-muted-foreground">Search model by name or ID. Leave blank to use default model</p>
             </div>
           </div>
 

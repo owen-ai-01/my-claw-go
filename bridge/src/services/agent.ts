@@ -312,8 +312,8 @@ export async function deleteAgent(agentId: string) {
   return { deleted: true, agentId };
 }
 
-export async function createAgent(params: { agentId: string; name?: string; workspace?: string; model?: string; role?: string; description?: string; department?: string; enabled?: boolean }) {
-  const { agentId, name, workspace, model, role, description, department, enabled } = params;
+export async function createAgent(params: { agentId: string; name?: string; workspace?: string; model?: string; role?: string; description?: string; department?: string; enabled?: boolean; avatar?: string; emoji?: string }) {
+  const { agentId, name, workspace, model, role, description, department, enabled, avatar, emoji } = params;
 
   if (!agentId || !/^[a-z0-9_-]+$/i.test(agentId)) {
     throw new BridgeError('INVALID_AGENT_ID', 'Agent ID must be alphanumeric with hyphens/underscores', 400);
@@ -352,6 +352,12 @@ export async function createAgent(params: { agentId: string; name?: string; work
   if (name) {
     newAgent.name = name;
     newAgent.identity = { ...(newAgent.identity || {}), name };
+  }
+  if (avatar?.trim()) {
+    newAgent.identity = { ...(newAgent.identity || {}), avatar: avatar.trim() };
+  }
+  if (emoji?.trim()) {
+    newAgent.identity = { ...(newAgent.identity || {}), emoji: emoji.trim() };
   }
   if (model) newAgent.model = model;
   if (role?.trim()) newAgent.role = role.trim();

@@ -23,6 +23,13 @@ export function ModelSelect({
   inputClassName = '',
 }: Props) {
   const [options, setOptions] = useState<ModelOption[]>(AVAILABLE_MODELS);
+  const [query, setQuery] = useState('');
+
+  const filteredOptions = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return options;
+    return options.filter((m) => m.id.toLowerCase().includes(q) || m.label.toLowerCase().includes(q));
+  }, [options, query]);
 
   const knownIds = useMemo(() => options.map((m) => m.id), [options]);
   const isKnown = !value || knownIds.includes(value);
@@ -68,13 +75,20 @@ export function ModelSelect({
 
   return (
     <div className={`flex flex-col gap-2 ${className}`}>
+      <input
+        type="text"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder="Search model…"
+        className={`${baseInput} ${inputClassName}`}
+      />
       <select
         value={mode === 'custom' ? CUSTOM_SENTINEL : (value || '')}
         onChange={handleSelectChange}
         className={`${baseSelect} ${selectClassName}`}
       >
         <option value="">{placeholder}</option>
-        {options.map((model) => (
+        {filteredOptions.map((model) => (
           <option key={model.id} value={model.id}>
             {model.label}
           </option>

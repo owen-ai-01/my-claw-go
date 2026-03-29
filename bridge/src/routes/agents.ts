@@ -25,9 +25,9 @@ export async function agentRoutes(app: FastifyInstance) {
 
   app.post('/agents', async (req: any, reply) => {
     try {
-      const { agentId, name, workspace, model, role, description, department, enabled } = req.body || {};
+      const { agentId, name, workspace, model, role, description, department, enabled, avatar, emoji } = req.body || {};
       if (!agentId) return fail(reply, 'INVALID_PARAMS', 'agentId is required', 400);
-      const data = await createAgent({ agentId, name, workspace, model, role, description, department, enabled });
+      const data = await createAgent({ agentId, name, workspace, model, role, description, department, enabled, avatar, emoji });
       return ok(reply, data);
     } catch (error: any) {
       return fail(reply, error.code || 'INTERNAL_ERROR', error.message || 'create agent failed', error.statusCode || 500);

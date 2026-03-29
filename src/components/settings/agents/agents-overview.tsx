@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { ModelSelect } from '@/components/ui/model-select';
+import { AgentAvatarPicker } from './agent-avatar-picker';
 import type { AgentRecord } from './types';
 
 type AgentsResponse = {
@@ -17,8 +18,11 @@ type CreateAgentPayload = {
   agentId: string;
   name?: string;
   role?: string;
+  description?: string;
   department?: string;
   model?: string;
+  avatar?: string;
+  emoji?: string;
 };
 
 type CreateAgentResponse = {
@@ -48,6 +52,9 @@ function CreateAgentModal({ onClose, onCreated }: { onClose: () => void; onCreat
   const [name, setName] = useState('');
   const [role, setRole] = useState('');
   const [department, setDepartment] = useState('');
+  const [description, setDescription] = useState('');
+  const [avatar, setAvatar] = useState('/avatars/agents/robot-main.svg');
+  const [emoji, setEmoji] = useState('🤖');
   const [model, setModel] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -69,6 +76,9 @@ function CreateAgentModal({ onClose, onCreated }: { onClose: () => void; onCreat
       if (name.trim()) body.name = name.trim();
       if (role.trim()) body.role = role.trim();
       if (department.trim()) body.department = department.trim();
+      if (description.trim()) body.description = description.trim();
+      if (avatar.trim()) body.avatar = avatar.trim();
+      if (emoji.trim()) body.emoji = emoji.trim();
       if (model.trim()) body.model = model.trim();
       const res = await fetch('/api/agents', {
         method: 'POST',
@@ -157,9 +167,25 @@ function CreateAgentModal({ onClose, onCreated }: { onClose: () => void; onCreat
           </div>
 
           <div>
+            <label className="mb-1.5 block text-sm font-medium">Avatar</label>
+            <AgentAvatarPicker value={avatar} onChange={setAvatar} onEmojiChange={setEmoji} />
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-sm font-medium">Bio (optional)</label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Brief intro for this agent..."
+              rows={3}
+              className="w-full rounded-xl border bg-muted/30 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/50"
+            />
+          </div>
+
+          <div>
             <label className="mb-1.5 block text-sm font-medium">Model (optional)</label>
             <ModelSelect value={model} onChange={setModel} placeholder="Default model" selectClassName="bg-muted/30" inputClassName="bg-muted/30" />
-            <p className="mt-1 text-xs text-muted-foreground">Leave blank to use the default model.</p>
+            <p className="mt-1 text-xs text-muted-foreground">Search and choose model, or leave blank to use default.</p>
           </div>
 
           {error && (
