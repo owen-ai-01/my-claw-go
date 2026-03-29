@@ -91,6 +91,12 @@ function resolvePresence(agent: EnrichedAgent): PresenceCategory {
   return 'idle';
 }
 
+function timeLabel(ts?: number | string | null) {
+  if (!ts) return '--:--';
+  const d = typeof ts === 'number' ? new Date(ts) : new Date(ts);
+  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
 // ─── Create Agent Modal ───────────────────────────────────────────────────────
 
 const AGENT_ID_RE = /^[a-z0-9][a-z0-9_-]{0,29}[a-z0-9]$|^[a-z0-9]{2,30}$/;
@@ -261,6 +267,7 @@ export function OfficeShell() {
   const [error, setError] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [countdown, setCountdown] = useState(5);
+  const [rightTab, setRightTab] = useState<'live' | 'tasks'>('live');
   const [movedAt, setMovedAt] = useState<Record<string, number>>({});
   const prevZonesRef = useRef<Record<string, 'dialogue' | 'office' | 'lounge'>>({});
   const refreshInterval = 5;
@@ -391,6 +398,52 @@ export function OfficeShell() {
     }
   }, [zoneByAgent, dialogAgentId]);
 
+  const liveRows = agents
+    .flatMap((agent) => {
+      const rows: Array<{ at: number; agentId: string; agentName: string; action: string }> = [];
+      if (agent.statusData?.currentTask) {
+        rows.push({
+          at: Date.now(),
+          agentId: agent.id,
+          agentName: agentLabel(agent),
+          action: agent.statusData.currentTask.description || 'Working on a task',
+        });
+      }
+      if (agent.latestTaskRun?.startedAtMs) {
+        rows.push({
+          at: agent.latestTaskRun.startedAtMs,
+          agentId: agent.id,
+          agentName: agentLabel(agent),
+          action: agent.latestTaskRun.status === 'error' ? 'Task run failed' : 'Task run finished',
+        });
+      }
+      if (agent.statusData?.lastActivity) {
+        rows.push({
+          at: new Date(agent.statusData.lastActivity).getTime(),
+          agentId: agent.id,
+          agentName: agentLabel(agent),
+          action: 'Last active',
+        });
+      }
+      return rows;
+    })
+    .sort((a, b) => b.at - a.at)
+    .slice(0, 14);
+
+  const taskRows = agents
+    .flatMap((agent) =>
+      (agent.tasksData || [])
+        .filter((t) => t.enabled !== false)
+        .map((t) => ({
+          at: t.state?.nextRunAtMs || t.updatedAtMs || t.createdAtMs || 0,
+          agentId: agent.id,
+          agentName: agentLabel(agent),
+          taskName: t.name || t.id,
+          nextRunAtMs: t.state?.nextRunAtMs,
+        }))
+    )
+    .sort((a, b) => (a.nextRunAtMs || a.at) - (b.nextRunAtMs || b.at))
+    .slice(0, 20);
 
   return (
     <div className="flex flex-col gap-6">
@@ -509,7 +562,56 @@ export function OfficeShell() {
             </div>
           </LayoutGroup>
 
-          <aside className="lg:col-span-3 rounded-2xl border bg-card/50 p-4 min-h-[360px]" />
+          <aside className="lg:col-span-3 rounded-2xl border bg-card/50 p-4 min-h-[360px]">
+            <div className="mb-3 flex items-center gap-2 rounded-xl border bg-background p-1">
+              <button
+                type="button"
+                onClick={() => setRightTab('live')}
+                className={`flex-1 rounded-lg px-2 py-1.5 text-xs font-medium ${rightTab === 'live' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
+              >
+                Live Feed
+              </button>
+              <button
+                type="button"
+                onClick={() => setRightTab('tasks')}
+                className={`flex-1 rounded-lg px-2 py-1.5 text-xs font-medium ${rightTab === 'tasks' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
+              >
+                Scheduled Tasks
+              </button>
+            </div>
+
+            {rightTab === 'live' ? (
+              <div className="space-y-2">
+                {liveRows.length === 0 ? (
+                  <div className="rounded-lg border bg-background p-3 text-xs text-muted-foreground">No recent activity.</div>
+                ) : (
+                  liveRows.map((row, idx) => (
+                    <div key={`${row.agentId}-${row.at}-${idx}`} className="rounded-lg border bg-background px-3 py-2">
+                      <div className="grid grid-cols-[56px_1fr] gap-2 text-xs">
+                        <span className="font-mono text-muted-foreground">{timeLabel(row.at)}</span>
+                        <span className="truncate"><strong>{row.agentName}</strong> · {row.action}</span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {taskRows.length === 0 ? (
+                  <div className="rounded-lg border bg-background p-3 text-xs text-muted-foreground">No scheduled tasks.</div>
+                ) : (
+                  taskRows.map((row, idx) => (
+                    <div key={`${row.agentId}-${row.taskName}-${idx}`} className="rounded-lg border bg-background px-3 py-2">
+                      <div className="grid grid-cols-[56px_1fr] gap-2 text-xs">
+                        <span className="font-mono text-muted-foreground">{timeLabel(row.nextRunAtMs || row.at)}</span>
+                        <span className="truncate"><strong>{row.agentName}</strong> · {row.taskName}</span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+          </aside>
         </div>
       )}
     </div>
