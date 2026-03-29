@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Routes } from '@/routes';
 import { ModelSelect } from '@/components/ui/model-select';
 import { AgentAvatarPicker } from '@/components/settings/agents/agent-avatar-picker';
@@ -434,7 +434,9 @@ function AgentCard({ agent }: { agent: EnrichedAgent }) {
 
 export function OfficeShell() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [agents, setAgents] = useState<EnrichedAgent[]>([]);
+  const [dialogAgentId, setDialogAgentId] = useState<string>('main');
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -450,7 +452,7 @@ export function OfficeShell() {
       ]);
       const data = await res.json().catch(() => ({})) as {
         ok?: boolean;
-        data?: { agents?: AgentItem[] };
+        data?: { agents?: AgentItem[]; defaultAgentId?: string };
       };
       const groupsData = await groupsRes.json().catch(() => ({})) as {
         ok?: boolean;
@@ -458,6 +460,14 @@ export function OfficeShell() {
       };
       if (!data.ok || !data.data?.agents) throw new Error('Failed to load agents');
       setGroups(groupsData.ok && groupsData.data?.groups ? groupsData.data.groups : []);
+
+      const preferredDialogAgentId =
+        searchParams.get('agentId') ||
+        data.data.defaultAgentId ||
+        data.data.agents.find((a) => a.isDefault)?.id ||
+        data.data.agents[0]?.id ||
+        'main';
+      setDialogAgentId(preferredDialogAgentId);
 
       const base = data.data.agents.map<EnrichedAgent>((a) => ({ 
         ...a,
@@ -515,7 +525,7 @@ export function OfficeShell() {
 
   useEffect(() => {
     loadAgents();
-  }, []);
+  }, [searchParams]);
 
   // Auto-refresh every 15s with countdown
   useEffect(() => {
@@ -531,19 +541,16 @@ export function OfficeShell() {
     return () => clearInterval(tick);
   }, []);
 
-  const categorize = (cat: PresenceCategory) =>
-    agents.filter((a) => resolvePresence(a) === cat);
-
-  const busy = categorize('busy');
-  const online = categorize('online');
-  const idle = categorize('idle');
-  const offline = categorize('offline');
+  const dialogAgent = agents.find((a) => a.id === dialogAgentId) || agents[0] || null;
+  const nonDialogAgents = agents.filter((a) => a.id !== dialogAgent?.id);
+  const officeAgents = nonDialogAgents.filter((a) => resolvePresence(a) === 'busy');
+  const loungeAgents = nonDialogAgents.filter((a) => resolvePresence(a) !== 'busy');
 
   const stats = [
     { label: 'Total', value: agents.length, color: 'text-foreground' },
-    { label: 'Busy', value: busy.length, color: 'text-blue-600' },
-    { label: 'Online', value: online.length, color: 'text-green-600' },
-    { label: 'Idle', value: idle.length, color: 'text-gray-500' },
+    { label: 'Dialogue Zone', value: dialogAgent ? 1 : 0, color: 'text-purple-600' },
+    { label: 'Office Zone', value: officeAgents.length, color: 'text-blue-600' },
+    { label: 'Lounge Zone', value: loungeAgents.length, color: 'text-gray-500' },
   ];
 
   return (
@@ -691,38 +698,38 @@ export function OfficeShell() {
         </div>
       ) : (
         <div className="space-y-6">
-          {busy.length > 0 && (
-            <section>
-              <h2 className="mb-3 text-sm font-semibold text-blue-700">⚙️ Working ({busy.length})</h2>
+          <section>
+            <h2 className="mb-3 text-sm font-semibold text-purple-700">💬 Dialogue Zone {dialogAgent ? '(1)' : '(0)'}</h2>
+            {dialogAgent ? (
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {busy.map((a) => <AgentCard key={a.id} agent={a} />)}
+                <AgentCard key={dialogAgent.id} agent={dialogAgent} />
               </div>
-            </section>
-          )}
-          {online.length > 0 && (
-            <section>
-              <h2 className="mb-3 text-sm font-semibold text-green-700">🟢 Online ({online.length})</h2>
+            ) : (
+              <div className="rounded-xl border bg-card p-4 text-sm text-muted-foreground">No agent is currently in the dialogue zone.</div>
+            )}
+          </section>
+
+          <section>
+            <h2 className="mb-3 text-sm font-semibold text-blue-700">⚙️ Office Zone ({officeAgents.length})</h2>
+            {officeAgents.length > 0 ? (
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {online.map((a) => <AgentCard key={a.id} agent={a} />)}
+                {officeAgents.map((a) => <AgentCard key={a.id} agent={a} />)}
               </div>
-            </section>
-          )}
-          {idle.length > 0 && (
-            <section>
-              <h2 className="mb-3 text-sm font-semibold text-gray-500">⚪ Idle ({idle.length})</h2>
+            ) : (
+              <div className="rounded-xl border bg-card p-4 text-sm text-muted-foreground">No agents are actively working right now.</div>
+            )}
+          </section>
+
+          <section>
+            <h2 className="mb-3 text-sm font-semibold text-gray-600">🛋️ Lounge Zone ({loungeAgents.length})</h2>
+            {loungeAgents.length > 0 ? (
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {idle.map((a) => <AgentCard key={a.id} agent={a} />)}
+                {loungeAgents.map((a) => <AgentCard key={a.id} agent={a} />)}
               </div>
-            </section>
-          )}
-          {offline.length > 0 && (
-            <section>
-              <h2 className="mb-3 text-sm font-semibold text-gray-400">⚫ Offline ({offline.length})</h2>
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {offline.map((a) => <AgentCard key={a.id} agent={a} />)}
-              </div>
-            </section>
-          )}
+            ) : (
+              <div className="rounded-xl border bg-card p-4 text-sm text-muted-foreground">No idle agents in lounge zone.</div>
+            )}
+          </section>
         </div>
       )}
     </div>
