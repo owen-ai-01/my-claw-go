@@ -3,8 +3,6 @@
 import { AVAILABLE_MODELS, type ModelOption } from '@/lib/myclawgo/model-catalog';
 import { useEffect, useMemo, useState } from 'react';
 
-const CUSTOM_SENTINEL = '__custom__';
-
 type Props = {
   value: string;
   onChange: (value: string) => void;
@@ -17,23 +15,12 @@ type Props = {
 export function ModelSelect({
   value,
   onChange,
-  placeholder = 'Select or enter model ID…',
+  placeholder = 'Search or enter model ID…',
   className = '',
   selectClassName = '',
   inputClassName = '',
 }: Props) {
   const [options, setOptions] = useState<ModelOption[]>(AVAILABLE_MODELS);
-  const [query, setQuery] = useState('');
-
-  const filteredOptions = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return options;
-    return options.filter((m) => m.id.toLowerCase().includes(q) || m.label.toLowerCase().includes(q));
-  }, [options, query]);
-
-  const knownIds = useMemo(() => options.map((m) => m.id), [options]);
-  const isKnown = !value || knownIds.includes(value);
-  const [mode, setMode] = useState<'select' | 'custom'>(isKnown ? 'select' : 'custom');
 
   useEffect(() => {
     let canceled = false;
@@ -54,57 +41,28 @@ export function ModelSelect({
     };
   }, []);
 
-  // If value changes externally and is not in list, switch to custom
-  useEffect(() => {
-    if (value && !knownIds.includes(value)) setMode('custom');
-  }, [value, knownIds]);
-
-  function handleSelectChange(e: React.ChangeEvent<HTMLSelectElement>) {
-    const selected = e.target.value;
-    if (selected === CUSTOM_SENTINEL) {
-      setMode('custom');
-      onChange('');
-    } else {
-      setMode('select');
-      onChange(selected);
-    }
-  }
-
-  const baseSelect = 'w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/50';
+  const datalistId = useMemo(() => `model-select-${Math.random().toString(36).slice(2)}`, []);
   const baseInput = 'w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/50';
+
+  function handleInputChange(next: string) {
+    const matched = options.find((m) => m.label === next || m.id === next);
+    onChange((matched?.id || next).trim());
+  }
 
   return (
     <div className={`flex flex-col gap-2 ${className}`}>
       <input
-        type="text"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        placeholder="Search model…"
-        className={`${baseInput} ${inputClassName}`}
+        list={datalistId}
+        value={value}
+        onChange={(e) => handleInputChange(e.target.value)}
+        placeholder={placeholder}
+        className={`${baseInput} ${selectClassName} ${inputClassName}`}
       />
-      <select
-        value={mode === 'custom' ? CUSTOM_SENTINEL : (value || '')}
-        onChange={handleSelectChange}
-        className={`${baseSelect} ${selectClassName}`}
-      >
-        <option value="">{placeholder}</option>
-        {filteredOptions.map((model) => (
-          <option key={model.id} value={model.id}>
-            {model.label}
-          </option>
+      <datalist id={datalistId}>
+        {options.map((model) => (
+          <option key={model.id} value={model.id} label={model.label} />
         ))}
-        <option value={CUSTOM_SENTINEL}>Custom model ID…</option>
-      </select>
-
-      {mode === 'custom' && (
-        <input
-          type="text"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder="e.g. openrouter/openai/gpt-4o-mini"
-          className={`${baseInput} ${inputClassName}`}
-        />
-      )}
+      </datalist>
     </div>
   );
 }

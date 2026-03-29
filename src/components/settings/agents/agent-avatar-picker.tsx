@@ -2,7 +2,7 @@
 
 import { AGENT_AVATAR_PRESETS } from '@/config/agent-avatar-presets';
 import { uploadFileFromBrowser } from '@/storage/client';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 
 export function AgentAvatarPicker({
   value,
@@ -15,7 +15,6 @@ export function AgentAvatarPicker({
 }) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
-  const selectedPreset = useMemo(() => AGENT_AVATAR_PRESETS.find((item) => item.image === value), [value]);
 
   async function onFileChange(file: File | null) {
     if (!file) return;
@@ -35,7 +34,7 @@ export function AgentAvatarPicker({
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-3">
-        <div className="h-12 w-12 overflow-hidden rounded-full border bg-muted">
+        <div className="h-12 w-12 overflow-hidden rounded-full bg-muted">
           {value ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={value} alt="avatar" className="h-full w-full object-cover" />
@@ -53,7 +52,6 @@ export function AgentAvatarPicker({
             disabled={uploading}
           />
         </label>
-        {selectedPreset ? <span className="text-xs text-muted-foreground">{selectedPreset.label}</span> : null}
       </div>
 
       <div>
@@ -68,7 +66,7 @@ export function AgentAvatarPicker({
                 if (onEmojiChange && preset.emoji) onEmojiChange(preset.emoji);
               }}
               title={preset.label}
-              className={`overflow-hidden rounded-full border transition-all ${value === preset.image ? 'ring-2 ring-primary border-primary' : 'hover:border-primary/50'}`}
+              className={`overflow-hidden rounded-full transition-all ${value === preset.image ? 'ring-2 ring-primary' : 'hover:opacity-90'}`}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={preset.image} alt={preset.label} className="h-10 w-10 object-cover" />
