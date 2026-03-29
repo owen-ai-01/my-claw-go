@@ -269,6 +269,8 @@ export function OfficeShell() {
   const [countdown, setCountdown] = useState(5);
   const [rightTab, setRightTab] = useState<'live' | 'tasks'>('live');
   const [movedAt, setMovedAt] = useState<Record<string, number>>({});
+  const [liveFeed, setLiveFeed] = useState<Array<{ key: string; at: number; agentId: string; agentName: string; action: string }>>([]);
+  const liveFeedSeenRef = useRef<Set<string>>(new Set());
   const prevZonesRef = useRef<Record<string, 'dialogue' | 'office' | 'lounge'>>({});
   const refreshInterval = 5;
 
@@ -295,7 +297,6 @@ export function OfficeShell() {
         tasksData: [],
         latestTaskRun: null,
       }));
-      setAgents(base);
       setError(null);
 
       // Fetch status for each agent in parallel
@@ -398,37 +399,42 @@ export function OfficeShell() {
     }
   }, [zoneByAgent, dialogAgentId]);
 
-  const liveRows = agents
-    .flatMap((agent) => {
-      const rows: Array<{ at: number; agentId: string; agentName: string; action: string }> = [];
-      if (agent.statusData?.currentTask) {
-        rows.push({
-          at: Date.now(),
-          agentId: agent.id,
-          agentName: agentLabel(agent),
-          action: agent.statusData.currentTask.description || 'Working on a task',
-        });
+  useEffect(() => {
+    const newItems: Array<{ key: string; at: number; agentId: string; agentName: string; action: string }> = [];
+    for (const agent of agents) {
+      if (agent.statusData?.currentTask?.description) {
+        const key = `${agent.id}:task:${agent.statusData.currentTask.description}`;
+        if (!liveFeedSeenRef.current.has(key)) {
+          liveFeedSeenRef.current.add(key);
+          newItems.push({
+            key,
+            at: Date.now(),
+            agentId: agent.id,
+            agentName: agentLabel(agent),
+            action: agent.statusData.currentTask.description,
+          });
+        }
       }
       if (agent.latestTaskRun?.startedAtMs) {
-        rows.push({
-          at: agent.latestTaskRun.startedAtMs,
-          agentId: agent.id,
-          agentName: agentLabel(agent),
-          action: agent.latestTaskRun.status === 'error' ? 'Task run failed' : 'Task run finished',
-        });
+        const key = `${agent.id}:run:${agent.latestTaskRun.startedAtMs}:${agent.latestTaskRun.status || 'ok'}`;
+        if (!liveFeedSeenRef.current.has(key)) {
+          liveFeedSeenRef.current.add(key);
+          newItems.push({
+            key,
+            at: agent.latestTaskRun.startedAtMs,
+            agentId: agent.id,
+            agentName: agentLabel(agent),
+            action: agent.latestTaskRun.status === 'error' ? 'Task run failed' : 'Task run finished',
+          });
+        }
       }
-      if (agent.statusData?.lastActivity) {
-        rows.push({
-          at: new Date(agent.statusData.lastActivity).getTime(),
-          agentId: agent.id,
-          agentName: agentLabel(agent),
-          action: 'Last active',
-        });
-      }
-      return rows;
-    })
-    .sort((a, b) => b.at - a.at)
-    .slice(0, 14);
+    }
+    if (newItems.length > 0) {
+      setLiveFeed((prev) => [...newItems.sort((a, b) => b.at - a.at), ...prev].slice(0, 60));
+    }
+  }, [agents]);
+
+  const liveRows = liveFeed.slice(0, 14);
 
   const taskRows = agents
     .flatMap((agent) =>
