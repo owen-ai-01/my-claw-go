@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/sheet';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
-import { RefreshCcw, Minimize2, Coins } from 'lucide-react';
+import { RefreshCcw, Minimize2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 type RuntimeStatus =
@@ -95,20 +95,6 @@ function agentEmoji(agent: Partial<AgentItem>) {
   return agent.identity?.emoji?.trim() || '🤖';
 }
 
-function useSessionTokens(agentId: string, refreshKey: number) {
-  const [tokens, setTokens] = useState({ input: 0, output: 0, total: 0 });
-  useEffect(() => {
-    let cancelled = false;
-    fetch(`/api/chat/session-tokens?agentId=${encodeURIComponent(agentId)}`, { cache: 'no-store' })
-      .then((res) => res.json())
-      .then((data: { ok?: boolean; tokens?: { input: number; output: number; total: number } }) => {
-        if (!cancelled && data?.ok && data.tokens) setTokens(data.tokens);
-      })
-      .catch(() => {});
-    return () => { cancelled = true; };
-  }, [agentId, refreshKey]);
-  return tokens;
-}
 
 function AgentConfigDrawer({
   open,
@@ -1142,7 +1128,6 @@ function ChatLayout() {
   const [activeTaskStatus, setActiveTaskStatus] = useState<string | null>(null);
   const [insufficientCredits, setInsufficientCredits] = useState(false);
   const [configOpen, setConfigOpen] = useState(false);
-  const [tokenRefreshKey, setTokenRefreshKey] = useState(0);
   const [addAgentOpen, setAddAgentOpen] = useState(false);
   const [createGroupOpen, setCreateGroupOpen] = useState(false);
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
@@ -1344,7 +1329,6 @@ function ChatLayout() {
           .catch(() => {});
       }
 
-      if (trimmed.startsWith('/')) setTokenRefreshKey((k) => k + 1);
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'Failed to send message';
       setMessages((m) => [...m, { role: 'assistant', content: `⚠️ ${msg}`, createdAt: new Date().toISOString(), status: 'failed' }]);
@@ -1387,8 +1371,6 @@ function ChatLayout() {
   const visibleMessages = messages.filter(
     (msg) => !(msg.role === 'assistant' && (msg.status === 'queued' || msg.status === 'running'))
   );
-
-  const sessionTokens = useSessionTokens(selectedAgentId, tokenRefreshKey);
 
   const slashCommands = [
     { cmd: '/compact', desc: 'Compress conversation context' },
@@ -1705,11 +1687,7 @@ function ChatLayout() {
           </div>
 
           <div className="border-t px-4 py-3 sm:px-6">
-            <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-              <div className="inline-flex items-center gap-2 rounded-lg border bg-muted/30 px-2.5 py-1.5 text-xs text-muted-foreground">
-                <Coins className="h-3.5 w-3.5" />
-                <span>Cumulative tokens: {sessionTokens.total.toLocaleString()}</span>
-              </div>
+            <div className="mb-2 flex flex-wrap items-center justify-end gap-2">
               <div className="flex items-center gap-2">
                 <button
                   type="button"
