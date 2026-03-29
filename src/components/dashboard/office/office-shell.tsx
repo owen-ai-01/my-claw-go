@@ -67,15 +67,6 @@ type EnrichedAgent = AgentItem & {
   latestTaskRun?: TaskRun | null;
 };
 
-type Group = {
-  id: string;
-  name: string;
-  description?: string;
-  type: 'project' | 'department' | 'temporary';
-  leaderId: string;
-  members: string[];
-};
-
 type PresenceCategory = 'busy' | 'online' | 'idle' | 'offline';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -433,11 +424,9 @@ function AgentCard({ agent }: { agent: EnrichedAgent }) {
 // ─── Shell ────────────────────────────────────────────────────────────────────
 
 export function OfficeShell() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const [agents, setAgents] = useState<EnrichedAgent[]>([]);
   const [dialogAgentId, setDialogAgentId] = useState<string>('main');
-  const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
@@ -446,20 +435,12 @@ export function OfficeShell() {
 
   async function loadAgents() {
     try {
-      const [res, groupsRes] = await Promise.all([
-        fetch('/api/agents', { cache: 'no-store' }),
-        fetch('/api/groups', { cache: 'no-store' }),
-      ]);
+      const res = await fetch('/api/agents', { cache: 'no-store' });
       const data = await res.json().catch(() => ({})) as {
         ok?: boolean;
         data?: { agents?: AgentItem[]; defaultAgentId?: string };
       };
-      const groupsData = await groupsRes.json().catch(() => ({})) as {
-        ok?: boolean;
-        data?: { groups?: Group[] };
-      };
       if (!data.ok || !data.data?.agents) throw new Error('Failed to load agents');
-      setGroups(groupsData.ok && groupsData.data?.groups ? groupsData.data.groups : []);
 
       const preferredDialogAgentId =
         searchParams.get('agentId') ||
@@ -546,12 +527,6 @@ export function OfficeShell() {
   const officeAgents = nonDialogAgents.filter((a) => resolvePresence(a) === 'busy');
   const loungeAgents = nonDialogAgents.filter((a) => resolvePresence(a) !== 'busy');
 
-  const stats = [
-    { label: 'Total', value: agents.length, color: 'text-foreground' },
-    { label: 'Dialogue Zone', value: dialogAgent ? 1 : 0, color: 'text-purple-600' },
-    { label: 'Office Zone', value: officeAgents.length, color: 'text-blue-600' },
-    { label: 'Lounge Zone', value: loungeAgents.length, color: 'text-gray-500' },
-  ];
 
   return (
     <div className="flex flex-col gap-6">
@@ -566,9 +541,7 @@ export function OfficeShell() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Office</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Your AI team at a glance — who's working, who's idle, and what's happening right now.
-          </p>
+          <p className="mt-1 text-sm text-muted-foreground">Left: Dialogue / Office / Lounge · Right: reserved area</p>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -579,157 +552,61 @@ export function OfficeShell() {
           >
             {loading ? 'Loading…' : `Refresh (${countdown}s)`}
           </button>
-          <button
-            type="button"
-            onClick={() => setShowCreate(true)}
-            className="rounded-xl bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-          >
-            + New Agent
-          </button>
         </div>
       </div>
 
-      {/* Stats bar */}
-      {!loading && !error && (
-        <div className="flex flex-wrap gap-3">
-          {stats.map((s) => (
-            <div key={s.label} className="rounded-xl border bg-card px-4 py-2.5 text-center shadow-sm">
-              <p className={`text-xl font-bold ${s.color}`}>{s.value}</p>
-              <p className="text-xs text-muted-foreground">{s.label}</p>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Group overview */}
-      {!loading && !error && groups.length > 0 && (
-        <section className="space-y-3">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <h2 className="text-sm font-semibold">Groups</h2>
-              <p className="text-xs text-muted-foreground">Jump into active team spaces from Office.</p>
-            </div>
-            <button
-              type="button"
-              onClick={() => router.push(Routes.Chat)}
-              className="rounded-lg border px-3 py-1.5 text-xs font-medium hover:bg-muted"
-            >
-              Open Chat
-            </button>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {groups.map((group) => {
-              const leader = agents.find((agent) => agent.id === group.leaderId);
-              const members = group.members
-                .map((id) => agents.find((agent) => agent.id === id))
-                .filter(Boolean) as EnrichedAgent[];
-              return (
-                <div key={group.id} className="rounded-2xl border bg-card p-5 shadow-sm">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-purple-100 text-lg">👥</div>
-                        <div className="min-w-0">
-                          <h3 className="truncate text-sm font-semibold">{group.name}</h3>
-                          <p className="truncate text-xs text-muted-foreground">@{group.id}</p>
-                        </div>
-                      </div>
-                    </div>
-                    <span className="rounded-full bg-purple-100 px-2 py-0.5 text-[10px] font-medium text-purple-700">{group.type}</span>
-                  </div>
-
-                  <div className="mt-4 space-y-2 text-xs text-muted-foreground">
-                    <div>Leader: {leader ? agentLabel(leader) : `@${group.leaderId}`}</div>
-                    <div>Members: {group.members.length}</div>
-                    {group.description ? <div className="line-clamp-2">{group.description}</div> : null}
-                  </div>
-
-                  <div className="mt-4 flex flex-wrap items-center gap-2">
-                    {members.slice(0, 5).map((member) => {
-                      const presence = resolvePresence(member);
-                      const colors = presenceColors(presence);
-                      return (
-                        <div
-                          key={member.id}
-                          className="inline-flex items-center gap-1.5 rounded-full border bg-background px-2 py-1 text-[11px]"
-                          title={`${agentLabel(member)} · ${presenceLabel(presence)}`}
-                        >
-                          <span className="relative inline-flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-xs">
-                            {agentEmoji(member)}
-                            <span className={`absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full border border-background ${colors.dot}`} />
-                          </span>
-                          <span className="max-w-[72px] truncate">{agentLabel(member)}</span>
-                        </div>
-                      );
-                    })}
-                    {group.members.length > 5 ? <span className="text-[11px] text-muted-foreground">+{group.members.length - 5}</span> : null}
-                  </div>
-
-                  <div className="mt-4 flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => router.push(`${Routes.Chat}?groupId=${encodeURIComponent(group.id)}`)}
-                      className="rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
-                    >
-                      Open Group Chat
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-      )}
 
       {/* Content */}
       {error ? (
         <div className="rounded-xl border border-red-300 bg-red-50 p-4 text-sm text-red-700">{error}</div>
       ) : loading ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {[1, 2].map((i) => (
-            <div key={i} className="h-48 animate-pulse rounded-2xl border bg-muted/40" />
-          ))}
+        <div className="grid gap-4 lg:grid-cols-10">
+          <div className="lg:col-span-7 h-64 animate-pulse rounded-2xl border bg-muted/40" />
+          <div className="lg:col-span-3 h-64 animate-pulse rounded-2xl border bg-muted/40" />
         </div>
       ) : agents.length === 0 ? (
         <div className="rounded-2xl border bg-card p-10 text-center shadow-sm">
           <div className="mb-3 text-4xl">👥</div>
           <h3 className="text-base font-semibold">No agents yet</h3>
-          <p className="mt-2 text-sm text-muted-foreground">Click <strong>+ New Agent</strong> to hire your first AI employee.</p>
         </div>
       ) : (
-        <div className="space-y-6">
-          <section>
-            <h2 className="mb-3 text-sm font-semibold text-purple-700">💬 Dialogue Zone {dialogAgent ? '(1)' : '(0)'}</h2>
-            {dialogAgent ? (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                <AgentCard key={dialogAgent.id} agent={dialogAgent} />
-              </div>
-            ) : (
-              <div className="rounded-xl border bg-card p-4 text-sm text-muted-foreground">No agent is currently in the dialogue zone.</div>
-            )}
-          </section>
+        <div className="grid gap-6 lg:grid-cols-10">
+          <div className="space-y-6 lg:col-span-7">
+            <section>
+              <h2 className="mb-3 text-sm font-semibold text-purple-700">💬 对话区 {dialogAgent ? '(1)' : '(0)'}</h2>
+              {dialogAgent ? (
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-2">
+                  <AgentCard key={dialogAgent.id} agent={dialogAgent} />
+                </div>
+              ) : (
+                <div className="rounded-xl border bg-card p-4 text-sm text-muted-foreground">No agent in dialogue zone.</div>
+              )}
+            </section>
 
-          <section>
-            <h2 className="mb-3 text-sm font-semibold text-blue-700">⚙️ Office Zone ({officeAgents.length})</h2>
-            {officeAgents.length > 0 ? (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {officeAgents.map((a) => <AgentCard key={a.id} agent={a} />)}
-              </div>
-            ) : (
-              <div className="rounded-xl border bg-card p-4 text-sm text-muted-foreground">No agents are actively working right now.</div>
-            )}
-          </section>
+            <section>
+              <h2 className="mb-3 text-sm font-semibold text-blue-700">⚙️ 办公区 ({officeAgents.length})</h2>
+              {officeAgents.length > 0 ? (
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-2">
+                  {officeAgents.map((a) => <AgentCard key={a.id} agent={a} />)}
+                </div>
+              ) : (
+                <div className="rounded-xl border bg-card p-4 text-sm text-muted-foreground">No agents are working right now.</div>
+              )}
+            </section>
 
-          <section>
-            <h2 className="mb-3 text-sm font-semibold text-gray-600">🛋️ Lounge Zone ({loungeAgents.length})</h2>
-            {loungeAgents.length > 0 ? (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {loungeAgents.map((a) => <AgentCard key={a.id} agent={a} />)}
-              </div>
-            ) : (
-              <div className="rounded-xl border bg-card p-4 text-sm text-muted-foreground">No idle agents in lounge zone.</div>
-            )}
-          </section>
+            <section>
+              <h2 className="mb-3 text-sm font-semibold text-gray-600">🛋️ 休闲区 ({loungeAgents.length})</h2>
+              {loungeAgents.length > 0 ? (
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-2">
+                  {loungeAgents.map((a) => <AgentCard key={a.id} agent={a} />)}
+                </div>
+              ) : (
+                <div className="rounded-xl border bg-card p-4 text-sm text-muted-foreground">No agents in lounge zone.</div>
+              )}
+            </section>
+          </div>
+
+          <aside className="lg:col-span-3 rounded-2xl border bg-card/50 p-4 min-h-[360px]" />
         </div>
       )}
     </div>
