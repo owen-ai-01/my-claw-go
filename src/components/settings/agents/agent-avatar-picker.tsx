@@ -1,8 +1,6 @@
 'use client';
 
 import { AGENT_AVATAR_PRESETS } from '@/config/agent-avatar-presets';
-import { uploadFileFromBrowser } from '@/storage/client';
-import { useState } from 'react';
 
 export function AgentAvatarPicker({
   value,
@@ -13,24 +11,6 @@ export function AgentAvatarPicker({
   onChange: (url: string) => void;
   onEmojiChange?: (emoji: string) => void;
 }) {
-  const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState('');
-
-  async function onFileChange(file: File | null) {
-    if (!file) return;
-    setUploading(true);
-    setError('');
-    try {
-      const result = await uploadFileFromBrowser(file, 'agent-avatars');
-      onChange(result.url);
-      if (onEmojiChange) onEmojiChange('🤖');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to upload avatar');
-    } finally {
-      setUploading(false);
-    }
-  }
-
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-3">
@@ -42,16 +22,6 @@ export function AgentAvatarPicker({
             <div className="flex h-full w-full items-center justify-center text-lg">🤖</div>
           )}
         </div>
-        <label className="rounded-lg border px-3 py-1.5 text-xs font-medium hover:bg-muted cursor-pointer">
-          {uploading ? 'Uploading…' : 'Upload Avatar'}
-          <input
-            type="file"
-            accept="image/png,image/jpeg,image/webp"
-            className="hidden"
-            onChange={(e) => onFileChange(e.target.files?.[0] || null)}
-            disabled={uploading}
-          />
-        </label>
       </div>
 
       <div>
@@ -81,7 +51,6 @@ export function AgentAvatarPicker({
         </div>
       </div>
 
-      {error ? <p className="text-xs text-red-600">{error}</p> : null}
     </div>
   );
 }
