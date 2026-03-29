@@ -45,6 +45,14 @@ type AgentConfigEntry = {
   identity?: AgentIdentity;
 };
 
+/**
+ * Principle (must-follow):
+ * Business metadata must NOT be written into OpenClaw native agent config.
+ * Forbidden in agents.list[]: role, description, department, enabled, avatar.
+ * Keep OpenClaw config schema-clean; store business fields in external metadata store.
+ */
+const FORBIDDEN_AGENT_CONFIG_KEYS = ['role', 'description', 'department', 'enabled'] as const;
+
 type OpenClawConfig = {
   agents?: {
     list?: AgentConfigEntry[];
@@ -102,8 +110,25 @@ async function readConfig() {
   return JSON.parse(raw) as OpenClawConfig;
 }
 
+function sanitizeOpenClawAgentList(config: OpenClawConfig) {
+  if (!config.agents?.list) return config;
+  config.agents.list = config.agents.list.map((agent) => {
+    const next = { ...agent };
+    for (const key of FORBIDDEN_AGENT_CONFIG_KEYS) {
+      if (key in next) delete (next as Record<string, unknown>)[key];
+    }
+    if (next.identity?.avatar) {
+      next.identity = { ...next.identity };
+      delete next.identity.avatar;
+    }
+    return next;
+  });
+  return config;
+}
+
 async function writeConfig(config: OpenClawConfig) {
-  await fs.writeFile(OPENCLAW_CONFIG_PATH, JSON.stringify(config, null, 2), 'utf8');
+  const sanitized = sanitizeOpenClawAgentList(config);
+  await fs.writeFile(OPENCLAW_CONFIG_PATH, JSON.stringify(sanitized, null, 2), 'utf8');
 }
 
 async function pathExists(filePath: string) {
