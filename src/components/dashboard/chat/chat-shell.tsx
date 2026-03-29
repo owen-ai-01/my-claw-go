@@ -122,6 +122,7 @@ function AgentConfigDrawer({
     tools: '',
   });
   const [activeDocTab, setActiveDocTab] = useState<'agents' | 'identity' | 'user' | 'soul' | 'tools'>('agents');
+  const [editingDocs, setEditingDocs] = useState(false);
   const [draftName, setDraftName] = useState('');
   const [draftRole, setDraftRole] = useState('');
   const [draftDescription, setDraftDescription] = useState('');
@@ -152,7 +153,7 @@ function AgentConfigDrawer({
         const docKeys: Array<'agents' | 'identity' | 'user' | 'soul' | 'tools'> = ['agents', 'identity', 'user', 'soul', 'tools'];
         const docEntries = await Promise.all(
           docKeys.map(async (docKey) => {
-            const res = await fetch(`/api/agents/${encodeURIComponent(agentId)}/docs/${docKey}`, { cache: 'no-store' });
+            const res = await fetch(`/api/chat/agent-docs/${encodeURIComponent(agentId)}/${docKey}`, { cache: 'no-store' });
             const payload = (await res.json().catch(() => ({}))) as AgentDocResponse;
             return [docKey, res.ok && payload.ok === true ? payload.data?.content || '' : ''] as const;
           })
@@ -177,6 +178,7 @@ function AgentConfigDrawer({
         setError(err instanceof Error ? err.message : 'Failed to load agent details');
         setAgent(null);
         setDraftDocs({ agents: '', identity: '', user: '', soul: '', tools: '' });
+        setEditingDocs(false);
         setDraftName('');
         setDraftRole('');
         setDraftDescription('');
@@ -220,7 +222,7 @@ function AgentConfigDrawer({
           }),
         }),
         ...docKeys.map((docKey) =>
-          fetch(`/api/agents/${encodeURIComponent(agent.id)}/docs/${docKey}`, {
+          fetch(`/api/chat/agent-docs/${encodeURIComponent(agent.id)}/${docKey}`, {
             method: 'PUT',
             headers: { 'content-type': 'application/json' },
             body: JSON.stringify({ content: draftDocs[docKey] || '' }),
@@ -395,6 +397,13 @@ function AgentConfigDrawer({
                     <h3 className="text-sm font-semibold">Markdown Files</h3>
                     <p className="mt-1 text-xs text-muted-foreground">AGENTS.md / IDENTITY.md / USER.md / SOUL.md / TOOLS.md</p>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => setEditingDocs((v) => !v)}
+                    className="rounded-lg border px-3 py-1 text-xs hover:bg-muted"
+                  >
+                    {editingDocs ? 'View' : 'Edit'}
+                  </button>
                 </div>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {([
@@ -418,6 +427,7 @@ function AgentConfigDrawer({
                   <textarea
                     value={draftDocs[activeDocTab] || ''}
                     onChange={(e) => setDraftDocs((prev) => ({ ...prev, [activeDocTab]: e.target.value }))}
+                    readOnly={!editingDocs}
                     className="min-h-[260px] w-full resize-none rounded-xl border bg-muted/30 p-3 font-mono text-xs leading-6 outline-none"
                   />
                 </div>
