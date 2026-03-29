@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { LayoutGroup, motion } from 'motion/react';
 import { ModelSelect } from '@/components/ui/model-select';
 import { AgentAvatarPicker } from '@/components/settings/agents/agent-avatar-picker';
 
@@ -217,7 +218,12 @@ function AgentCard({ agent, zone, moved }: { agent: EnrichedAgent; zone: 'dialog
       : s?.currentTask?.description || 'Working on task';
 
   return (
-    <div className={`rounded-2xl border bg-card p-4 shadow-sm transition-all duration-500 ${moved ? 'ring-2 ring-primary/40 scale-[1.02]' : ''}`}>
+    <motion.div
+      layout
+      layoutId={`office-agent-${agent.id}`}
+      transition={{ type: 'spring', stiffness: 360, damping: 30 }}
+      className={`rounded-2xl border bg-card p-4 shadow-sm transition-all duration-500 ${moved ? 'ring-2 ring-primary/40 scale-[1.02]' : ''}`}
+    >
       <div className="flex items-center gap-3">
         <div className="h-12 w-12 overflow-hidden rounded-full bg-primary/10">
           {agent.identity?.avatar ? (
@@ -241,7 +247,7 @@ function AgentCard({ agent, zone, moved }: { agent: EnrichedAgent; zone: 'dialog
           </div>
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }
 
@@ -429,40 +435,42 @@ export function OfficeShell() {
         </div>
       ) : (
         <div className="grid gap-6 lg:grid-cols-10">
-          <div className="space-y-6 lg:col-span-7">
-            <section>
-              <h2 className="mb-3 text-sm font-semibold text-purple-700">💬 对话区 {dialogAgent ? '(1)' : '(0)'}</h2>
-              {dialogAgent ? (
-                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-2">
-                  <AgentCard key={dialogAgent.id} agent={dialogAgent} zone="dialogue" moved={Date.now() - (movedAt[dialogAgent.id] || 0) < 2000} />
-                </div>
-              ) : (
-                <div className="rounded-xl border bg-card p-4 text-sm text-muted-foreground">No agent in dialogue zone.</div>
-              )}
-            </section>
+          <LayoutGroup id="office-zones">
+            <div className="space-y-6 lg:col-span-7">
+              <section>
+                <h2 className="mb-3 text-sm font-semibold text-purple-700">💬 对话区 {dialogAgent ? '(1)' : '(0)'}</h2>
+                {dialogAgent ? (
+                  <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-2">
+                    <AgentCard key={dialogAgent.id} agent={dialogAgent} zone="dialogue" moved={Date.now() - (movedAt[dialogAgent.id] || 0) < 2000} />
+                  </div>
+                ) : (
+                  <div className="rounded-xl border bg-card p-4 text-sm text-muted-foreground">No agent in dialogue zone.</div>
+                )}
+              </section>
 
-            <section>
-              <h2 className="mb-3 text-sm font-semibold text-blue-700">⚙️ 办公区 ({officeAgents.length})</h2>
-              {officeAgents.length > 0 ? (
-                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-2">
-                  {officeAgents.map((a) => <AgentCard key={a.id} agent={a} zone="office" moved={Date.now() - (movedAt[a.id] || 0) < 2000} />)}
-                </div>
-              ) : (
-                <div className="rounded-xl border bg-card p-4 text-sm text-muted-foreground">No agents are working right now.</div>
-              )}
-            </section>
+              <section>
+                <h2 className="mb-3 text-sm font-semibold text-blue-700">⚙️ 办公区 ({officeAgents.length})</h2>
+                {officeAgents.length > 0 ? (
+                  <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-2">
+                    {officeAgents.map((a) => <AgentCard key={a.id} agent={a} zone="office" moved={Date.now() - (movedAt[a.id] || 0) < 2000} />)}
+                  </div>
+                ) : (
+                  <div className="rounded-xl border bg-card p-4 text-sm text-muted-foreground">No agents are working right now.</div>
+                )}
+              </section>
 
-            <section>
-              <h2 className="mb-3 text-sm font-semibold text-gray-600">🛋️ 休闲区 ({loungeAgents.length})</h2>
-              {loungeAgents.length > 0 ? (
-                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-2">
-                  {loungeAgents.map((a) => <AgentCard key={a.id} agent={a} zone="lounge" moved={Date.now() - (movedAt[a.id] || 0) < 2000} />)}
-                </div>
-              ) : (
-                <div className="rounded-xl border bg-card p-4 text-sm text-muted-foreground">No agents in lounge zone.</div>
-              )}
-            </section>
-          </div>
+              <section>
+                <h2 className="mb-3 text-sm font-semibold text-gray-600">🛋️ 休闲区 ({loungeAgents.length})</h2>
+                {loungeAgents.length > 0 ? (
+                  <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-2">
+                    {loungeAgents.map((a) => <AgentCard key={a.id} agent={a} zone="lounge" moved={Date.now() - (movedAt[a.id] || 0) < 2000} />)}
+                  </div>
+                ) : (
+                  <div className="rounded-xl border bg-card p-4 text-sm text-muted-foreground">No agents in lounge zone.</div>
+                )}
+              </section>
+            </div>
+          </LayoutGroup>
 
           <aside className="lg:col-span-3 rounded-2xl border bg-card/50 p-4 min-h-[360px]" />
         </div>
