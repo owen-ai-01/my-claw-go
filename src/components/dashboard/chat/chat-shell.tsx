@@ -78,7 +78,7 @@ type AgentResponse = {
   data?: AgentDetail;
 };
 
-type AgentsMdResponse = {
+type AgentDocResponse = {
   ok?: boolean;
   data?: {
     agentId: string;
@@ -114,8 +114,14 @@ function AgentConfigDrawer({
   const [error, setError] = useState<string | null>(null);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [agent, setAgent] = useState<AgentDetail | null>(null);
-  const [agentsMd, setAgentsMd] = useState('');
-  const [draftAgentsMd, setDraftAgentsMd] = useState('');
+  const [draftDocs, setDraftDocs] = useState<Record<'agents' | 'identity' | 'user' | 'soul' | 'tools', string>>({
+    agents: '',
+    identity: '',
+    user: '',
+    soul: '',
+    tools: '',
+  });
+  const [activeDocTab, setActiveDocTab] = useState<'agents' | 'identity' | 'user' | 'soul' | 'tools'>('agents');
   const [draftName, setDraftName] = useState('');
   const [draftRole, setDraftRole] = useState('');
   const [draftDescription, setDraftDescription] = useState('');
@@ -136,28 +142,25 @@ function AgentConfigDrawer({
       setError(null);
       setSaveMessage(null);
       try {
-        const [agentRes, agentsMdRes] = await Promise.all([
-          fetch(`/api/agents/${encodeURIComponent(agentId)}`, { cache: 'no-store' }),
-          fetch(`/api/agents/${encodeURIComponent(agentId)}/agents-md`, { cache: 'no-store' }),
-        ]);
+        const agentRes = await fetch(`/api/agents/${encodeURIComponent(agentId)}`, { cache: 'no-store' });
 
         const agentPayload = (await agentRes.json().catch(() => ({}))) as AgentResponse;
         if (!agentRes.ok || agentPayload.ok !== true || !agentPayload.data) {
           throw new Error('Failed to load agent details');
         }
 
-        let nextAgentsMd = '';
-        if (agentsMdRes.ok) {
-          const agentsMdPayload = (await agentsMdRes.json().catch(() => ({}))) as AgentsMdResponse;
-          if (agentsMdPayload.ok === true) {
-            nextAgentsMd = agentsMdPayload.data?.content || '';
-          }
-        }
+        const docKeys: Array<'agents' | 'identity' | 'user' | 'soul' | 'tools'> = ['agents', 'identity', 'user', 'soul', 'tools'];
+        const docEntries = await Promise.all(
+          docKeys.map(async (docKey) => {
+            const res = await fetch(`/api/agents/${encodeURIComponent(agentId)}/docs/${docKey}`, { cache: 'no-store' });
+            const payload = (await res.json().catch(() => ({}))) as AgentDocResponse;
+            return [docKey, res.ok && payload.ok === true ? payload.data?.content || '' : ''] as const;
+          })
+        );
 
         if (cancelled) return;
         setAgent(agentPayload.data);
-        setAgentsMd(nextAgentsMd);
-        setDraftAgentsMd(nextAgentsMd);
+        setDraftDocs(Object.fromEntries(docEntries) as Record<'agents' | 'identity' | 'user' | 'soul' | 'tools', string>);
         setDraftName(agentPayload.data.name || agentPayload.data.identity?.name || '');
         setDraftRole(agentPayload.data.role || '');
         setDraftDescription(agentPayload.data.description || '');
@@ -173,8 +176,7 @@ function AgentConfigDrawer({
         if (cancelled) return;
         setError(err instanceof Error ? err.message : 'Failed to load agent details');
         setAgent(null);
-        setAgentsMd('');
-        setDraftAgentsMd('');
+        setDraftDocs({ agents: '', identity: '', user: '', soul: '', tools: '' });
         setDraftName('');
         setDraftRole('');
         setDraftDescription('');
@@ -203,7 +205,8 @@ function AgentConfigDrawer({
     setSaveMessage(null);
 
     try {
-      const [modelRes, agentsMdRes, telegramRes] = await Promise.all([
+      const docKeys: Array<'agents' | 'identity' | 'user' | 'soul' | 'tools'> = ['agents', 'identity', 'user', 'soul', 'tools'];
+      const [modelRes, ...restResponses] = await Promise.all([
         fetch(`/api/agents/${encodeURIComponent(agent.id)}`, {
           method: 'PATCH',
           headers: { 'content-type': 'application/json' },
@@ -216,11 +219,13 @@ function AgentConfigDrawer({
             model: draftModel,
           }),
         }),
-        fetch(`/api/agents/${encodeURIComponent(agent.id)}/agents-md`, {
-          method: 'PUT',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ content: draftAgentsMd }),
-        }),
+        ...docKeys.map((docKey) =>
+          fetch(`/api/agents/${encodeURIComponent(agent.id)}/docs/${docKey}`, {
+            method: 'PUT',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ content: draftDocs[docKey] || '' }),
+          })
+        ),
         fetch(`/api/agents/${encodeURIComponent(agent.id)}/channels/telegram`, {
           method: 'PUT',
           headers: { 'content-type': 'application/json' },
@@ -234,21 +239,24 @@ function AgentConfigDrawer({
       ]);
 
       const modelPayload = await modelRes.json().catch(() => ({}));
-      const agentsMdPayload = await agentsMdRes.json().catch(() => ({}));
+      const docResponses = restResponses.slice(0, docKeys.length);
+      const telegramRes = restResponses[docKeys.length];
+      const docPayloads = await Promise.all(docResponses.map((r) => r.json().catch(() => ({}))));
       const telegramPayload = await telegramRes.json().catch(() => ({}));
       if (!modelRes.ok || modelPayload.ok !== true) {
         throw new Error(modelPayload?.error?.message || modelPayload?.error || 'Failed to save model');
       }
-      if (!agentsMdRes.ok || agentsMdPayload.ok !== true) {
-        throw new Error(agentsMdPayload?.error?.message || agentsMdPayload?.error || 'Failed to save AGENTS.md');
+      const failedDocIndex = docResponses.findIndex((res, idx) => !res.ok || (docPayloads[idx] as any)?.ok !== true);
+      if (failedDocIndex >= 0) {
+        const p: any = docPayloads[failedDocIndex] || {};
+        throw new Error(p?.error?.message || p?.error || 'Failed to save markdown files');
       }
-      if (!telegramRes.ok || telegramPayload.ok !== true) {
-        throw new Error(telegramPayload?.error?.message || telegramPayload?.error || 'Failed to save Telegram settings');
+      if (!telegramRes.ok || (telegramPayload as any).ok !== true) {
+        throw new Error((telegramPayload as any)?.error?.message || (telegramPayload as any)?.error || 'Failed to save Telegram settings');
       }
 
-      const refreshedAgent = telegramPayload.data as AgentDetail;
+      const refreshedAgent = (telegramPayload as any).data as AgentDetail;
       setAgent(refreshedAgent);
-      setAgentsMd(draftAgentsMd);
       setDraftTelegramBotToken('');
       setSaveMessage('Saved');
       toast.success('Agent settings saved successfully');
@@ -384,18 +392,32 @@ function AgentConfigDrawer({
               <section className="rounded-2xl border bg-card p-4 shadow-sm">
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <h3 className="text-sm font-semibold">AGENTS.md</h3>
-                    <p className="mt-1 text-xs text-muted-foreground">Each agent has its own workspace-level AGENTS.md.</p>
-                  </div>
-                  <div className="rounded-full border px-2 py-1 text-[11px] text-muted-foreground">
-                    {agent.agentsMdExists ? 'Loaded' : 'Missing'}
+                    <h3 className="text-sm font-semibold">Markdown Files</h3>
+                    <p className="mt-1 text-xs text-muted-foreground">AGENTS.md / IDENTITY.md / USER.md / SOUL.md / TOOLS.md</p>
                   </div>
                 </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {([
+                    ['agents', 'AGENTS.md'],
+                    ['identity', 'IDENTITY.md'],
+                    ['user', 'USER.md'],
+                    ['soul', 'SOUL.md'],
+                    ['tools', 'TOOLS.md'],
+                  ] as const).map(([key, label]) => (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => setActiveDocTab(key)}
+                      className={`rounded-lg border px-3 py-1 text-xs ${activeDocTab === key ? 'bg-primary text-primary-foreground border-primary' : 'hover:bg-muted'}`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
                 <div className="mt-4">
-                  <p className="mb-2 text-xs text-muted-foreground break-all">{agent.agentsMdPath || 'No AGENTS.md path'}</p>
                   <textarea
-                    value={draftAgentsMd}
-                    onChange={(e) => setDraftAgentsMd(e.target.value)}
+                    value={draftDocs[activeDocTab] || ''}
+                    onChange={(e) => setDraftDocs((prev) => ({ ...prev, [activeDocTab]: e.target.value }))}
                     className="min-h-[260px] w-full resize-none rounded-xl border bg-muted/30 p-3 font-mono text-xs leading-6 outline-none"
                   />
                 </div>
@@ -450,7 +472,7 @@ function AgentConfigDrawer({
                 </div>
                 <div className="mt-4 flex items-center justify-between gap-3">
                   <p className="text-xs text-muted-foreground">
-                    Save updates model, AGENTS.md, and Telegram settings together.
+                    Save updates model, markdown files, and Telegram settings together.
                   </p>
                   <button
                     type="button"
