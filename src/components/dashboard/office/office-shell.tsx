@@ -442,13 +442,8 @@ export function OfficeShell() {
       };
       if (!data.ok || !data.data?.agents) throw new Error('Failed to load agents');
 
-      const preferredDialogAgentId =
-        searchParams.get('agentId') ||
-        data.data.defaultAgentId ||
-        data.data.agents.find((a) => a.isDefault)?.id ||
-        data.data.agents[0]?.id ||
-        'main';
-      setDialogAgentId(preferredDialogAgentId);
+      const explicitDialogAgentId = searchParams.get('agentId') || '';
+      setDialogAgentId(explicitDialogAgentId);
 
       const base = data.data.agents.map<EnrichedAgent>((a) => ({ 
         ...a,
@@ -522,7 +517,7 @@ export function OfficeShell() {
     return () => clearInterval(tick);
   }, []);
 
-  const dialogAgent = agents.find((a) => a.id === dialogAgentId) || agents[0] || null;
+  const dialogAgent = dialogAgentId ? (agents.find((a) => a.id === dialogAgentId) || null) : null;
   const nonDialogAgents = agents.filter((a) => a.id !== dialogAgent?.id);
   const officeAgents = nonDialogAgents.filter((a) => resolvePresence(a) === 'busy');
   const loungeAgents = nonDialogAgents.filter((a) => resolvePresence(a) !== 'busy');
