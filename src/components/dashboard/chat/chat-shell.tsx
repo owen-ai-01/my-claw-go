@@ -1455,8 +1455,13 @@ function ChatLayout() {
                           className={`w-full rounded-xl border px-3 py-3 text-left transition-colors ${active ? 'border-primary bg-primary/5 shadow-sm' : 'border-border hover:bg-muted/60'}`}
                         >
                           <div className="flex items-start gap-3">
-                            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-base">
-                              {agentEmoji(agent)}
+                            <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-full bg-primary/10">
+                              {agent.identity?.avatar ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img src={agent.identity.avatar} alt={agentLabel(agent)} className="h-full w-full object-cover" />
+                              ) : (
+                                <div className="flex h-full w-full items-center justify-center text-base">{agentEmoji(agent)}</div>
+                              )}
                             </div>
                             <div className="min-w-0 flex-1">
                               <div className="flex items-center gap-2">
