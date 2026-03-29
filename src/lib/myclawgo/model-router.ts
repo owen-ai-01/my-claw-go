@@ -16,11 +16,15 @@
  */
 
 export type RoutingLevel = 'L1' | 'L2' | 'L3';
-export type RoutingPath = 'direct' | 'bridge';
 
 export type RoutingDecision = {
   level: RoutingLevel;
-  path: RoutingPath;
+  /**
+   * path is always 'bridge' — all messages go through OpenClaw bridge
+   * to preserve session memory, tools, and agent personality.
+   * This field is kept for logging / observability only.
+   */
+  path: 'bridge';
   model: string;
   reason: string;
   /** explicit user-specified model; if set, classification is bypassed */
@@ -81,7 +85,7 @@ export function routeMessage(params: {
   if (userModelOverride && userModelOverride !== 'auto') {
     return {
       level: 'L3',
-      path: forceBridge ? 'bridge' : 'direct',
+      path: 'bridge',
       model: userModelOverride,
       reason: 'user_override',
       userOverride: userModelOverride,
@@ -103,13 +107,13 @@ export function routeMessage(params: {
 
   // 3. L1: Very short or greeting/ack
   if (len <= 6) {
-    return { level: 'L1', path: 'direct', model: getL1Model(), reason: 'very_short' };
+    return { level: 'L1', path: 'bridge', model: getL1Model(), reason: 'very_short' };
   }
   for (const p of GREETING_PATTERNS) {
-    if (p.test(msg)) return { level: 'L1', path: 'direct', model: getL1Model(), reason: 'greeting' };
+    if (p.test(msg)) return { level: 'L1', path: 'bridge', model: getL1Model(), reason: 'greeting' };
   }
   for (const p of SIMPLE_ACK_PATTERNS) {
-    if (p.test(msg)) return { level: 'L1', path: 'direct', model: getL1Model(), reason: 'ack' };
+    if (p.test(msg)) return { level: 'L1', path: 'bridge', model: getL1Model(), reason: 'ack' };
   }
 
   // 4. L3: Tool-call keywords → must go through bridge (agent tools)
@@ -119,36 +123,36 @@ export function routeMessage(params: {
 
   // 5. L3: Architecture / system design
   if (ARCHITECTURE_KEYWORDS.test(msg)) {
-    return { level: 'L3', path: 'direct', model: getL3Model('general'), reason: 'architecture' };
+    return { level: 'L3', path: 'bridge', model: getL3Model('general'), reason: 'architecture' };
   }
 
   // 6. L3: Very long context → Gemini Pro
   if (len > VERY_LONG_CONTEXT_THRESHOLD) {
-    return { level: 'L3', path: 'direct', model: getL3Model('longContext'), reason: 'very_long_context' };
+    return { level: 'L3', path: 'bridge', model: getL3Model('longContext'), reason: 'very_long_context' };
   }
 
   // 7. L2: Code-related
   if (CODE_KEYWORDS.test(msg) || hasCodeFences(msg)) {
-    return { level: 'L2', path: 'direct', model: getL2Model('code'), reason: 'code' };
+    return { level: 'L2', path: 'bridge', model: getL2Model('code'), reason: 'code' };
   }
 
   // 8. L2: Chinese writing / content creation
   if (CHINESE_WRITING_KEYWORDS.test(msg)) {
-    return { level: 'L2', path: 'direct', model: getL2Model('chinese'), reason: 'chinese_writing' };
+    return { level: 'L2', path: 'bridge', model: getL2Model('chinese'), reason: 'chinese_writing' };
   }
 
   // 9. L2: Message length medium
   if (len > LONG_CONTEXT_THRESHOLD) {
     const model = isMostlyChinese(msg) ? getL2Model('chinese') : getL2Model('general');
-    return { level: 'L2', path: 'direct', model, reason: 'long_message' };
+    return { level: 'L2', path: 'bridge', model, reason: 'long_message' };
   }
 
   // 10. L1: Short message, no special keywords, mostly Chinese casual chat
   if (len < 80 && isMostlyChinese(msg)) {
-    return { level: 'L1', path: 'direct', model: getL1Model(), reason: 'short_chinese' };
+    return { level: 'L1', path: 'bridge', model: getL1Model(), reason: 'short_chinese' };
   }
 
   // 11. L2: Default for everything else
   const model = isMostlyChinese(msg) ? getL2Model('chinese') : getL2Model('general');
-  return { level: 'L2', path: 'direct', model, reason: 'default' };
+  return { level: 'L2', path: 'bridge', model, reason: 'default' };
 }

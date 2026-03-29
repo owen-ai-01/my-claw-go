@@ -74,12 +74,15 @@ export async function chatRoutes(app: FastifyInstance) {
       }
 
       const agentStartedAt = Date.now();
+      // model: passed from platform's model router (optional)
+      const modelOverride = body.model ? String(body.model).trim() : undefined;
       const result = await sendChatMessage({
         message,
         agentId: targetAgentId,
         timeoutMs: body.timeoutMs ? Number(body.timeoutMs) : 90000,
         channel,
         chatScope,
+        model: modelOverride,
       });
       const agentDurationMs = Date.now() - agentStartedAt;
       const routeDurationMs = Date.now() - routeStartedAt;

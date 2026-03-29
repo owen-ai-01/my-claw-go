@@ -306,12 +306,30 @@ async function sendChatViaGateway(params: {
   message: string;
   agentId: string;
   timeoutMs: number;
+  model?: string; // optional model override from platform router
 }) {
   const sessionKey = `agent:${params.agentId}:main`;
   const gatewayStartAt = Date.now();
   const gateway = await openGatewaySession(Math.max(params.timeoutMs, 65000));
   const connectMs = Date.now() - gatewayStartAt;
   try {
+    // ── Inject model override via sessions.patch ─────────────────────────────
+    // If the platform's router picked a model, apply it to the session before
+    // chat.send so OpenClaw uses that model for this turn only.
+    // sessions.patch is the lightweight gateway WS method for per-session overrides.
+    if (params.model) {
+      try {
+        await gateway.sendReq('sessions.patch', {
+          sessionKey,
+          model: params.model,
+        }, 5000);
+        console.info(`[bridge/model-router] sessions.patch model=${params.model} sessionKey=${sessionKey}`);
+      } catch (patchErr) {
+        // Non-fatal: if sessions.patch fails (e.g. older gateway), continue with agent default model
+        console.warn(`[bridge/model-router] sessions.patch failed (will use agent default): ${patchErr instanceof Error ? patchErr.message : patchErr}`);
+      }
+    }
+
     const chatSendStartedAt = Date.now();
     const started = await gateway.sendReq<ChatSendStartedPayload>('chat.send', {
       sessionKey,
@@ -399,11 +417,12 @@ export async function sendChatMessage(params: {
   timeoutMs?: number;
   channel?: string;
   chatScope?: string;
+  model?: string; // optional model override from platform router
 }) {
-  const { message, agentId, timeoutMs = 90000, channel = 'direct', chatScope = 'default' } = params;
+  const { message, agentId, timeoutMs = 90000, channel = 'direct', chatScope = 'default', model } = params;
 
   try {
-    const result = await sendChatViaGateway({ message, agentId, timeoutMs });
+    const result = await sendChatViaGateway({ message, agentId, timeoutMs, model });
     await appendChatTranscript({ role: 'user', text: message, agentId, channel, chatScope });
     await appendChatTranscript({ role: 'assistant', text: result.reply || '', agentId, channel, chatScope, meta: { model: result.model } });
     return result;
