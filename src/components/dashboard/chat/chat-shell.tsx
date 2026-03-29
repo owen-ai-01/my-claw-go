@@ -667,7 +667,7 @@ function AddAgentDrawer({
             </div>
 
             <div>
-              <label className="text-sm font-medium">Bio</label>
+              <label className="text-sm font-medium">Description</label>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}

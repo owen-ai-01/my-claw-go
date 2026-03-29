@@ -172,7 +172,7 @@ function CreateAgentModal({ onClose, onCreated }: { onClose: () => void; onCreat
           </div>
 
           <div>
-            <label className="mb-1.5 block text-sm font-medium">Bio (optional)</label>
+            <label className="mb-1.5 block text-sm font-medium">Description (optional)</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
