@@ -2,8 +2,8 @@
 
 import Link from 'next/link';
 import { Routes } from '@/routes';
-import { useEffect, useState } from 'react';
-import { ModelSelect } from '@/components/ui/model-select';
+import { useEffect, useMemo, useState } from 'react';
+import { AVAILABLE_MODELS } from '@/lib/myclawgo/model-catalog';
 import type { AgentDetailRecord } from './types';
 
 type AgentResponse = {
@@ -76,9 +76,16 @@ function AgentTasksPanel({ agentId }: { agentId: string }) {
   const [scheduleValue, setScheduleValue] = useState('1h');
   const [message, setMessage] = useState('');
   const [model, setModel] = useState('');
+  const [modelQuery, setModelQuery] = useState('');
   const [creating, setCreating] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [runsText, setRunsText] = useState('');
+
+  const filteredModels = useMemo(() => {
+    const q = modelQuery.trim().toLowerCase();
+    if (!q) return AVAILABLE_MODELS;
+    return AVAILABLE_MODELS.filter((item) => item.id.toLowerCase().includes(q) || item.label.toLowerCase().includes(q));
+  }, [modelQuery]);
 
   async function loadTasks() {
     setLoading(true);
@@ -206,9 +213,24 @@ function AgentTasksPanel({ agentId }: { agentId: string }) {
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Model Override</p>
-            <div className="mt-1">
-              <ModelSelect value={model} onChange={setModel} placeholder="Search or select model" />
-            </div>
+            <input
+              value={modelQuery}
+              onChange={(e) => setModelQuery(e.target.value)}
+              className="mt-1 w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none"
+              placeholder="Filter models..."
+            />
+            <select
+              value={model}
+              onChange={(e) => setModel(e.target.value)}
+              className="mt-2 w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none"
+            >
+              <option value="">Use default</option>
+              {filteredModels.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.label} ({item.id})
+                </option>
+              ))}
+            </select>
           </div>
           <div className="md:col-span-2">
             <p className="text-xs text-muted-foreground">Task Prompt</p>
