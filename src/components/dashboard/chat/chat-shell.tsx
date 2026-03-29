@@ -95,8 +95,19 @@ function agentEmoji(agent: Partial<AgentItem>) {
   return agent.identity?.emoji?.trim() || '🤖';
 }
 
-function estimateTextTokens(text: string) {
-  return Math.max(1, Math.ceil((text || '').length / 4));
+function useSessionTokens(agentId: string, refreshKey: number) {
+  const [tokens, setTokens] = useState({ input: 0, output: 0, total: 0 });
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`/api/chat/session-tokens?agentId=${encodeURIComponent(agentId)}`, { cache: 'no-store' })
+      .then((res) => res.json())
+      .then((data: { ok?: boolean; tokens?: { input: number; output: number; total: number } }) => {
+        if (!cancelled && data?.ok && data.tokens) setTokens(data.tokens);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [agentId, refreshKey]);
+  return tokens;
 }
 
 function AgentConfigDrawer({
@@ -1131,6 +1142,7 @@ function ChatLayout() {
   const [activeTaskStatus, setActiveTaskStatus] = useState<string | null>(null);
   const [insufficientCredits, setInsufficientCredits] = useState(false);
   const [configOpen, setConfigOpen] = useState(false);
+  const [tokenRefreshKey, setTokenRefreshKey] = useState(0);
   const [addAgentOpen, setAddAgentOpen] = useState(false);
   const [createGroupOpen, setCreateGroupOpen] = useState(false);
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
@@ -1355,7 +1367,7 @@ function ChatLayout() {
 
   async function handleContextReset() {
     const confirmed = window.confirm(
-      'Reset context will start a brand-new session for this chat.\n\nWhat will happen:\n- A new session will be created\n- Previous chat context will no longer be used\n- Estimated token count will restart from 0\n\nDo you want to continue?'
+      'Reset context will start a brand-new session for this chat.\n\nWhat will happen:\n- A new session will be created\n- Previous chat context will no longer be used by the model\n- The latest OpenClaw response will be shown in chat\n- Token usage will refresh after the action\n\nDo you want to continue?'
     );
     if (!confirmed) return;
 
@@ -1363,36 +1375,68 @@ function ChatLayout() {
       const payload: any = { message: '/new', timeoutMs: 90000 };
       if (selectedGroupId) payload.groupId = selectedGroupId;
       else payload.agentId = selectedAgentId;
-      await fetch('/api/chat/send', {
+
+      const res = await fetch('/api/chat/send', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(payload),
-      }).catch(() => null);
-    } finally {
-      setMessages([]);
-      setActiveTaskStatus(null);
-      toast.success('Context reset complete. New session started.');
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (data?.ok) {
+        await fetch(`/api/chat/history?agentId=${encodeURIComponent(selectedAgentId)}`, { cache: 'no-store' })
+          .then((r) => r.json())
+          .then((history) => {
+            if (history?.ok && history?.data?.messages) {
+              const nextMessages = history.data.messages as ChatMessage[];
+              const hasPendingAssistant = nextMessages.some((msg) => msg.role === 'assistant' && (msg.status === 'queued' || msg.status === 'running'));
+              setMessages(nextMessages);
+              setActiveTaskStatus(hasPendingAssistant ? (history.data.task?.status || 'running') : null);
+            }
+          })
+          .catch(() => {});
+        setTokenRefreshKey((k) => k + 1);
+      }
+    } catch {
+      toast.error('Failed to reset context.');
     }
   }
 
   async function handleContextCompress() {
     const confirmed = window.confirm(
-      'Compress context will summarize and trim older chat context.\n\nWhat will happen:\n- Older context is compacted to save tokens\n- Recent messages are kept for continuity\n- Estimated token count should decrease\n\nDo you want to continue?'
+      'Compress context will summarize and trim older chat context.\n\nWhat will happen:\n- Older context is compacted to save tokens\n- Recent messages are kept for continuity\n- The latest OpenClaw response will be shown in chat\n- Token usage will refresh after the action\n\nDo you want to continue?'
     );
     if (!confirmed) return;
 
-    const payload: any = { message: '/compact', timeoutMs: 90000 };
-    if (selectedGroupId) payload.groupId = selectedGroupId;
-    else payload.agentId = selectedAgentId;
+    try {
+      const payload: any = { message: '/compact', timeoutMs: 90000 };
+      if (selectedGroupId) payload.groupId = selectedGroupId;
+      else payload.agentId = selectedAgentId;
 
-    await fetch('/api/chat/send', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(payload),
-    }).catch(() => null);
+      const res = await fetch('/api/chat/send', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
 
-    setMessages((prev) => prev.slice(-12));
-    toast.success('Context compressed.');
+      const data = await res.json().catch(() => ({}));
+      if (data?.ok) {
+        await fetch(`/api/chat/history?agentId=${encodeURIComponent(selectedAgentId)}`, { cache: 'no-store' })
+          .then((r) => r.json())
+          .then((history) => {
+            if (history?.ok && history?.data?.messages) {
+              const nextMessages = history.data.messages as ChatMessage[];
+              const hasPendingAssistant = nextMessages.some((msg) => msg.role === 'assistant' && (msg.status === 'queued' || msg.status === 'running'));
+              setMessages(nextMessages);
+              setActiveTaskStatus(hasPendingAssistant ? (history.data.task?.status || 'running') : null);
+            }
+          })
+          .catch(() => {});
+        setTokenRefreshKey((k) => k + 1);
+      }
+    } catch {
+      toast.error('Failed to compress context.');
+    }
   }
 
   const selectedAgent = agents.find((agent) => agent.id === selectedAgentId) || { id: selectedAgentId, name: selectedAgentId };
@@ -1418,10 +1462,7 @@ function ChatLayout() {
     (msg) => !(msg.role === 'assistant' && (msg.status === 'queued' || msg.status === 'running'))
   );
 
-  const estimatedTokens = useMemo(
-    () => visibleMessages.reduce((sum, msg) => sum + estimateTextTokens(msg.content), 0),
-    [visibleMessages]
-  );
+  const sessionTokens = useSessionTokens(selectedAgentId, tokenRefreshKey);
 
   function switchToAgent(agentId: string) {
     setSelectedAgentId(agentId);
@@ -1732,7 +1773,7 @@ function ChatLayout() {
             <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
               <div className="inline-flex items-center gap-2 rounded-lg border bg-muted/30 px-2.5 py-1.5 text-xs text-muted-foreground">
                 <Coins className="h-3.5 w-3.5" />
-                <span>Cumulative tokens: {estimatedTokens.toLocaleString()}</span>
+                <span>Cumulative tokens: {sessionTokens.total.toLocaleString()}</span>
               </div>
               <div className="flex items-center gap-2">
                 <button
