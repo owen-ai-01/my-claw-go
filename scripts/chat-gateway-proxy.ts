@@ -4,7 +4,8 @@ import { promisify } from 'node:util';
 import { URL } from 'node:url';
 import WebSocket, { WebSocketServer } from 'ws';
 import { verifyChatProxyToken } from '../src/lib/myclawgo/chat-proxy-token';
-import { getSession } from '../src/lib/myclawgo/session-store';
+import { ensureSessionById } from '../src/lib/myclawgo/session-store';
+import { ensureUserContainer } from '../src/lib/myclawgo/docker-manager';
 
 const execFileAsync = promisify(execFile);
 const PORT = Number(process.env.MYCLAWGO_CHAT_PROXY_PORT || 3020);
@@ -160,14 +161,21 @@ server.on('upgrade', async (req, socket, head) => {
     // eslint-disable-next-line no-console
     console.log('[chat-gateway-proxy] token ok for user', tokenPayload.userId);
 
-    const runtimeSession = await getSession(tokenPayload.userId);
+    const runtimeSession = await ensureSessionById(tokenPayload.userId, 'chat-proxy-upgrade');
     if (!runtimeSession?.containerName) {
       socket.write('HTTP/1.1 404 Not Found\r\n\r\n');
       socket.destroy();
       return;
     }
 
-    const upstreamReady = await waitForGatewayHealth(runtimeSession.containerName, 12);
+    const ensured = await ensureUserContainer(runtimeSession);
+    if (!ensured.ok) {
+      socket.write('HTTP/1.1 503 Service Unavailable\r\n\r\n');
+      socket.destroy();
+      return;
+    }
+
+    const upstreamReady = await waitForGatewayHealth(runtimeSession.containerName, 24);
     if (!upstreamReady) {
       socket.write('HTTP/1.1 503 Service Unavailable\r\n\r\n');
       socket.destroy();
