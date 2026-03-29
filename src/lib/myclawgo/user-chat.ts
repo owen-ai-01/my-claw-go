@@ -10,6 +10,8 @@ import {
 } from '@/lib/myclawgo/billing';
 import { and, asc, desc, eq } from 'drizzle-orm';
 import { resolveUserBridgeTarget } from '@/lib/myclawgo/bridge-target';
+import { routeMessage } from '@/lib/myclawgo/model-router';
+import { sendDirectChat } from '@/lib/myclawgo/direct-chat';
 
 export async function listUserChatMessages(userId: string, agentId: string) {
   const db = await getDb();
@@ -25,8 +27,9 @@ export async function createDirectChatTask(params: {
   agentId: string;
   message: string;
   timeoutMs?: number;
+  userModelOverride?: string; // 'auto' or explicit model id
 }) {
-  const { userId, agentId, message, timeoutMs = 180000 } = params;
+  const { userId, agentId, message, timeoutMs = 180000, userModelOverride } = params;
   const db = await getDb();
   const userMessageId = crypto.randomUUID();
   const assistantMessageId = crypto.randomUUID();
@@ -68,7 +71,7 @@ export async function createDirectChatTask(params: {
     updatedAt: now,
   });
 
-  void runDirectChatTask({ taskId, userId, agentId, message, timeoutMs });
+  void runDirectChatTask({ taskId, userId, agentId, message, timeoutMs, userModelOverride });
 
   return { taskId, userMessageId, assistantMessageId };
 }
@@ -198,8 +201,9 @@ async function runDirectChatTask(params: {
   agentId: string;
   message: string;
   timeoutMs: number;
+  userModelOverride?: string; // 'auto' or specific model id
 }) {
-  const { taskId, userId, agentId, message, timeoutMs } = params;
+  const { taskId, userId, agentId, message, timeoutMs, userModelOverride } = params;
   const db = await getDb();
 
   const [task] = await db.select().from(userChatTask).where(eq(userChatTask.id, taskId)).limit(1);
@@ -211,66 +215,103 @@ async function runDirectChatTask(params: {
     .where(eq(userChatTask.id, taskId));
 
   try {
-    const target = await resolveUserBridgeTarget(userId);
-    if (!target.ok) {
-      throw new Error('Runtime bridge unavailable');
-    }
-
-    const upstreamRes = await fetch(`${target.bridge.baseUrl}/chat/send`, {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        authorization: `Bearer ${target.bridge.token}`,
-      },
-      body: JSON.stringify({
-        message,
-        agentId,
-        timeoutMs,
-        channel: 'direct',
-        chatScope: 'default',
-      }),
-      signal: AbortSignal.timeout(timeoutMs),
-    });
-
-    const payload = await upstreamRes.json().catch(() => ({ ok: false, error: 'Invalid bridge response' })) as {
-      ok?: boolean;
-      data?: {
-        reply?: string;
-        model?: string;
-        usage?: {
-          input?: number;
-          output?: number;
-          cacheRead?: number;
-          cacheWrite?: number;
-          total?: number;
-          input_tokens?: number;
-          output_tokens?: number;
-          prompt_tokens?: number;
-          completion_tokens?: number;
-        };
-        raw?: unknown;
-      };
-      error?: string | { message?: string };
-    };
-
-    if (!upstreamRes.ok || payload.ok !== true || !payload.data?.reply?.trim()) {
-      throw new Error(typeof payload.error === 'string' ? payload.error : payload.error?.message || 'Chat task failed');
-    }
-
-    await db.update(userChatMessage)
-      .set({ content: payload.data.reply, status: 'done', updatedAt: new Date() })
-      .where(eq(userChatMessage.id, task.assistantMessageId));
-
-    await settleDirectChatBilling({
-      taskId,
-      userId,
-      agentId,
+    // ── Smart routing: decide model + path ───────────────────────────────────
+    const routing = routeMessage({
       message,
-      reply: payload.data.reply,
-      model: payload.data.model,
-      usage: payload.data.usage,
-      bridgeRaw: payload.data.raw,
+      userModelOverride: userModelOverride && userModelOverride !== 'auto' ? userModelOverride : undefined,
     });
+
+    const isAutoEnabled = !process.env.MYCLAWGO_ROUTER_DISABLED || process.env.MYCLAWGO_ROUTER_DISABLED === 'false';
+
+    if (isAutoEnabled && routing.path === 'direct') {
+      // ── Direct path: OpenRouter HTTP API (bypass bridge) ──────────────────
+      const result = await sendDirectChat({
+        message,
+        model: routing.model,
+        timeoutMs,
+      });
+
+      await db.update(userChatMessage)
+        .set({ content: result.reply, status: 'done', updatedAt: new Date() })
+        .where(eq(userChatMessage.id, task.assistantMessageId));
+
+      await settleDirectChatBilling({
+        taskId,
+        userId,
+        agentId,
+        message,
+        reply: result.reply,
+        model: result.model,
+        usage: result.usage,
+        bridgeRaw: { routingLevel: routing.level, routingReason: routing.reason, durationMs: result.durationMs },
+      });
+
+      console.info(`[model-router] taskId=${taskId} level=${routing.level} path=direct model=${result.model} reason=${routing.reason} durationMs=${result.durationMs}`);
+    } else {
+      // ── Bridge path: OpenClaw agent (memory + tools available) ───────────
+      const target = await resolveUserBridgeTarget(userId);
+      if (!target.ok) {
+        throw new Error('Runtime bridge unavailable');
+      }
+
+      const upstreamRes = await fetch(`${target.bridge.baseUrl}/chat/send`, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          authorization: `Bearer ${target.bridge.token}`,
+        },
+        body: JSON.stringify({
+          message,
+          agentId,
+          timeoutMs,
+          channel: 'direct',
+          chatScope: 'default',
+        }),
+        signal: AbortSignal.timeout(timeoutMs),
+      });
+
+      const payload = await upstreamRes.json().catch(() => ({ ok: false, error: 'Invalid bridge response' })) as {
+        ok?: boolean;
+        data?: {
+          reply?: string;
+          model?: string;
+          usage?: {
+            input?: number;
+            output?: number;
+            cacheRead?: number;
+            cacheWrite?: number;
+            total?: number;
+            input_tokens?: number;
+            output_tokens?: number;
+            prompt_tokens?: number;
+            completion_tokens?: number;
+          };
+          raw?: unknown;
+        };
+        error?: string | { message?: string };
+      };
+
+      if (!upstreamRes.ok || payload.ok !== true || !payload.data?.reply?.trim()) {
+        throw new Error(typeof payload.error === 'string' ? payload.error : payload.error?.message || 'Chat task failed');
+      }
+
+      await db.update(userChatMessage)
+        .set({ content: payload.data.reply, status: 'done', updatedAt: new Date() })
+        .where(eq(userChatMessage.id, task.assistantMessageId));
+
+      await settleDirectChatBilling({
+        taskId,
+        userId,
+        agentId,
+        message,
+        reply: payload.data.reply,
+        model: payload.data.model,
+        usage: payload.data.usage,
+        bridgeRaw: payload.data.raw,
+      });
+
+      console.info(`[model-router] taskId=${taskId} level=${routing.level} path=bridge model=${payload.data.model || agentId} reason=${routing.reason}`);
+    }
 
     await db.update(userChatTask)
       .set({ status: 'done', finishedAt: new Date(), updatedAt: new Date(), error: null })
@@ -286,3 +327,5 @@ async function runDirectChatTask(params: {
       .where(eq(userChatTask.id, taskId));
   }
 }
+
+

@@ -31,6 +31,7 @@ export async function POST(req: Request) {
     agentId?: string;
     groupId?: string;
     timeoutMs?: number;
+    model?: string; // 'auto' | specific model id
   };
 
   const message = String(body.message || '').trim();
@@ -120,6 +121,7 @@ export async function POST(req: Request) {
       agentId,
       message,
       timeoutMs: body.timeoutMs || 180000,
+      userModelOverride: body.model || 'auto',
     });
 
     return NextResponse.json({
