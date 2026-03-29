@@ -1,8 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { Routes } from '@/routes';
+import { useSearchParams } from 'next/navigation';
 import { ModelSelect } from '@/components/ui/model-select';
 import { AgentAvatarPicker } from '@/components/settings/agents/agent-avatar-picker';
 
@@ -79,25 +78,6 @@ function agentEmoji(agent: Partial<AgentItem>) {
   return agent.identity?.emoji?.trim() || '🤖';
 }
 
-function relativeTime(iso: string | null | undefined): string {
-  if (!iso) return 'Never';
-  const diff = Date.now() - new Date(iso).getTime();
-  if (diff < 0) return 'Just now';
-  const seconds = Math.floor(diff / 1000);
-  if (seconds < 60) return `${seconds}s ago`;
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  return `${days}d ago`;
-}
-
-function relativeTimeMs(ms?: number | null): string {
-  if (!ms) return 'Never';
-  return relativeTime(new Date(ms).toISOString());
-}
-
 function resolvePresence(agent: EnrichedAgent): PresenceCategory {
   const s = agent.statusData;
   if (!s) return 'offline';
@@ -108,39 +88,6 @@ function resolvePresence(agent: EnrichedAgent): PresenceCategory {
     if (ageMs < 5 * 60 * 1000) return 'online';
   }
   return 'idle';
-}
-
-function presenceLabel(p: PresenceCategory) {
-  return { busy: 'Busy', online: 'Online', idle: 'Idle', offline: 'Offline' }[p];
-}
-
-function presenceColors(p: PresenceCategory) {
-  return {
-    busy: {
-      badge: 'bg-blue-100 text-blue-700 border-blue-300',
-      dot: 'bg-blue-500',
-      border: 'border-blue-200',
-      ring: 'ring-1 ring-blue-200',
-    },
-    online: {
-      badge: 'bg-green-100 text-green-700 border-green-300',
-      dot: 'bg-green-500',
-      border: 'border-green-200',
-      ring: 'ring-1 ring-green-200',
-    },
-    idle: {
-      badge: 'bg-gray-100 text-gray-600 border-gray-200',
-      dot: 'bg-gray-400',
-      border: 'border-border',
-      ring: '',
-    },
-    offline: {
-      badge: 'bg-gray-100 text-gray-400 border-gray-200',
-      dot: 'bg-gray-300',
-      border: 'border-border',
-      ring: '',
-    },
-  }[p];
 }
 
 // ─── Create Agent Modal ───────────────────────────────────────────────────────
@@ -262,161 +209,38 @@ function CreateAgentModal({ onClose, onCreated }: { onClose: () => void; onCreat
 
 // ─── Agent Card ───────────────────────────────────────────────────────────────
 
-function AgentCard({ agent }: { agent: EnrichedAgent }) {
-  const router = useRouter();
-  const presence = resolvePresence(agent);
-  const colors = presenceColors(presence);
+function AgentCard({ agent, zone }: { agent: EnrichedAgent; zone: 'dialogue' | 'office' | 'lounge' }) {
   const s = agent.statusData;
-  const hasErrors = (s?.recentErrors?.length ?? 0) > 0;
-  const hasTaskFailure = agent.latestTaskRun?.status === 'error';
+  const progressText =
+    zone === 'dialogue'
+      ? s?.currentTask?.description || 'In conversation'
+      : s?.currentTask?.description || 'Working on task';
 
   return (
-    <div className={`group relative rounded-2xl border bg-card p-5 shadow-sm transition-all hover:shadow-md ${hasTaskFailure ? 'border-red-300 ring-1 ring-red-200 bg-red-50/30' : colors.ring}`}>
-      {/* Error indicator */}
-      {(hasErrors || hasTaskFailure) && (
-        <div className="absolute right-3 top-3">
-          <span className="flex h-2.5 w-2.5 items-center justify-center">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
-          </span>
+    <div className="rounded-2xl border bg-card p-4 shadow-sm">
+      <div className="flex items-center gap-3">
+        <div className="h-12 w-12 overflow-hidden rounded-full bg-primary/10">
+          {agent.identity?.avatar ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={agent.identity.avatar} alt={agentLabel(agent)} className="h-full w-full object-cover" />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center text-xl">{agentEmoji(agent)}</div>
+          )}
         </div>
-      )}
-
-      <div className="flex items-start gap-4">
-        {/* Avatar */}
-        <div className="relative flex-shrink-0">
-          <div className="h-14 w-14 overflow-hidden rounded-full bg-primary/10">
-            {agent.identity?.avatar ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={agent.identity.avatar} alt={agentLabel(agent)} className="h-full w-full object-cover" />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center text-2xl">{agentEmoji(agent)}</div>
-            )}
-          </div>
-          {/* Online dot */}
-          <span className={`absolute bottom-0.5 right-0.5 h-3.5 w-3.5 rounded-full border-2 border-card ${colors.dot}`} />
-        </div>
-
-        {/* Info */}
-        <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0">
-              <h3 className="truncate text-base font-semibold">{agentLabel(agent)}</h3>
-              <p className="mt-0.5 truncate text-xs text-muted-foreground">@{agent.id}</p>
-              {agent.role ? <p className="mt-1 truncate text-[11px] text-muted-foreground">{agent.role}</p> : null}
-            </div>
-            <span className={`shrink-0 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium ${colors.badge}`}>
-              <span className={`h-1.5 w-1.5 rounded-full ${colors.dot}`} />
-              {presenceLabel(presence)}
-            </span>
-          </div>
-
-          {/* Status details */}
-          <div className="mt-3 space-y-1.5 text-xs text-muted-foreground">
-            {/* Current task */}
-            {s?.currentTask ? (
-              <div className="flex items-start gap-1.5">
-                <span className="mt-0.5 shrink-0">⚙️</span>
-                <span className="line-clamp-2">{s.currentTask.description || `Task ${s.currentTask.id || ''} running…`}</span>
-              </div>
-            ) : (
-              <div className="flex items-center gap-1.5">
-                <span>🕐</span>
-                <span>Last active: {relativeTime(s?.lastActivity)}</span>
-              </div>
-            )}
-
-            {/* Model */}
-            {agent.model && (
-              <div className="flex items-center gap-1.5">
-                <span>🤖</span>
-                <span className="truncate font-mono text-[10px] opacity-70">{agent.model}</span>
-              </div>
-            )}
-
-            {/* Telegram */}
-            {agent.telegram ? (
-              <div className="flex items-center gap-1.5">
-                <span>💬</span>
-                <span>
-                  {agent.telegram.bindingEnabled
-                    ? 'Telegram connected'
-                    : agent.telegram.hasBotToken
-                    ? 'Telegram configured (not bound)'
-                    : 'Telegram not set up'}
-                </span>
-              </div>
-            ) : null}
-
-            {/* Task summary */}
-            <div className="flex items-center gap-1.5">
-              <span>🗂️</span>
-              <span>
-                {agent.tasksData?.length ? `${agent.tasksData.filter((t) => t.enabled !== false).length}/${agent.tasksData.length} tasks enabled` : 'No tasks yet'}
-              </span>
-            </div>
-            {agent.tasksData?.find((task) => task.enabled !== false && task.state?.nextRunAtMs) ? (
-              <div className="flex items-center gap-1.5">
-                <span>⏭️</span>
-                <span>
-                  Next run: {relativeTimeMs(
-                    [...agent.tasksData]
-                      .filter((task) => task.enabled !== false && task.state?.nextRunAtMs)
-                      .sort((a, b) => (a.state?.nextRunAtMs || 0) - (b.state?.nextRunAtMs || 0))[0]?.state?.nextRunAtMs
-                  )}
-                </span>
-              </div>
-            ) : null}
-            {agent.latestTaskRun ? (
-              <div className={`flex items-start gap-1.5 ${agent.latestTaskRun.status === 'error' ? 'text-red-600' : 'text-emerald-700'}`}>
-                <span className="mt-0.5 shrink-0">{agent.latestTaskRun.status === 'error' ? '⚠️' : '✅'}</span>
-                <span className="line-clamp-2">
-                  Last task run {agent.latestTaskRun.status === 'error' ? 'failed' : 'succeeded'} {relativeTimeMs(agent.latestTaskRun.finishedAtMs || agent.latestTaskRun.startedAtMs)}
-                </span>
-              </div>
-            ) : null}
-            {hasTaskFailure && agent.latestTaskRun?.error ? (
-              <div className="flex items-start gap-1.5 text-red-700">
-                <span className="mt-0.5 shrink-0">🧾</span>
-                <span className="line-clamp-2">Failure: {agent.latestTaskRun.error}</span>
-              </div>
-            ) : null}
-
-            {/* Recent errors */}
-            {hasErrors && (
-              <div className="flex items-start gap-1.5 text-red-600">
-                <span className="mt-0.5 shrink-0">⚠️</span>
-                <span className="line-clamp-1">{s!.recentErrors[0]}</span>
-              </div>
-            )}
-          </div>
-
-          {/* Actions */}
-          <div className="mt-4 flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => router.push(`${Routes.Chat}?agentId=${encodeURIComponent(agent.id)}`)}
-              className="rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-            >
-              Chat
-            </button>
-            <button
-              type="button"
-              onClick={() => router.push(`${Routes.SettingsAgents}/${agent.id}`)}
-              className="rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors hover:bg-muted"
-            >
-              Configure
-            </button>
-            <button
-              type="button"
-              onClick={() => router.push(`${Routes.SettingsAgents}/${agent.id}`)}
-              className="rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors hover:bg-muted"
-            >
-              Tasks
-            </button>
-          </div>
+        <div className="min-w-0">
+          <h3 className="truncate text-sm font-semibold">{agentLabel(agent)}</h3>
+          <p className="truncate text-xs text-muted-foreground">@{agent.id}</p>
         </div>
       </div>
+
+      {zone !== 'lounge' && (
+        <div className="mt-3 space-y-1.5">
+          <div className="text-xs text-muted-foreground line-clamp-1">{progressText}</div>
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+            <div className={`h-full rounded-full ${zone === 'dialogue' ? 'w-2/3 bg-purple-500' : 'w-5/6 bg-blue-500'} animate-pulse`} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -435,14 +259,18 @@ export function OfficeShell() {
 
   async function loadAgents() {
     try {
-      const res = await fetch('/api/agents', { cache: 'no-store' });
+      const [res, activeRes] = await Promise.all([
+        fetch('/api/agents', { cache: 'no-store' }),
+        fetch('/api/chat/active-agent', { cache: 'no-store' }),
+      ]);
       const data = await res.json().catch(() => ({})) as {
         ok?: boolean;
         data?: { agents?: AgentItem[]; defaultAgentId?: string };
       };
+      const activeData = await activeRes.json().catch(() => ({})) as { ok?: boolean; data?: { agentId?: string } };
       if (!data.ok || !data.data?.agents) throw new Error('Failed to load agents');
 
-      const explicitDialogAgentId = searchParams.get('agentId') || '';
+      const explicitDialogAgentId = activeData.data?.agentId || searchParams.get('agentId') || '';
       setDialogAgentId(explicitDialogAgentId);
 
       const base = data.data.agents.map<EnrichedAgent>((a) => ({ 
@@ -571,7 +399,7 @@ export function OfficeShell() {
               <h2 className="mb-3 text-sm font-semibold text-purple-700">💬 对话区 {dialogAgent ? '(1)' : '(0)'}</h2>
               {dialogAgent ? (
                 <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-2">
-                  <AgentCard key={dialogAgent.id} agent={dialogAgent} />
+                  <AgentCard key={dialogAgent.id} agent={dialogAgent} zone="dialogue" />
                 </div>
               ) : (
                 <div className="rounded-xl border bg-card p-4 text-sm text-muted-foreground">No agent in dialogue zone.</div>
@@ -582,7 +410,7 @@ export function OfficeShell() {
               <h2 className="mb-3 text-sm font-semibold text-blue-700">⚙️ 办公区 ({officeAgents.length})</h2>
               {officeAgents.length > 0 ? (
                 <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-2">
-                  {officeAgents.map((a) => <AgentCard key={a.id} agent={a} />)}
+                  {officeAgents.map((a) => <AgentCard key={a.id} agent={a} zone="office" />)}
                 </div>
               ) : (
                 <div className="rounded-xl border bg-card p-4 text-sm text-muted-foreground">No agents are working right now.</div>
@@ -593,7 +421,7 @@ export function OfficeShell() {
               <h2 className="mb-3 text-sm font-semibold text-gray-600">🛋️ 休闲区 ({loungeAgents.length})</h2>
               {loungeAgents.length > 0 ? (
                 <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-2">
-                  {loungeAgents.map((a) => <AgentCard key={a.id} agent={a} />)}
+                  {loungeAgents.map((a) => <AgentCard key={a.id} agent={a} zone="lounge" />)}
                 </div>
               ) : (
                 <div className="rounded-xl border bg-card p-4 text-sm text-muted-foreground">No agents in lounge zone.</div>

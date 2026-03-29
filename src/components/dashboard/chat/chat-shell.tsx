@@ -1218,6 +1218,15 @@ function ChatLayout() {
   }, [selectedAgentId, selectedGroupId]);
 
   useEffect(() => {
+    const agentIdForOffice = selectedGroupId ? '' : selectedAgentId;
+    fetch('/api/chat/active-agent', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ agentId: agentIdForOffice }),
+    }).catch(() => {});
+  }, [selectedAgentId, selectedGroupId]);
+
+  useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, activeTaskStatus, sending, selectedAgentId]);
 
