@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { Routes } from '@/routes';
 import { useEffect, useState } from 'react';
+import { ModelSelect } from '@/components/ui/model-select';
 import type { AgentDetailRecord } from './types';
 
 type AgentResponse = {
@@ -205,7 +206,9 @@ function AgentTasksPanel({ agentId }: { agentId: string }) {
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Model Override</p>
-            <input value={model} onChange={(e) => setModel(e.target.value)} className="mt-1 w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none" placeholder="optional" />
+            <div className="mt-1">
+              <ModelSelect value={model} onChange={setModel} placeholder="Search or select model" />
+            </div>
           </div>
           <div className="md:col-span-2">
             <p className="text-xs text-muted-foreground">Task Prompt</p>

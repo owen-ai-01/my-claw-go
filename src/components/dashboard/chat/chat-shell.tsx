@@ -1199,8 +1199,10 @@ function ChatLayout() {
           data?: { messages?: ChatMessage[]; task?: { status?: string } | null };
         };
         if (data.ok && data.data?.messages) {
-          setMessages(data.data.messages);
-          setActiveTaskStatus(data.data.task?.status || null);
+          const nextMessages = data.data.messages;
+          const hasPendingAssistant = nextMessages.some((msg) => msg.role === 'assistant' && (msg.status === 'queued' || msg.status === 'running'));
+          setMessages(nextMessages);
+          setActiveTaskStatus(hasPendingAssistant ? (data.data.task?.status || 'running') : null);
         } else {
           setMessages([]);
         }
@@ -1231,8 +1233,10 @@ function ChatLayout() {
             data?: { messages?: ChatMessage[]; task?: { status?: string } | null };
           };
           if (!cancelled && data.ok && data.data?.messages) {
-            setMessages(data.data.messages);
-            setActiveTaskStatus(data.data.task?.status || null);
+            const nextMessages = data.data.messages;
+            const hasPendingAssistant = nextMessages.some((msg) => msg.role === 'assistant' && (msg.status === 'queued' || msg.status === 'running'));
+            setMessages(nextMessages);
+            setActiveTaskStatus(hasPendingAssistant ? (data.data.task?.status || 'running') : null);
           }
         } catch {}
 
@@ -1325,8 +1329,10 @@ function ChatLayout() {
           .then((r) => r.json())
           .then((history) => {
             if (history?.ok && history?.data?.messages) {
-              setMessages(history.data.messages);
-              setActiveTaskStatus(history.data.task?.status || null);
+              const nextMessages = history.data.messages as ChatMessage[];
+              const hasPendingAssistant = nextMessages.some((msg) => msg.role === 'assistant' && (msg.status === 'queued' || msg.status === 'running'));
+              setMessages(nextMessages);
+              setActiveTaskStatus(hasPendingAssistant ? (history.data.task?.status || 'running') : null);
             }
           })
           .catch(() => {});
