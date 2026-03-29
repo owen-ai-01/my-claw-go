@@ -261,6 +261,7 @@ export function OfficeShell() {
   const [error, setError] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [countdown, setCountdown] = useState(5);
+  const [restartingGateway, setRestartingGateway] = useState(false);
   const [movedAt, setMovedAt] = useState<Record<string, number>>({});
   const prevZonesRef = useRef<Record<string, 'dialogue' | 'office' | 'lounge'>>({});
   const refreshInterval = 5;
@@ -332,6 +333,26 @@ export function OfficeShell() {
       setError(err instanceof Error ? err.message : 'Failed to load');
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleRestartGateway() {
+    const confirmed = window.confirm(
+      'Restart gateway for your runtime container?\n\nThis may briefly interrupt active conversations.'
+    );
+    if (!confirmed || restartingGateway) return;
+
+    setRestartingGateway(true);
+    try {
+      const res = await fetch('/api/chat/restart-gateway', { method: 'POST' });
+      const data = await res.json().catch(() => ({})) as { ok?: boolean; error?: string };
+      if (!res.ok || data.ok !== true) {
+        window.alert(data.error || 'Failed to restart gateway.');
+      }
+      await loadAgents();
+      setCountdown(refreshInterval);
+    } finally {
+      setRestartingGateway(false);
     }
   }
 
@@ -509,7 +530,18 @@ export function OfficeShell() {
             </div>
           </LayoutGroup>
 
-          <aside className="lg:col-span-3 rounded-2xl border bg-card/50 p-4 min-h-[360px]" />
+          <aside className="lg:col-span-3 rounded-2xl border bg-card/50 p-4 min-h-[360px]">
+            <div className="flex items-center justify-end">
+              <button
+                type="button"
+                onClick={handleRestartGateway}
+                disabled={restartingGateway}
+                className="rounded-lg border px-3 py-1.5 text-xs font-medium hover:bg-muted disabled:opacity-50"
+              >
+                {restartingGateway ? 'Restarting Gateway…' : 'Restart Gateway'}
+              </button>
+            </div>
+          </aside>
         </div>
       )}
     </div>
