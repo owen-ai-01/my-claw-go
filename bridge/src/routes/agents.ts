@@ -111,6 +111,7 @@ export async function agentRoutes(app: FastifyInstance) {
         description: typeof req.body?.description === 'string' ? req.body.description : undefined,
         department: typeof req.body?.department === 'string' ? req.body.department : undefined,
         enabled: typeof req.body?.enabled === 'boolean' ? req.body.enabled : undefined,
+        avatar: typeof req.body?.avatar === 'string' ? req.body.avatar : undefined,
       };
       const data = await updateAgent(agentId, patch);
       return ok(reply, data);

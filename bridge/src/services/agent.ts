@@ -105,6 +105,38 @@ export type AgentDetail = AgentListItem & {
   agentsMdExists: boolean;
 };
 
+type AgentBusinessMetadata = {
+  role?: string;
+  description?: string;
+  department?: string;
+  enabled?: boolean;
+  avatar?: string;
+};
+
+type AgentMetadataStore = {
+  version: 1;
+  agents: Record<string, AgentBusinessMetadata>;
+};
+
+const AGENT_METADATA_PATH = path.join(OPENCLAW_HOME, 'agent-metadata.json');
+
+async function readAgentMetadataStore(): Promise<AgentMetadataStore> {
+  try {
+    const raw = await fs.readFile(AGENT_METADATA_PATH, 'utf8');
+    const parsed = JSON.parse(raw) as AgentMetadataStore;
+    return {
+      version: 1,
+      agents: parsed?.agents || {},
+    };
+  } catch {
+    return { version: 1, agents: {} };
+  }
+}
+
+async function writeAgentMetadataStore(store: AgentMetadataStore) {
+  await fs.writeFile(AGENT_METADATA_PATH, JSON.stringify(store, null, 2), 'utf8');
+}
+
 async function readConfig() {
   const raw = await fs.readFile(OPENCLAW_CONFIG_PATH, 'utf8');
   return JSON.parse(raw) as OpenClawConfig;
@@ -140,23 +172,33 @@ async function pathExists(filePath: string) {
   }
 }
 
-function toAgentListItem(config: OpenClawConfig, defaultAgentId: string | undefined, agent: AgentConfigEntry): AgentListItem {
+function toAgentListItem(
+  config: OpenClawConfig,
+  defaultAgentId: string | undefined,
+  agent: AgentConfigEntry,
+  metadata?: AgentBusinessMetadata
+): AgentListItem {
   const accountId = agent.id;
   const telegramAccount = config.channels?.telegram?.accounts?.[accountId];
   const bindingEnabled = !!config.bindings?.some((binding) => binding.agentId === agent.id && binding.match?.channel === 'telegram' && binding.match?.accountId === accountId);
 
+  const effectiveIdentity: AgentIdentity | undefined = {
+    ...(agent.identity || {}),
+    ...(metadata?.avatar ? { avatar: metadata.avatar } : {}),
+  };
+
   return {
     id: agent.id,
-    name: agent.name || agent.identity?.name || agent.id,
+    name: agent.name || effectiveIdentity?.name || agent.id,
     workspace: agent.workspace,
     agentDir: agent.agentDir,
     model: agent.model,
-    enabled: agent.enabled !== false,
-    role: agent.role,
-    description: agent.description,
-    department: agent.department,
+    enabled: metadata?.enabled ?? true,
+    role: metadata?.role,
+    description: metadata?.description,
+    department: metadata?.department,
     isDefault: agent.default === true || agent.id === defaultAgentId,
-    identity: agent.identity,
+    identity: effectiveIdentity,
     telegram: telegramAccount
       ? {
           accountId,
@@ -174,7 +216,10 @@ function toAgentListItem(config: OpenClawConfig, defaultAgentId: string | undefi
 export async function listAgents() {
   const config = await readConfig();
   const state = await getBridgeState();
-  const agents = (config?.agents?.list || []).map((agent) => toAgentListItem(config, state.defaultAgentId, agent));
+  const metadataStore = await readAgentMetadataStore();
+  const agents = (config?.agents?.list || []).map((agent) =>
+    toAgentListItem(config, state.defaultAgentId, agent, metadataStore.agents[agent.id])
+  );
   return {
     defaultAgentId: state.defaultAgentId,
     agents,
@@ -193,12 +238,13 @@ export async function ensureAgentExists(agentId: string) {
 export async function getAgent(agentId: string): Promise<AgentDetail> {
   const config = await readConfig();
   const state = await getBridgeState();
+  const metadataStore = await readAgentMetadataStore();
   const found = config?.agents?.list?.find((agent) => agent.id === agentId);
   if (!found) {
     throw new BridgeError('AGENT_NOT_FOUND', `Agent not found: ${agentId}`, 404);
   }
 
-  const detail = toAgentListItem(config, state.defaultAgentId, found);
+  const detail = toAgentListItem(config, state.defaultAgentId, found, metadataStore.agents[found.id]);
   const agentsMdPath = found.workspace ? path.join(found.workspace, 'AGENTS.md') : null;
   const agentsMdExists = agentsMdPath ? await pathExists(agentsMdPath) : false;
   return {
@@ -241,7 +287,7 @@ export async function updateAgentMarkdown(agentId: string, content: string) {
   };
 }
 
-export async function updateAgent(agentId: string, patch: { model?: string; name?: string; role?: string; description?: string; department?: string; enabled?: boolean }) {
+export async function updateAgent(agentId: string, patch: { model?: string; name?: string; role?: string; description?: string; department?: string; enabled?: boolean; avatar?: string }) {
   const config = await readConfig();
   const agents = config.agents?.list || [];
   const index = agents.findIndex((agent) => agent.id === agentId);
@@ -268,31 +314,43 @@ export async function updateAgent(agentId: string, patch: { model?: string; name
       next.identity = { ...(next.identity || {}), name: trimmed };
     }
   }
-  if (typeof patch.role === 'string') {
-    const trimmed = patch.role.trim();
-    if (!trimmed) delete next.role;
-    else next.role = trimmed;
-  }
-  if (typeof patch.description === 'string') {
-    const trimmed = patch.description.trim();
-    if (!trimmed) delete next.description;
-    else next.description = trimmed;
-  }
-  if (typeof patch.department === 'string') {
-    const trimmed = patch.department.trim();
-    if (!trimmed) delete next.department;
-    else next.department = trimmed;
-  }
-  if (typeof patch.enabled === 'boolean') {
-    next.enabled = patch.enabled;
-  }
-
   agents[index] = next;
   config.agents = {
     ...(config.agents || {}),
     list: agents,
   };
   await writeConfig(config);
+
+  const metadataStore = await readAgentMetadataStore();
+  const currentMeta = { ...(metadataStore.agents[agentId] || {}) };
+
+  if (typeof patch.role === 'string') {
+    const trimmed = patch.role.trim();
+    if (!trimmed) delete currentMeta.role;
+    else currentMeta.role = trimmed;
+  }
+  if (typeof patch.description === 'string') {
+    const trimmed = patch.description.trim();
+    if (!trimmed) delete currentMeta.description;
+    else currentMeta.description = trimmed;
+  }
+  if (typeof patch.department === 'string') {
+    const trimmed = patch.department.trim();
+    if (!trimmed) delete currentMeta.department;
+    else currentMeta.department = trimmed;
+  }
+  if (typeof patch.enabled === 'boolean') {
+    currentMeta.enabled = patch.enabled;
+  }
+  if (typeof patch.avatar === 'string') {
+    const trimmed = patch.avatar.trim();
+    if (!trimmed) delete currentMeta.avatar;
+    else currentMeta.avatar = trimmed;
+  }
+
+  metadataStore.agents[agentId] = currentMeta;
+  await writeAgentMetadataStore(metadataStore);
+
   return getAgent(agentId);
 }
 
@@ -334,6 +392,13 @@ export async function deleteAgent(agentId: string) {
   }
 
   await writeConfig(config);
+
+  const metadataStore = await readAgentMetadataStore();
+  if (metadataStore.agents[agentId]) {
+    delete metadataStore.agents[agentId];
+    await writeAgentMetadataStore(metadataStore);
+  }
+
   return { deleted: true, agentId };
 }
 
@@ -378,23 +443,27 @@ export async function createAgent(params: { agentId: string; name?: string; work
     newAgent.name = name;
     newAgent.identity = { ...(newAgent.identity || {}), name };
   }
-  if (avatar?.trim()) {
-    newAgent.identity = { ...(newAgent.identity || {}), avatar: avatar.trim() };
-  }
   if (emoji?.trim()) {
     newAgent.identity = { ...(newAgent.identity || {}), emoji: emoji.trim() };
   }
   if (model) newAgent.model = model;
-  if (role?.trim()) newAgent.role = role.trim();
-  if (description?.trim()) newAgent.description = description.trim();
-  if (department?.trim()) newAgent.department = department.trim();
-  if (typeof enabled === 'boolean') newAgent.enabled = enabled;
 
   config.agents = config.agents || {};
   config.agents.list = config.agents.list || [];
   config.agents.list.push(newAgent);
 
   await writeConfig(config);
+
+  const metadataStore = await readAgentMetadataStore();
+  metadataStore.agents[agentId] = {
+    ...(role?.trim() ? { role: role.trim() } : {}),
+    ...(description?.trim() ? { description: description.trim() } : {}),
+    ...(department?.trim() ? { department: department.trim() } : {}),
+    ...(typeof enabled === 'boolean' ? { enabled } : {}),
+    ...(avatar?.trim() ? { avatar: avatar.trim() } : {}),
+  };
+  await writeAgentMetadataStore(metadataStore);
+
   return getAgent(agentId);
 }
 
