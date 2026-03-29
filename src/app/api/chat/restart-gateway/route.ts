@@ -20,18 +20,32 @@ export async function POST() {
   const containerName = runtimeSession.containerName;
 
   try {
-    await execFileAsync('sg', [
-      'docker',
-      '-c',
-      `docker exec --user openclaw ${containerName} bash -lc \"pkill -f 'openclaw gateway run|keep-gateway.sh' >/dev/null 2>&1 || true; nohup openclaw gateway run --allow-unconfigured --auth none --bind loopback --port 18789 >/home/openclaw/.openclaw/gateway.log 2>&1 & sleep 1\"`,
-    ], { timeout: 15000, maxBuffer: 1024 * 1024 });
+    const restartScript = [
+      "set -e",
+      "if [ -x /home/openclaw/.openclaw/keep-gateway.sh ]; then",
+      "  pkill -f 'openclaw gateway run --allow-unconfigured --auth none --bind loopback --port 18789' >/dev/null 2>&1 || true",
+      "  nohup /home/openclaw/.openclaw/keep-gateway.sh >/home/openclaw/.openclaw/gateway.log 2>&1 &",
+      "else",
+      "  pkill -f 'openclaw gateway run --allow-unconfigured --auth none --bind loopback --port 18789' >/dev/null 2>&1 || true",
+      "  nohup openclaw gateway run --allow-unconfigured --auth none --bind loopback --port 18789 >/home/openclaw/.openclaw/gateway.log 2>&1 &",
+      "fi",
+      "sleep 1",
+      "openclaw gateway call health --json >/dev/null 2>&1 || true",
+    ].join('; ');
 
-    return NextResponse.json({ ok: true, data: { restarted: true } });
+    const { stdout, stderr } = await execFileAsync(
+      'sg',
+      ['docker', '-c', `docker exec --user openclaw ${containerName} bash -lc ${JSON.stringify(restartScript)}`],
+      { timeout: 20000, maxBuffer: 1024 * 1024 }
+    );
+
+    return NextResponse.json({ ok: true, data: { restarted: true, stdout, stderr } });
   } catch (error) {
+    const msg = error instanceof Error ? error.message : 'Failed to restart gateway';
     return NextResponse.json(
       {
         ok: false,
-        error: error instanceof Error ? error.message : 'Failed to restart gateway',
+        error: msg,
       },
       { status: 500 }
     );
