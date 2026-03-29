@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { Routes } from '@/routes';
 import { useEffect, useState } from 'react';
+import { ModelSelect } from '@/components/ui/model-select';
 import type { AgentDetailRecord } from './types';
 
 type AgentResponse = {
