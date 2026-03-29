@@ -307,8 +307,13 @@ export function AgentDetails({ agentId }: { agentId: string }) {
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0">
           <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-lg">
-              {agentEmoji(agent)}
+            <div className="h-12 w-12 overflow-hidden rounded-full bg-primary/10">
+              {agent.identity?.avatar ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={agent.identity.avatar} alt={agentLabel(agent)} className="h-full w-full object-cover" />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center text-lg">{agentEmoji(agent)}</div>
+              )}
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2">
