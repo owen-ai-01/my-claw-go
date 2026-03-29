@@ -194,6 +194,64 @@ export async function settleDirectChatBilling(params: {
   }
 }
 
+export type ChatModelSelection = {
+  selectedModel: string;
+  isAutoModel: boolean;
+  routing: ReturnType<typeof routeMessage> | null;
+  resolvedModel?: string;
+  mode: 'user-selected' | 'auto' | 'auto-fallback';
+};
+
+export function resolveChatModelSelection(params: {
+  message: string;
+  userModelOverride?: string;
+  routerEnabled: boolean;
+  routeFn?: typeof routeMessage;
+}): ChatModelSelection {
+  const { message, userModelOverride, routerEnabled, routeFn = routeMessage } = params;
+  const selectedModel = String(userModelOverride || '').trim();
+  const isAutoModel = !selectedModel || selectedModel === 'auto' || selectedModel === 'default';
+
+  if (!isAutoModel) {
+    return {
+      selectedModel,
+      isAutoModel,
+      routing: null,
+      resolvedModel: selectedModel,
+      mode: 'user-selected',
+    };
+  }
+
+  if (!routerEnabled) {
+    return {
+      selectedModel,
+      isAutoModel,
+      routing: null,
+      resolvedModel: undefined,
+      mode: 'auto-fallback',
+    };
+  }
+
+  try {
+    const routing = routeFn({ message });
+    return {
+      selectedModel,
+      isAutoModel,
+      routing,
+      resolvedModel: routing.model,
+      mode: 'auto',
+    };
+  } catch {
+    return {
+      selectedModel,
+      isAutoModel,
+      routing: null,
+      resolvedModel: undefined,
+      mode: 'auto-fallback',
+    };
+  }
+}
+
 async function runDirectChatTask(params: {
   taskId: string;
   userId: string;
@@ -231,29 +289,15 @@ async function runDirectChatTask(params: {
     //   - To add a new model tier: add env var + update routing table.
     const routerEnabled = process.env.MYCLAWGO_ROUTER_DISABLED !== 'true';
 
-    // Compatibility policy:
-    // 1) User selects explicit model   -> use it directly, NO routing
-    // 2) User selects auto/default/''  -> use router
-    // 3) Router fails                  -> fallback to agent default model
-    const selectedModel = String(userModelOverride || '').trim();
-    const isAutoModel = !selectedModel || selectedModel === 'auto' || selectedModel === 'default';
+    const selection = resolveChatModelSelection({
+      message,
+      userModelOverride,
+      routerEnabled,
+    });
 
-    let routing: ReturnType<typeof routeMessage> | null = null;
-    let resolvedModel: string | undefined;
-
-    if (!isAutoModel) {
-      // Explicit user model wins (no routing)
-      resolvedModel = selectedModel;
-    } else if (routerEnabled) {
-      try {
-        routing = routeMessage({ message });
-        resolvedModel = routing.model;
-      } catch (routeError) {
-        // Fallback to agent default model by leaving resolvedModel undefined
-        console.warn(`[model-router] route failed, fallback to agent default: ${routeError instanceof Error ? routeError.message : routeError}`);
-        routing = null;
-        resolvedModel = undefined;
-      }
+    const { isAutoModel, routing, resolvedModel, mode } = selection;
+    if (mode === 'auto-fallback' && routerEnabled) {
+      console.warn('[model-router] route failed, fallback to agent default');
     }
 
     const target = await resolveUserBridgeTarget(userId);
