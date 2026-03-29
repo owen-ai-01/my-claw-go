@@ -16,7 +16,7 @@ import {
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { RefreshCcw, Minimize2, Coins } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 type RuntimeStatus =
   | { ok: true; state: 'not_created'; reason: string; containerName?: string }
@@ -1271,24 +1271,19 @@ function ChatLayout() {
     }
   }, [activeTaskStatus, selectedAgentId, selectedGroupId]);
 
-  async function onSend() {
-    const text = input.trim();
-    if (!text || sending) return;
-    // Only add user message optimistically — bounce indicator handles the waiting state
-    setMessages((m) => [...m,
-      { role: 'user', content: text, createdAt: new Date().toISOString(), status: 'done' },
-    ]);
+  async function sendText(text: string) {
+    const trimmed = text.trim();
+    if (!trimmed || sending) return;
+
+    setMessages((m) => [...m, { role: 'user', content: trimmed, createdAt: new Date().toISOString(), status: 'done' }]);
     setInput('');
     setSending(true);
     setInsufficientCredits(false);
 
     try {
-      const payload: any = { message: text, timeoutMs: 90000 };
-      if (selectedGroupId) {
-        payload.groupId = selectedGroupId;
-      } else {
-        payload.agentId = selectedAgentId;
-      }
+      const payload: any = { message: trimmed, timeoutMs: 90000 };
+      if (selectedGroupId) payload.groupId = selectedGroupId;
+      else payload.agentId = selectedAgentId;
 
       const res = await fetch('/api/chat/send', {
         method: 'POST',
@@ -1299,19 +1294,13 @@ function ChatLayout() {
       const data = (await res.json().catch(() => ({}))) as {
         ok?: boolean;
         code?: string;
-        data?: {
-          taskId?: string;
-          assistantMessageId?: string;
-          status?: string;
-          reply?: string;
-          routedAgentId?: string;
-        };
+        data?: { status?: string; reply?: string; routedAgentId?: string };
         error?: string | { message?: string };
       };
 
       if (res.status === 402 && data.code === 'insufficient_credits') {
         setInsufficientCredits(true);
-        setMessages((m) => m.slice(0, -1)); // remove the optimistic user message
+        setMessages((m) => m.slice(0, -1));
         return;
       }
 
@@ -1354,89 +1343,26 @@ function ChatLayout() {
           })
           .catch(() => {});
       }
+
+      if (trimmed.startsWith('/')) setTokenRefreshKey((k) => k + 1);
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'Failed to send message';
-      setMessages((m) => [
-        ...m,
-        { role: 'assistant', content: `⚠️ ${msg}`, createdAt: new Date().toISOString(), status: 'failed' },
-      ]);
+      setMessages((m) => [...m, { role: 'assistant', content: `⚠️ ${msg}`, createdAt: new Date().toISOString(), status: 'failed' }]);
     } finally {
       setSending(false);
     }
   }
 
+  async function onSend() {
+    await sendText(input);
+  }
+
   async function handleContextReset() {
-    const confirmed = window.confirm(
-      'Reset context will start a brand-new session for this chat.\n\nWhat will happen:\n- A new session will be created\n- Previous chat context will no longer be used by the model\n- The latest OpenClaw response will be shown in chat\n- Token usage will refresh after the action\n\nDo you want to continue?'
-    );
-    if (!confirmed) return;
-
-    try {
-      const payload: any = { message: '/new', timeoutMs: 90000 };
-      if (selectedGroupId) payload.groupId = selectedGroupId;
-      else payload.agentId = selectedAgentId;
-
-      const res = await fetch('/api/chat/send', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await res.json().catch(() => ({}));
-      if (data?.ok) {
-        await fetch(`/api/chat/history?agentId=${encodeURIComponent(selectedAgentId)}`, { cache: 'no-store' })
-          .then((r) => r.json())
-          .then((history) => {
-            if (history?.ok && history?.data?.messages) {
-              const nextMessages = history.data.messages as ChatMessage[];
-              const hasPendingAssistant = nextMessages.some((msg) => msg.role === 'assistant' && (msg.status === 'queued' || msg.status === 'running'));
-              setMessages(nextMessages);
-              setActiveTaskStatus(hasPendingAssistant ? (history.data.task?.status || 'running') : null);
-            }
-          })
-          .catch(() => {});
-        setTokenRefreshKey((k) => k + 1);
-      }
-    } catch {
-      toast.error('Failed to reset context.');
-    }
+    await sendText('/new');
   }
 
   async function handleContextCompress() {
-    const confirmed = window.confirm(
-      'Compress context will summarize and trim older chat context.\n\nWhat will happen:\n- Older context is compacted to save tokens\n- Recent messages are kept for continuity\n- The latest OpenClaw response will be shown in chat\n- Token usage will refresh after the action\n\nDo you want to continue?'
-    );
-    if (!confirmed) return;
-
-    try {
-      const payload: any = { message: '/compact', timeoutMs: 90000 };
-      if (selectedGroupId) payload.groupId = selectedGroupId;
-      else payload.agentId = selectedAgentId;
-
-      const res = await fetch('/api/chat/send', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await res.json().catch(() => ({}));
-      if (data?.ok) {
-        await fetch(`/api/chat/history?agentId=${encodeURIComponent(selectedAgentId)}`, { cache: 'no-store' })
-          .then((r) => r.json())
-          .then((history) => {
-            if (history?.ok && history?.data?.messages) {
-              const nextMessages = history.data.messages as ChatMessage[];
-              const hasPendingAssistant = nextMessages.some((msg) => msg.role === 'assistant' && (msg.status === 'queued' || msg.status === 'running'));
-              setMessages(nextMessages);
-              setActiveTaskStatus(hasPendingAssistant ? (history.data.task?.status || 'running') : null);
-            }
-          })
-          .catch(() => {});
-        setTokenRefreshKey((k) => k + 1);
-      }
-    } catch {
-      toast.error('Failed to compress context.');
-    }
+    await sendText('/compact');
   }
 
   const selectedAgent = agents.find((agent) => agent.id === selectedAgentId) || { id: selectedAgentId, name: selectedAgentId };
@@ -1463,6 +1389,15 @@ function ChatLayout() {
   );
 
   const sessionTokens = useSessionTokens(selectedAgentId, tokenRefreshKey);
+
+  const slashCommands = [
+    { cmd: '/compact', desc: 'Compress conversation context' },
+    { cmd: '/new', desc: 'Start a new session context' },
+    { cmd: '/reset', desc: 'Reset session context' },
+    { cmd: '/status', desc: 'Show session status' },
+  ];
+  const showSlashCommands = input.trim().startsWith('/');
+  const filteredSlashCommands = slashCommands.filter((item) => item.cmd.startsWith(input.trim().toLowerCase()));
 
   function switchToAgent(agentId: string) {
     setSelectedAgentId(agentId);
@@ -1794,6 +1729,24 @@ function ChatLayout() {
                 </button>
               </div>
             </div>
+            {showSlashCommands && filteredSlashCommands.length > 0 && (
+              <div className="mb-2 rounded-xl border bg-background p-2">
+                <div className="mb-1 px-1 text-[11px] text-muted-foreground">Commands</div>
+                <div className="flex flex-col gap-1">
+                  {filteredSlashCommands.map((item) => (
+                    <button
+                      key={item.cmd}
+                      type="button"
+                      onClick={() => sendText(item.cmd)}
+                      className="flex items-center justify-between rounded-md px-2 py-1.5 text-left text-xs hover:bg-muted"
+                    >
+                      <span className="font-mono">{item.cmd}</span>
+                      <span className="text-muted-foreground">{item.desc}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             <div className="flex items-end gap-2 rounded-2xl border bg-background px-4 py-2.5">
               <textarea
                 value={input}
