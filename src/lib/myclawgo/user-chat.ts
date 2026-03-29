@@ -230,15 +230,31 @@ async function runDirectChatTask(params: {
     //   - To update rules: redeploy platform only, no Docker image changes needed.
     //   - To add a new model tier: add env var + update routing table.
     const routerEnabled = process.env.MYCLAWGO_ROUTER_DISABLED !== 'true';
-    const routing = routerEnabled
-      ? routeMessage({
-          message,
-          userModelOverride: userModelOverride && userModelOverride !== 'auto' ? userModelOverride : undefined,
-        })
-      : null;
 
-    // Effective model: explicit user override > auto router choice > undefined (agent default)
-    const resolvedModel = routing?.userOverride || routing?.model || undefined;
+    // Compatibility policy:
+    // 1) User selects explicit model   -> use it directly, NO routing
+    // 2) User selects auto/default/''  -> use router
+    // 3) Router fails                  -> fallback to agent default model
+    const selectedModel = String(userModelOverride || '').trim();
+    const isAutoModel = !selectedModel || selectedModel === 'auto' || selectedModel === 'default';
+
+    let routing: ReturnType<typeof routeMessage> | null = null;
+    let resolvedModel: string | undefined;
+
+    if (!isAutoModel) {
+      // Explicit user model wins (no routing)
+      resolvedModel = selectedModel;
+    } else if (routerEnabled) {
+      try {
+        routing = routeMessage({ message });
+        resolvedModel = routing.model;
+      } catch (routeError) {
+        // Fallback to agent default model by leaving resolvedModel undefined
+        console.warn(`[model-router] route failed, fallback to agent default: ${routeError instanceof Error ? routeError.message : routeError}`);
+        routing = null;
+        resolvedModel = undefined;
+      }
+    }
 
     const target = await resolveUserBridgeTarget(userId);
     if (!target.ok) {
@@ -304,8 +320,12 @@ async function runDirectChatTask(params: {
       bridgeRaw: payload.data.raw,
     });
 
-    if (routing) {
-      console.info(`[model-router] taskId=${taskId} level=${routing.level} model=${payload.data.model || resolvedModel || 'agent-default'} reason=${routing.reason}`);
+    if (!isAutoModel) {
+      console.info(`[model-router] taskId=${taskId} mode=user-selected model=${payload.data.model || resolvedModel}`);
+    } else if (routing) {
+      console.info(`[model-router] taskId=${taskId} mode=auto level=${routing.level} model=${payload.data.model || resolvedModel || 'agent-default'} reason=${routing.reason}`);
+    } else {
+      console.info(`[model-router] taskId=${taskId} mode=auto-fallback model=${payload.data.model || 'agent-default'}`);
     }
 
     await db.update(userChatTask)
