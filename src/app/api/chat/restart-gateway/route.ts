@@ -7,6 +7,14 @@ import { promisify } from 'node:util';
 
 const execFileAsync = promisify(execFile);
 
+async function sanitizeOpenClawConfig(containerName: string) {
+  await execFileAsync(
+    'sg',
+    ['docker', '-c', `docker exec --user openclaw ${containerName} bash -lc ${JSON.stringify("node -e \"const fs=require('fs');const p='/home/openclaw/.openclaw/openclaw.json';const j=JSON.parse(fs.readFileSync(p,'utf8'));if(j.agents&&Array.isArray(j.agents.list)){j.agents.list=j.agents.list.map(a=>{if(a&&typeof a==='object'){delete a.role;delete a.description;delete a.department;delete a.enabled;if(a.identity&&a.identity.avatar) delete a.identity.avatar;}return a;});}fs.writeFileSync(p,JSON.stringify(j,null,2));\"")}`],
+    { timeout: 15000, maxBuffer: 1024 * 1024 }
+  );
+}
+
 export async function POST() {
   const session = await auth.api.getSession({ headers: await headers() });
   const userId = session?.user?.id;
@@ -20,6 +28,7 @@ export async function POST() {
   const containerName = runtimeSession.containerName;
 
   try {
+    await sanitizeOpenClawConfig(containerName);
     const restartScript = [
       "set -e",
       "if [ -x /home/openclaw/.openclaw/keep-gateway.sh ]; then",

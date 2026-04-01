@@ -125,8 +125,6 @@ function CreateAgentModal({ onClose, onCreated }: { onClose: () => void; onCreat
     try {
       const body: Record<string, string> = { agentId: agentId.trim() };
       if (name.trim()) body.name = name.trim();
-      if (role.trim()) body.role = role.trim();
-      if (description.trim()) body.description = description.trim();
       if (avatar.trim()) body.avatar = avatar.trim();
       if (emoji.trim()) body.emoji = emoji.trim();
       if (model.trim()) body.model = model.trim();

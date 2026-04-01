@@ -16,7 +16,7 @@ import {
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { RefreshCcw, Minimize2 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 type RuntimeStatus =
   | { ok: true; state: 'not_created'; reason: string; containerName?: string }
@@ -93,6 +93,31 @@ function agentLabel(agent: Partial<AgentItem>) {
 
 function agentEmoji(agent: Partial<AgentItem>) {
   return agent.identity?.emoji?.trim() || '🤖';
+}
+
+/** Render message text with @agentId highlighted as colored badges */
+function renderMessageContent(
+  content: string,
+  knownMembers: { id: string; name?: string; identity?: { name?: string; emoji?: string } }[] = []
+) {
+  const parts = content.split(/(@[a-zA-Z0-9_-]+)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith('@')) {
+      const id = part.slice(1);
+      const member = knownMembers.find((m) => m.id === id);
+      return (
+        <span
+          key={i}
+          title={member ? agentLabel(member) : id}
+          className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-1.5 py-0.5 text-[11px] font-semibold text-primary"
+        >
+          {member ? agentEmoji(member) : null}
+          @{id}
+        </span>
+      );
+    }
+    return <span key={i}>{part}</span>;
+  });
 }
 
 
@@ -214,10 +239,6 @@ function AgentConfigDrawer({
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({
             name: draftName,
-            role: draftRole,
-            description: draftDescription,
-            department: draftDepartment,
-            enabled: draftEnabled,
             model: draftModel,
           }),
         }),
@@ -579,8 +600,6 @@ function AddAgentDrawer({
         body: JSON.stringify({
           agentId: agentId.trim(),
           name: name.trim() || undefined,
-          role: role.trim() || undefined,
-          description: description.trim() || undefined,
           avatar: avatar.trim() || undefined,
           emoji: emoji.trim() || undefined,
           model: model.trim() || undefined,
@@ -1164,7 +1183,13 @@ function ChatLayout() {
   const [createGroupOpen, setCreateGroupOpen] = useState(false);
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const mentionPopupRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+
+  // @mention autocomplete state
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
+  const [mentionActiveIdx, setMentionActiveIdx] = useState(0);
 
   useEffect(() => {
     const loadData = async () => {
@@ -1378,9 +1403,9 @@ function ChatLayout() {
     }
   }
 
-  async function onSend() {
+  const onSend = useCallback(async () => {
     await sendText(input);
-  }
+  }, [input]);
 
   async function handleContextReset() {
     await sendText('/new');
@@ -1421,6 +1446,96 @@ function ChatLayout() {
   ];
   const showSlashCommands = input.trim().startsWith('/');
   const filteredSlashCommands = slashCommands.filter((item) => item.cmd.startsWith(input.trim().toLowerCase()));
+
+  // ── @mention autocomplete ─────────────────────────────────────────────────
+  const mentionMembers = selectedGroup ? selectedGroupMembers : [];
+  const filteredMentionMembers = mentionQuery !== null
+    ? mentionMembers.filter((m) =>
+        m.id.toLowerCase().includes(mentionQuery.toLowerCase()) ||
+        (agentLabel(m)).toLowerCase().includes(mentionQuery.toLowerCase())
+      )
+    : [];
+  const showMentionPopup = !!selectedGroup && mentionQuery !== null && filteredMentionMembers.length > 0;
+
+  // close mention popup when clicking outside
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!showMentionPopup) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (mentionPopupRef.current && !mentionPopupRef.current.contains(e.target as Node)) {
+        setMentionQuery(null);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showMentionPopup]);
+
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const val = e.target.value;
+    setInput(val);
+    e.target.style.height = 'auto';
+    e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
+
+    // Detect @mention trigger: find last @ before cursor
+    const cursor = e.target.selectionStart ?? val.length;
+    const textBefore = val.slice(0, cursor);
+    const atMatch = textBefore.match(/@([a-zA-Z0-9_-]*)$/);
+    if (atMatch) {
+      setMentionQuery(atMatch[1]);
+      setMentionActiveIdx(0);
+    } else {
+      setMentionQuery(null);
+    }
+  }, []);
+
+  const insertMention = useCallback((memberId: string) => {
+    if (!textareaRef.current) return;
+    const el = textareaRef.current;
+    const cursor = el.selectionStart ?? input.length;
+    const textBefore = input.slice(0, cursor);
+    const atIdx = textBefore.lastIndexOf('@');
+    const before = input.slice(0, atIdx);
+    const after = input.slice(cursor);
+    const newVal = `${before}@${memberId} ${after}`;
+    setInput(newVal);
+    setMentionQuery(null);
+    // Restore focus + move cursor after inserted mention
+    requestAnimationFrame(() => {
+      el.focus();
+      const pos = atIdx + memberId.length + 2; // @name + space
+      el.setSelectionRange(pos, pos);
+      el.style.height = 'auto';
+      el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
+    });
+  }, [input]);
+
+  const handleTextareaKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (showMentionPopup && filteredMentionMembers.length > 0) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setMentionActiveIdx((i) => (i + 1) % filteredMentionMembers.length);
+        return;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setMentionActiveIdx((i) => (i - 1 + filteredMentionMembers.length) % filteredMentionMembers.length);
+        return;
+      }
+      if (e.key === 'Enter' || e.key === 'Tab') {
+        e.preventDefault();
+        insertMention(filteredMentionMembers[mentionActiveIdx]?.id || filteredMentionMembers[0].id);
+        return;
+      }
+      if (e.key === 'Escape') {
+        setMentionQuery(null);
+        return;
+      }
+    }
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      onSend();
+    }
+  }, [showMentionPopup, filteredMentionMembers, mentionActiveIdx, insertMention, onSend]);
 
   function switchToAgent(agentId: string) {
     setSelectedAgentId(agentId);
@@ -1700,7 +1815,9 @@ function ChatLayout() {
                         </div>
                       ) : null}
                       <div className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap break-words [overflow-wrap:anywhere] ${msg.role === 'user' ? 'bg-primary text-primary-foreground rounded-br-sm' : 'bg-muted text-foreground rounded-bl-sm'}`}>
-                        {msg.content}
+                        {selectedGroup
+                          ? renderMessageContent(msg.content, selectedGroupMembers)
+                          : msg.content}
                       </div>
                     </div>
                   </div>
@@ -1748,6 +1865,7 @@ function ChatLayout() {
                 </button>
               </div>
             </div>
+            {/* Slash commands popup */}
             {showSlashCommands && filteredSlashCommands.length > 0 && (
               <div className="mb-2 rounded-xl border bg-background p-2">
                 <div className="mb-1 px-1 text-[11px] text-muted-foreground">Commands</div>
@@ -1766,20 +1884,39 @@ function ChatLayout() {
                 </div>
               </div>
             )}
+
+            {/* @mention autocomplete popup */}
+            {showMentionPopup && (
+              <div
+                ref={mentionPopupRef}
+                className="mb-2 rounded-xl border bg-background shadow-lg overflow-hidden"
+              >
+                <div className="px-3 pt-2 pb-1 text-[11px] text-muted-foreground font-medium">Members</div>
+                {filteredMentionMembers.map((member, idx) => (
+                  <button
+                    key={member.id}
+                    type="button"
+                    onMouseDown={(e) => { e.preventDefault(); insertMention(member.id); }}
+                    className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm text-left transition-colors ${
+                      idx === mentionActiveIdx ? 'bg-primary/10 text-primary' : 'hover:bg-muted'
+                    }`}
+                  >
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-xs flex-shrink-0">
+                      {agentEmoji(member)}
+                    </span>
+                    <span className="font-medium truncate">{agentLabel(member)}</span>
+                    <span className="text-[11px] text-muted-foreground ml-auto flex-shrink-0">@{member.id}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+
             <div className="flex items-end gap-2 rounded-2xl border bg-background px-4 py-2.5">
               <textarea
+                ref={textareaRef}
                 value={input}
-                onChange={(e) => {
-                  setInput(e.target.value);
-                  e.target.style.height = 'auto';
-                  e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    onSend();
-                  }
-                }}
+                onChange={handleInputChange}
+                onKeyDown={handleTextareaKeyDown}
                 placeholder={inputPlaceholder}
                 rows={1}
                 className="flex-1 resize-none bg-transparent text-sm outline-none max-h-[120px] leading-relaxed py-0.5"
@@ -1789,7 +1926,9 @@ function ChatLayout() {
               </button>
             </div>
             <p className="mt-1.5 text-center text-xs text-muted-foreground/40">
-              {selectedGroup ? 'Shift+Enter for new line · Tip: use @agentId in group chat' : 'Shift+Enter for new line'}
+              {selectedGroup
+                ? 'Shift+Enter for new line · Type @ to mention a member'
+                : 'Shift+Enter for new line'}
             </p>
           </div>
         </div>
