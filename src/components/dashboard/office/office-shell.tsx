@@ -269,7 +269,6 @@ export function OfficeShell() {
   const [movedAt, setMovedAt] = useState<Record<string, number>>({});
   const [liveFeed, setLiveFeed] = useState<Array<{ key: string; at: number; agentId: string; agentName: string; action: string }>>([]);
   const liveFeedSeenRef = useRef<Set<string>>(new Set());
-  const liveRawSeenRef = useRef<Set<string>>(new Set());
   const prevZonesRef = useRef<Record<string, 'dialogue' | 'office' | 'lounge'>>({});
   const refreshInterval = 5;
 
@@ -398,44 +397,6 @@ export function OfficeShell() {
     }
   }, [zoneByAgent, dialogAgentId]);
 
-  function parseLogLineToFeedItem(line: string): { agentId: string; action: string } | null {
-    const lower = line.toLowerCase();
-    const agentMatch = line.match(/agent(?:id)?[=:]([a-zA-Z0-9_-]+)/i)
-      || line.match(/targetAgent=([a-zA-Z0-9_-]+)/i)
-      || line.match(/agent\s+([a-zA-Z0-9_-]+)/i);
-
-    if (!agentMatch?.[1]) return null;
-    const agentId = agentMatch[1];
-
-    // tool actions
-    const toolMatch = line.match(/tool(?:name)?[=:]\s*([a-zA-Z0-9_:-]+)/i) || line.match(/"tool"\s*:\s*"([a-zA-Z0-9_:-]+)"/i);
-    if (toolMatch?.[1]) return { agentId, action: `Tool: ${toolMatch[1]}` };
-
-    if (lower.includes(' read ') || lower.includes('"read"') || lower.includes('/read')) {
-      const fileMatch = line.match(/(?:path|file|file_path|pathname)[=:\"]\s*([^\",\s]+)/i);
-      return { agentId, action: fileMatch?.[1] ? `Read file ${fileMatch[1]}` : 'Read file' };
-    }
-    if (lower.includes(' write ') || lower.includes('"write"') || lower.includes('/write')) {
-      const fileMatch = line.match(/(?:path|file|file_path|pathname)[=:\"]\s*([^\",\s]+)/i);
-      return { agentId, action: fileMatch?.[1] ? `Write file ${fileMatch[1]}` : 'Write file' };
-    }
-    if (lower.includes(' edit ') || lower.includes('"edit"') || lower.includes('/edit')) {
-      const fileMatch = line.match(/(?:path|file|file_path|pathname)[=:\"]\s*([^\",\s]+)/i);
-      return { agentId, action: fileMatch?.[1] ? `Edit file ${fileMatch[1]}` : 'Edit file' };
-    }
-    if (lower.includes(' exec ') || lower.includes('process') || lower.includes('/exec')) {
-      return { agentId, action: 'Run command' };
-    }
-    if (lower.includes('chat.send') || lower.includes('/chat/send')) {
-      return { agentId, action: 'Handling chat request' };
-    }
-    if (lower.includes('timing')) {
-      return { agentId, action: 'Working…' };
-    }
-
-    return { agentId, action: 'Activity update' };
-  }
-
   useEffect(() => {
     const newItems: Array<{ key: string; at: number; agentId: string; agentName: string; action: string }> = [];
     for (const agent of agents) {
@@ -471,60 +432,54 @@ export function OfficeShell() {
     }
   }, [agents]);
 
-  // Enrich Live Feed by polling bridge/gateway recent logs (pseudo-stream)
+  // Structured activity stream from bridge
   useEffect(() => {
     let stopped = false;
 
     const tick = async () => {
       try {
-        const [bridgeRes, gatewayRes] = await Promise.all([
-          fetch('/api/logs/recent?source=bridge&lines=120', { cache: 'no-store' }),
-          fetch('/api/logs/recent?source=gateway&lines=120', { cache: 'no-store' }),
-        ]);
-        const bridgeJson = await bridgeRes.json().catch(() => ({})) as { ok?: boolean; data?: { lines?: string[] } };
-        const gatewayJson = await gatewayRes.json().catch(() => ({})) as { ok?: boolean; data?: { lines?: string[] } };
-        const allLines = [
-          ...(Array.isArray(bridgeJson?.data?.lines) ? bridgeJson.data!.lines! : []),
-          ...(Array.isArray(gatewayJson?.data?.lines) ? gatewayJson.data!.lines! : []),
-        ];
+        const res = await fetch('/api/activity/recent?limit=160', { cache: 'no-store' });
+        const json = await res.json().catch(() => ({})) as {
+          ok?: boolean;
+          data?: {
+            events?: Array<{ at?: number; agentId?: string; action?: string }>;
+          };
+        };
+        const events = Array.isArray(json?.data?.events) ? json.data!.events! : [];
+        if (events.length === 0) return;
 
-        if (allLines.length === 0) return;
-
-        const now = Date.now();
         const newItems: Array<{ key: string; at: number; agentId: string; agentName: string; action: string }> = [];
 
-        for (const line of allLines) {
-          const rawKey = line.trim();
-          if (!rawKey || liveRawSeenRef.current.has(rawKey)) continue;
-          liveRawSeenRef.current.add(rawKey);
+        for (const ev of events) {
+          const agentId = String(ev.agentId || '').trim();
+          const action = String(ev.action || '').trim();
+          const at = Number(ev.at || Date.now());
+          if (!agentId || !action) continue;
 
-          const parsed = parseLogLineToFeedItem(line);
-          if (!parsed) continue;
-
-          const agent = agents.find((a) => a.id === parsed.agentId);
-          const key = `log:${parsed.agentId}:${parsed.action}:${rawKey.slice(0, 64)}`;
+          const key = `act:${agentId}:${at}:${action}`;
           if (liveFeedSeenRef.current.has(key)) continue;
           liveFeedSeenRef.current.add(key);
 
+          const agent = agents.find((a) => a.id === agentId);
           newItems.push({
             key,
-            at: now,
-            agentId: parsed.agentId,
-            agentName: agent ? agentLabel(agent) : parsed.agentId,
-            action: parsed.action,
+            at,
+            agentId,
+            agentName: agent ? agentLabel(agent) : agentId,
+            action,
           });
         }
 
         if (!stopped && newItems.length > 0) {
-          setLiveFeed((prev) => [...newItems.reverse(), ...prev].slice(0, 120));
+          setLiveFeed((prev) => [...newItems.sort((a, b) => b.at - a.at), ...prev].slice(0, 120));
         }
       } catch {
-        // ignore log polling failures
+        // ignore activity polling failures
       }
     };
 
     tick();
-    const timer = setInterval(tick, 2000);
+    const timer = setInterval(tick, 1500);
     return () => {
       stopped = true;
       clearInterval(timer);

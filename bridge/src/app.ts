@@ -1,5 +1,6 @@
 import Fastify from 'fastify';
 import { agentRoutes } from './routes/agents.js';
+import { activityRoutes } from './routes/activity.js';
 import { chatRoutes } from './routes/chat.js';
 import { configRoutes } from './routes/config.js';
 import { healthRoutes } from './routes/health.js';
@@ -25,6 +26,7 @@ export async function buildApp() {
 
   await healthRoutes(app);
   await chatRoutes(app);
+  await activityRoutes(app);
   await agentRoutes(app);
   await groupRoutes(app);
   await taskRoutes(app);

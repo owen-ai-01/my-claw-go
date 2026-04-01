@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import { createPrivateKey, createPublicKey, randomUUID, sign } from 'node:crypto';
 import { createRequire } from 'node:module';
 import { appendChatTranscript } from './chat-store.js';
+import { appendActivity } from './activity.js';
 import { BridgeError } from '../lib/errors.js';
 
 const OPENCLAW_HOME = '/home/openclaw/.openclaw';
@@ -137,6 +138,49 @@ function extractTextFromHistoryMessage(message: ChatHistoryMessage | undefined) 
   }
   if (typeof message.text === 'string') return message.text;
   return '';
+}
+
+function detectFilePath(text: string) {
+  const m = text.match(/(?:\/[^\s\"']+\.[a-z0-9]+|[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_./-]+\.[a-z0-9]+)/i);
+  return m?.[0] || null;
+}
+
+function toolActionFromMessage(message: any): { kind: 'tool' | 'file' | 'cmd'; action: string; detail?: string } | null {
+  const role = String(message?.role || '').toLowerCase();
+  if (role !== 'tool' && role !== 'toolresult') return null;
+
+  const toolName = String(message?.name || message?.toolName || message?.tool || '').trim();
+  const text = extractTextFromHistoryMessage(message as ChatHistoryMessage);
+  const lower = `${toolName} ${text}`.toLowerCase();
+
+  if (toolName) {
+    if (toolName === 'read' || lower.includes(' read ')) {
+      const file = detectFilePath(text);
+      return { kind: 'file', action: file ? `Read ${file}` : 'Read file', detail: file || undefined };
+    }
+    if (toolName === 'write' || toolName === 'edit' || lower.includes(' write ') || lower.includes(' edit ')) {
+      const file = detectFilePath(text);
+      return { kind: 'file', action: file ? `Write ${file}` : 'Write/Edit file', detail: file || undefined };
+    }
+    if (toolName === 'exec' || toolName === 'process' || lower.includes(' exec ') || lower.includes(' command ')) {
+      return { kind: 'cmd', action: 'Run command' };
+    }
+    return { kind: 'tool', action: `Tool ${toolName}` };
+  }
+
+  if (lower.includes(' read ')) {
+    const file = detectFilePath(text);
+    return { kind: 'file', action: file ? `Read ${file}` : 'Read file', detail: file || undefined };
+  }
+  if (lower.includes(' write ') || lower.includes(' edit ')) {
+    const file = detectFilePath(text);
+    return { kind: 'file', action: file ? `Write ${file}` : 'Write/Edit file', detail: file || undefined };
+  }
+  if (lower.includes(' exec ') || lower.includes(' command ')) {
+    return { kind: 'cmd', action: 'Run command' };
+  }
+
+  return { kind: 'tool', action: 'Tool activity' };
 }
 
 async function loadGatewayRuntimeAuth() {
@@ -310,6 +354,13 @@ async function sendChatViaGateway(params: {
 }) {
   const sessionKey = `agent:${params.agentId}:main`;
   const gatewayStartAt = Date.now();
+  await appendActivity({
+    at: Date.now(),
+    agentId: params.agentId,
+    kind: 'chat',
+    action: 'Start chat run',
+    detail: params.message.slice(0, 120),
+  });
   const gateway = await openGatewaySession(Math.max(params.timeoutMs, 65000));
   const connectMs = Date.now() - gatewayStartAt;
   try {
@@ -323,6 +374,13 @@ async function sendChatViaGateway(params: {
           sessionKey,
           model: params.model,
         }, 5000);
+        await appendActivity({
+          at: Date.now(),
+          agentId: params.agentId,
+          kind: 'status',
+          action: `Switch model → ${params.model}`,
+          model: params.model,
+        });
         console.info(`[bridge/model-router] sessions.patch model=${params.model} sessionKey=${sessionKey}`);
       } catch (patchErr) {
         // Non-fatal: if sessions.patch fails (e.g. older gateway), continue with agent default model
@@ -344,6 +402,14 @@ async function sendChatViaGateway(params: {
     if (!started?.runId) {
       throw new BridgeError('OPENCLAW_GATEWAY_ERROR', 'Gateway chat.send did not return runId', 502);
     }
+
+    await appendActivity({
+      at: Date.now(),
+      agentId: params.agentId,
+      kind: 'chat',
+      action: 'Run started',
+      runId: started.runId,
+    });
 
     const agentWaitStartedAt = Date.now();
     const waitResult = await gateway.sendReq<AgentWaitPayload>('agent.wait', {
@@ -369,6 +435,34 @@ async function sendChatViaGateway(params: {
     if (!reply.trim()) {
       throw new BridgeError('OPENCLAW_GATEWAY_ERROR', 'Gateway returned no assistant reply', 502);
     }
+
+    // Capture fine-grained tool/file/cmd activity from recent transcript entries
+    const recentToolMessages = messages.filter((m: any) => {
+      const role = String(m?.role || '').toLowerCase();
+      return role === 'tool' || role === 'toolresult';
+    }).slice(-12);
+
+    for (const toolMsg of recentToolMessages) {
+      const activity = toolActionFromMessage(toolMsg);
+      if (!activity) continue;
+      await appendActivity({
+        at: Date.now(),
+        agentId: params.agentId,
+        kind: activity.kind,
+        action: activity.action,
+        detail: activity.detail,
+        runId: started.runId,
+      });
+    }
+
+    await appendActivity({
+      at: Date.now(),
+      agentId: params.agentId,
+      kind: 'chat',
+      action: 'Run finished',
+      runId: started.runId,
+      model: assistant?.model,
+    });
 
     const timing: GatewayTiming = {
       connectMs,
@@ -430,6 +524,13 @@ export async function sendChatMessage(params: {
     const errText = error instanceof Error ? error.message : String(error);
     await appendChatTranscript({ role: 'user', text: message, agentId, channel, chatScope });
     await appendChatTranscript({ role: 'assistant', text: errText.trim(), agentId, channel, chatScope });
+    await appendActivity({
+      at: Date.now(),
+      agentId,
+      kind: 'status',
+      action: 'Run failed',
+      detail: errText.slice(0, 200),
+    });
     throw error;
   }
 }
