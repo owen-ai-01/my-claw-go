@@ -7,6 +7,7 @@ type Group = {
   id: string;
   name: string;
   description?: string;
+  announcement?: string;
   leaderId: string;
   members: string[];
   relay?: {
@@ -55,6 +56,7 @@ async function readGroupStore(): Promise<GroupStore> {
       id: String(g?.id || ''),
       name: String(g?.name || ''),
       description: typeof g?.description === 'string' ? g.description : undefined,
+      announcement: typeof g?.announcement === 'string' ? g.announcement : undefined,
       leaderId: String(g?.leaderId || ''),
       members: Array.isArray(g?.members) ? g.members.map((m: any) => String(m)).filter(Boolean) : [],
       relay: g?.relay && typeof g.relay === 'object' ? {
@@ -117,6 +119,7 @@ export async function createGroup(params: {
   id: string;
   name: string;
   description?: string;
+  announcement?: string;
   leaderId: string;
   members: string[];
   relay?: {
@@ -125,7 +128,7 @@ export async function createGroup(params: {
     cooldownMs?: number;
   };
 }) {
-  const { id, name, description, leaderId, members, relay } = params;
+  const { id, name, description, announcement, leaderId, members, relay } = params;
 
   if (!id || !/^[a-z0-9_-]+$/i.test(id)) {
     throw new BridgeError('INVALID_GROUP_ID', 'Group ID must be alphanumeric with hyphens/underscores', 400);
@@ -154,6 +157,7 @@ export async function createGroup(params: {
     id,
     name: name.trim(),
     description: description?.trim(),
+    announcement: announcement?.trim() || undefined,
     leaderId,
     members: [...new Set(members)],
     relay: {
@@ -174,6 +178,7 @@ export async function createGroup(params: {
 export async function updateGroup(groupId: string, patch: {
   name?: string;
   description?: string;
+  announcement?: string;
   leaderId?: string;
   members?: string[];
   relay?: {
@@ -200,6 +205,10 @@ export async function updateGroup(groupId: string, patch: {
 
   if (patch.description !== undefined) {
     group.description = patch.description.trim() || undefined;
+  }
+
+  if (patch.announcement !== undefined) {
+    group.announcement = patch.announcement.trim() || undefined;
   }
 
 

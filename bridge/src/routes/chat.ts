@@ -23,6 +23,7 @@ async function buildGroupContext(params: {
   groupName: string;
   members: string[];
   leaderId: string;
+  announcement?: string;
   targetAgentId: string;
   mode: 'human-entry' | 'relay-handoff';
   mentionedAgentId?: string | null;
@@ -39,6 +40,7 @@ async function buildGroupContext(params: {
     leaderId,
     targetAgentId,
     mode,
+    announcement,
     mentionedAgentId,
     fromAgentId,
     originalUserMessage,
@@ -76,6 +78,10 @@ async function buildGroupContext(params: {
     }
     if (originalUserMessage) lines.push(`[Original human request]: ${originalUserMessage}`);
     if (previousReply) lines.push(`[Previous message from @${fromAgentId || 'unknown'}]: ${previousReply}`);
+  }
+
+  if (announcement?.trim()) {
+    lines.push(`[Group Announcement]: ${announcement.trim()}`);
   }
 
   lines.push(
@@ -171,6 +177,27 @@ function hasRelayStopCommand(text: string) {
 type RelayControl = { runId: number; stopped: boolean };
 const groupRelayControl = new Map<string, RelayControl>();
 
+type UsageLike = {
+  input?: number;
+  output?: number;
+  total?: number;
+  cacheRead?: number;
+  cacheWrite?: number;
+};
+
+function sumUsage(base?: UsageLike, add?: UsageLike): UsageLike | undefined {
+  if (!base && !add) return undefined;
+  const b = base || {};
+  const a = add || {};
+  return {
+    input: Number(b.input || 0) + Number(a.input || 0),
+    output: Number(b.output || 0) + Number(a.output || 0),
+    total: Number(b.total || 0) + Number(a.total || 0),
+    cacheRead: Number(b.cacheRead || 0) + Number(a.cacheRead || 0),
+    cacheWrite: Number(b.cacheWrite || 0) + Number(a.cacheWrite || 0),
+  };
+}
+
 async function runGroupAutoRelay(params: {
   app: FastifyInstance;
   group: any;
@@ -180,16 +207,18 @@ async function runGroupAutoRelay(params: {
   originalUserMessage: string;
   timeoutMs: number;
   modelOverride?: string;
-}) {
+}): Promise<{ usage?: UsageLike; turns: number }> {
   const { app, group, runId, initialReply, initialSpeakerId, originalUserMessage, timeoutMs, modelOverride } = params;
   const relayEnabled = group?.relay?.enabled !== false;
-  if (!relayEnabled) return;
+  if (!relayEnabled) return { turns: 0 };
 
   const maxTurns = Math.min(Math.max(Number(group?.relay?.maxTurns || 6), 1), 20);
   const cooldownMs = Math.min(Math.max(Number(group?.relay?.cooldownMs || 900), 0), 10000);
 
   let currentSpeaker = initialSpeakerId;
   let previousReply = initialReply;
+  let usageSum: UsageLike | undefined;
+  let turns = 0;
   const seenEdges = new Set<string>();
 
   for (let turn = 1; turn <= maxTurns; turn += 1) {
@@ -234,6 +263,7 @@ async function runGroupAutoRelay(params: {
       groupName: group.name || group.id,
       members: group.members,
       leaderId: group.leaderId,
+      announcement: group.announcement,
       targetAgentId: nextAgentId,
       mode: 'relay-handoff',
       fromAgentId: currentSpeaker,
@@ -276,7 +306,11 @@ async function runGroupAutoRelay(params: {
 
     previousReply = relayNormalized;
     currentSpeaker = nextAgentId;
+    usageSum = sumUsage(usageSum, relayResult.usage as UsageLike | undefined);
+    turns += 1;
   }
+
+  return { usage: usageSum, turns };
 }
 
 export async function chatRoutes(app: FastifyInstance) {
@@ -361,6 +395,7 @@ export async function chatRoutes(app: FastifyInstance) {
           groupName: group.name || groupId,
           members: group.members,
           leaderId: group.leaderId,
+          announcement: group.announcement,
           targetAgentId,
           mode: 'human-entry',
           mentionedAgentId,
@@ -414,6 +449,7 @@ export async function chatRoutes(app: FastifyInstance) {
       );
 
       let finalReply = result.reply;
+      let billedUsage: UsageLike | undefined = result.usage as UsageLike | undefined;
       if (groupId && (body as any).__group && finalReply?.trim()) {
         const group = (body as any).__group;
         const forceRelay = shouldForceRelayFromUserPrompt(rawUserMessage);
@@ -444,19 +480,22 @@ export async function chatRoutes(app: FastifyInstance) {
           meta: { model: result.model, routedAgentId: targetAgentId },
         });
 
-        // Fire-and-forget group auto relay chain (leader may @ next member)
-        runGroupAutoRelay({
-          app,
-          group,
-          runId: Number((body as any).__relayRunId || Date.now()),
-          initialReply: finalReply,
-          initialSpeakerId: targetAgentId,
-          originalUserMessage: rawUserMessage,
-          timeoutMs,
-          modelOverride,
-        }).catch((err) => {
+        // Run relay chain and aggregate usage for billing
+        try {
+          const relay = await runGroupAutoRelay({
+            app,
+            group,
+            runId: Number((body as any).__relayRunId || Date.now()),
+            initialReply: finalReply,
+            initialSpeakerId: targetAgentId,
+            originalUserMessage: rawUserMessage,
+            timeoutMs,
+            modelOverride,
+          });
+          billedUsage = sumUsage(billedUsage, relay.usage);
+        } catch (err) {
           app.log.error(`[group/relay] chain failed: ${err instanceof Error ? err.message : String(err)}`);
-        });
+        }
       }
 
       return ok(reply, {
@@ -466,7 +505,7 @@ export async function chatRoutes(app: FastifyInstance) {
         groupId: groupId || undefined,
         reply: finalReply,
         model: result.model,
-        usage: result.usage,
+        usage: billedUsage,
         raw: result.raw,
         timing: {
           bridgeRouteMs: routeDurationMs,

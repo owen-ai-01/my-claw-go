@@ -764,6 +764,7 @@ type Group = {
   id: string;
   name: string;
   description?: string;
+  announcement?: string;
   leaderId: string;
   members: string[];
   relay?: {
@@ -824,6 +825,7 @@ function CreateGroupModal({
   const [groupId, setGroupId] = useState('');
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [announcement, setAnnouncement] = useState('');
   const [leaderId, setLeaderId] = useState(agents[0]?.id || 'main');
   const [memberIds, setMemberIds] = useState<string[]>(agents.slice(0, 1).map((a) => a.id));
   const [submitting, setSubmitting] = useState(false);
@@ -851,6 +853,7 @@ function CreateGroupModal({
           id: groupId.trim(),
           name: name.trim(),
           description: description.trim() || undefined,
+          announcement: announcement.trim() || undefined,
           leaderId,
           members: memberIds,
         }),
@@ -913,6 +916,17 @@ function CreateGroupModal({
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="What does this group work on?"
+                className="w-full rounded-xl border bg-muted/30 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/50"
+              />
+            </div>
+
+            <div>
+              <label className="mb-1.5 block text-sm font-medium">Group Announcement (optional)</label>
+              <textarea
+                value={announcement}
+                onChange={(e) => setAnnouncement(e.target.value)}
+                placeholder="Shared context/policy for all group turns"
+                rows={3}
                 className="w-full rounded-xl border bg-muted/30 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/50"
               />
             </div>
@@ -1000,6 +1014,7 @@ function EditGroupModal({
 }) {
   const [name, setName] = useState(group.name);
   const [description, setDescription] = useState(group.description || '');
+  const [announcement, setAnnouncement] = useState(group.announcement || '');
   const [leaderId, setLeaderId] = useState(group.leaderId);
   const [memberIds, setMemberIds] = useState<string[]>(group.members);
   const [relayEnabled, setRelayEnabled] = useState(group.relay?.enabled !== false);
@@ -1033,6 +1048,7 @@ function EditGroupModal({
         body: JSON.stringify({
           name: name.trim(),
           description: description.trim() || undefined,
+          announcement: announcement.trim() || undefined,
           leaderId,
           members: memberIds,
           relay: {
@@ -1105,6 +1121,17 @@ function EditGroupModal({
                 onChange={(e) => setDescription(e.target.value)}
                 className="w-full rounded-xl border bg-muted/30 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/50"
                 placeholder="What does this group work on?"
+              />
+            </div>
+
+            <div>
+              <label className="mb-1.5 block text-sm font-medium">Group Announcement</label>
+              <textarea
+                value={announcement}
+                onChange={(e) => setAnnouncement(e.target.value)}
+                rows={3}
+                className="w-full rounded-xl border bg-muted/30 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/50"
+                placeholder="Shared context/policy for all group turns"
               />
             </div>
 
@@ -1817,6 +1844,7 @@ function ChatLayout() {
                       <span className="rounded-full bg-muted px-2.5 py-1">Members: {selectedGroup.members.length}</span>
                       <span className="rounded-full bg-muted px-2.5 py-1">Leader: {selectedGroupLeader ? agentLabel(selectedGroupLeader) : `@${selectedGroup.leaderId}`}</span>
                       {selectedGroup.description ? <span className="max-w-full truncate rounded-full bg-muted px-2.5 py-1">{selectedGroup.description}</span> : null}
+                      {selectedGroup.announcement ? <span className="max-w-full truncate rounded-full bg-amber-100 px-2.5 py-1 text-amber-800">📢 {selectedGroup.announcement}</span> : null}
                     </div>
                     <div className="mt-3 flex flex-wrap items-center gap-2">
                       {selectedGroupMembers.map((member) => {

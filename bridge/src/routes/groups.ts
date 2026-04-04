@@ -20,13 +20,13 @@ export async function groupRoutes(app: FastifyInstance) {
 
   app.post('/groups', async (req: any, reply) => {
     try {
-      const { id, name, description, leaderId, members, relay } = req.body || {};
+      const { id, name, description, announcement, leaderId, members, relay } = req.body || {};
       if (!id) return fail(reply, 'INVALID_PARAMS', 'id is required', 400);
       if (!name) return fail(reply, 'INVALID_PARAMS', 'name is required', 400);
       if (!leaderId) return fail(reply, 'INVALID_PARAMS', 'leaderId is required', 400);
       if (!members) return fail(reply, 'INVALID_PARAMS', 'members is required', 400);
 
-      const data = await createGroup({ id, name, description, leaderId, members, relay });
+      const data = await createGroup({ id, name, description, announcement, leaderId, members, relay });
       return ok(reply, data);
     } catch (error: any) {
       return fail(reply, error.code || 'INTERNAL_ERROR', error.message || 'create group failed', error.statusCode || 500);
@@ -52,6 +52,7 @@ export async function groupRoutes(app: FastifyInstance) {
       const patch = {
         name: typeof req.body?.name === 'string' ? req.body.name : undefined,
         description: typeof req.body?.description === 'string' ? req.body.description : undefined,
+        announcement: typeof req.body?.announcement === 'string' ? req.body.announcement : undefined,
         leaderId: typeof req.body?.leaderId === 'string' ? req.body.leaderId : undefined,
         members: Array.isArray(req.body?.members) ? req.body.members : undefined,
         relay: req.body?.relay && typeof req.body.relay === 'object' ? {
