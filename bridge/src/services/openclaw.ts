@@ -509,23 +509,25 @@ export async function sendChatMessage(params: {
   message: string;
   rawMessage?: string; // original user text without group context prefix (for transcript)
   agentId: string;
+  transcriptAgentId?: string; // force transcript to a shared chat lane (e.g. group leader lane)
   timeoutMs?: number;
   channel?: string;
   chatScope?: string;
   model?: string; // optional model override from platform router
 }) {
-  const { message, rawMessage, agentId, timeoutMs = 90000, channel = 'direct', chatScope = 'default', model } = params;
+  const { message, rawMessage, agentId, transcriptAgentId, timeoutMs = 90000, channel = 'direct', chatScope = 'default', model } = params;
   const transcriptMessage = rawMessage || message;
+  const transcriptOwner = transcriptAgentId || agentId;
 
   try {
     const result = await sendChatViaGateway({ message, agentId, timeoutMs, model });
-    await appendChatTranscript({ role: 'user', text: transcriptMessage, agentId, channel, chatScope });
-    await appendChatTranscript({ role: 'assistant', text: result.reply || '', agentId, channel, chatScope, meta: { model: result.model } });
+    await appendChatTranscript({ role: 'user', text: transcriptMessage, agentId: transcriptOwner, channel, chatScope });
+    await appendChatTranscript({ role: 'assistant', text: result.reply || '', agentId: transcriptOwner, channel, chatScope, meta: { model: result.model, routedAgentId: agentId } });
     return result;
   } catch (error) {
     const errText = error instanceof Error ? error.message : String(error);
-    await appendChatTranscript({ role: 'user', text: transcriptMessage, agentId, channel, chatScope });
-    await appendChatTranscript({ role: 'assistant', text: errText.trim(), agentId, channel, chatScope });
+    await appendChatTranscript({ role: 'user', text: transcriptMessage, agentId: transcriptOwner, channel, chatScope });
+    await appendChatTranscript({ role: 'assistant', text: errText.trim(), agentId: transcriptOwner, channel, chatScope, meta: { routedAgentId: agentId } });
     await appendActivity({
       at: Date.now(),
       agentId,

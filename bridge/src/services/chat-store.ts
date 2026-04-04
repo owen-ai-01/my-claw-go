@@ -59,11 +59,19 @@ export async function readChatTranscript(input: ChatStoreKey) {
         const createdAt = timestampLine?.replace('timestamp: ', '').trim();
         const content = lines.slice(contentStart).join('\n').trim();
         if ((role !== 'user' && role !== 'assistant') || !content) return null;
+
+        let meta: any = null;
+        if (metaIndex >= 0) {
+          const metaRaw = lines[metaIndex].replace(/^meta:\s*/, '').trim();
+          try { meta = JSON.parse(metaRaw); } catch { meta = null; }
+        }
+
         return {
           id: `${input.agentId}-${index}`,
           role,
           content,
           createdAt,
+          routedAgentId: typeof meta?.routedAgentId === 'string' ? meta.routedAgentId : undefined,
         };
       })
       .filter(Boolean);

@@ -17,21 +17,36 @@ function extractMentionedAgentId(message: string, members: string[]) {
   return null;
 }
 
-/**
- * Build a group context prefix to inject into messages sent to agents.
- * This lets the receiving agent know it's in a group and who is in it.
- */
+/** Build group context to keep all agents aware of leader/members/rules. */
 async function buildGroupContext(params: {
   groupId: string;
   groupName: string;
   members: string[];
   leaderId: string;
   targetAgentId: string;
-  mentionedAgentId: string | null;
+  mode: 'human-entry' | 'relay-handoff';
+  mentionedAgentId?: string | null;
+  fromAgentId?: string | null;
+  originalUserMessage?: string;
+  previousReply?: string;
+  turnIndex?: number;
+  maxTurns?: number;
 }): Promise<string> {
-  const { groupId, groupName, members, leaderId, targetAgentId, mentionedAgentId } = params;
+  const {
+    groupId,
+    groupName,
+    members,
+    leaderId,
+    targetAgentId,
+    mode,
+    mentionedAgentId,
+    fromAgentId,
+    originalUserMessage,
+    previousReply,
+    turnIndex,
+    maxTurns,
+  } = params;
 
-  // Resolve member names
   const memberDescs: string[] = [];
   for (const memberId of members) {
     try {
@@ -43,17 +58,105 @@ async function buildGroupContext(params: {
     }
   }
 
-  const targetNote = mentionedAgentId && mentionedAgentId !== targetAgentId
-    ? `(responding on behalf of @${mentionedAgentId})`
-    : '';
-
-  return [
+  const lines = [
     `[Group Chat: ${groupName} | id: ${groupId}]`,
     `[Members: ${memberDescs.join(', ')}]`,
-    `[You are: @${targetAgentId}${targetNote ? ' ' + targetNote : ''}]`,
-    `[Guidelines: Reply as yourself. If another member is @mentioned, address them appropriately. Stay in character.]`,
-    '',
-  ].join('\n');
+    `[Leader (primary owner): @${leaderId}]`,
+    `[You are: @${targetAgentId}]`,
+  ];
+
+  if (mode === 'human-entry') {
+    lines.push(`[Mode: human-entry. The human spoke to the group. Leader should coordinate and may @mention next member.]`);
+    if (mentionedAgentId) lines.push(`[Human mentioned: @${mentionedAgentId}]`);
+    if (originalUserMessage) lines.push(`[Human message]: ${originalUserMessage}`);
+  } else {
+    lines.push(`[Mode: relay-handoff. You were @mentioned by @${fromAgentId || 'leader'} and should continue quickly.]`);
+    if (typeof turnIndex === 'number' && typeof maxTurns === 'number') {
+      lines.push(`[Relay turn: ${turnIndex}/${maxTurns}]`);
+    }
+    if (originalUserMessage) lines.push(`[Original human request]: ${originalUserMessage}`);
+    if (previousReply) lines.push(`[Previous message from @${fromAgentId || 'unknown'}]: ${previousReply}`);
+  }
+
+  lines.push(
+    '[Reply rules: 1) Stay in role. 2) Keep momentum. 3) If handoff is needed, @mention exactly one next member from this group. 4) Do not say system errors/apologies unless truly failed.]',
+    ''
+  );
+
+  return lines.join('\n');
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function pickFirstMentionInText(text: string, members: string[]) {
+  return extractMentionedAgentId(text || '', members);
+}
+
+async function runGroupAutoRelay(params: {
+  app: FastifyInstance;
+  group: any;
+  initialReply: string;
+  initialSpeakerId: string;
+  originalUserMessage: string;
+  timeoutMs: number;
+  modelOverride?: string;
+}) {
+  const { app, group, initialReply, initialSpeakerId, originalUserMessage, timeoutMs, modelOverride } = params;
+  const relayEnabled = group?.relay?.enabled !== false;
+  if (!relayEnabled) return;
+
+  const maxTurns = Math.min(Math.max(Number(group?.relay?.maxTurns || 6), 1), 20);
+  const cooldownMs = Math.min(Math.max(Number(group?.relay?.cooldownMs || 900), 0), 10000);
+
+  let currentSpeaker = initialSpeakerId;
+  let previousReply = initialReply;
+
+  for (let turn = 1; turn <= maxTurns; turn += 1) {
+    const nextMention = pickFirstMentionInText(previousReply, group.members || []);
+    if (!nextMention) break;
+
+    let nextAgentId = nextMention;
+    try {
+      await ensureAgentExists(nextAgentId);
+    } catch {
+      app.log.warn(`[group/relay] mentioned agent ${nextAgentId} unavailable, fallback to leader ${group.leaderId}`);
+      nextAgentId = group.leaderId;
+    }
+
+    await sleep(cooldownMs);
+
+    const relayCtx = await buildGroupContext({
+      groupId: group.id,
+      groupName: group.name || group.id,
+      members: group.members,
+      leaderId: group.leaderId,
+      targetAgentId: nextAgentId,
+      mode: 'relay-handoff',
+      fromAgentId: currentSpeaker,
+      originalUserMessage,
+      previousReply,
+      turnIndex: turn,
+      maxTurns,
+    });
+
+    const relayPrompt = `${relayCtx}Continue the conversation now, in one concise turn.`;
+
+    const relayResult = await sendChatMessage({
+      message: relayPrompt,
+      rawMessage: ' ', // keep relay internal prompts hidden from rendered history
+      agentId: nextAgentId,
+      transcriptAgentId: group.leaderId,
+      timeoutMs: Math.min(Math.max(timeoutMs, 15000), 45000),
+      channel: 'group',
+      chatScope: group.id,
+      model: modelOverride,
+    });
+
+    previousReply = relayResult.reply || '';
+    currentSpeaker = nextAgentId;
+  }
 }
 
 export async function chatRoutes(app: FastifyInstance) {
@@ -96,49 +199,29 @@ export async function chatRoutes(app: FastifyInstance) {
       let chatScope: string;
 
       if (groupId) {
-        // ── Group chat routing ────────────────────────────────────────────────
+        // ── Group chat policy: single primary owner (leader) is entrypoint ───
         const group = await getGroup(groupId);
         const mentionedAgentId = extractMentionedAgentId(message, group.members);
 
-        // Determine who should reply:
-        //   1. Explicitly @mentioned member → that agent
-        //   2. No @mention → group leader
-        const preferredTarget = mentionedAgentId || group.leaderId;
-
-        // Verify the preferred target has a real OpenClaw session (workspace).
-        // If not, fall back to the leader — they always have a session.
-        let resolvedTarget = group.leaderId; // default: always valid
-        if (preferredTarget !== group.leaderId) {
-          try {
-            await ensureAgentExists(preferredTarget);
-            // Try to use the preferred agent (they may have a workspace)
-            resolvedTarget = preferredTarget;
-          } catch {
-            // Preferred agent not available → fall back to leader
-            app.log.warn(`[group] agent ${preferredTarget} not found, falling back to leader ${group.leaderId}`);
-            resolvedTarget = group.leaderId;
-          }
-        }
-
-        targetAgentId = resolvedTarget;
+        targetAgentId = group.leaderId;
         channel = 'group';
         chatScope = groupId;
-
         await ensureAgentExists(targetAgentId);
 
-        // Inject group context prefix so the agent knows the group, members, and its role
         const groupCtxPrefix = await buildGroupContext({
           groupId,
           groupName: group.name || groupId,
           members: group.members,
           leaderId: group.leaderId,
           targetAgentId,
+          mode: 'human-entry',
           mentionedAgentId,
+          originalUserMessage: message,
         });
-        // Prepend context to the actual user message
+
+        (req.body as any).__group = group;
         (req.body as any).__groupMessage = message;
-        (req.body as any).__groupContextMessage = `${groupCtxPrefix}User message: ${message}`;
-        (req.body as any).__routedTo = targetAgentId;
+        (req.body as any).__groupContextMessage = `${groupCtxPrefix}Now respond as @${targetAgentId}.`;
         (req.body as any).__mentionedAgentId = mentionedAgentId;
       } else {
         // Agent 消息
@@ -158,11 +241,13 @@ export async function chatRoutes(app: FastifyInstance) {
       // The raw user message (for transcript storage, without context prefix)
       const rawUserMessage: string = (body as any).__groupMessage || message;
 
+      const timeoutMs = body.timeoutMs ? Number(body.timeoutMs) : 90000;
       const result = await sendChatMessage({
         message: messageToSend,
         rawMessage: rawUserMessage,
         agentId: targetAgentId,
-        timeoutMs: body.timeoutMs ? Number(body.timeoutMs) : 90000,
+        transcriptAgentId: groupId ? (body as any).__group?.leaderId || targetAgentId : undefined,
+        timeoutMs,
         channel,
         chatScope,
         model: modelOverride,
@@ -177,6 +262,21 @@ export async function chatRoutes(app: FastifyInstance) {
         ` openclawAgentMs=${agentDurationMs}` +
         `${result.timing ? ` connectMs=${result.timing.connectMs} chatSendMs=${result.timing.chatSendMs} agentWaitMs=${result.timing.agentWaitMs} chatHistoryMs=${result.timing.chatHistoryMs} totalGatewayMs=${result.timing.totalGatewayMs}` : ''}`
       );
+
+      // Fire-and-forget group auto relay chain (leader may @ next member)
+      if (groupId && (body as any).__group && result.reply?.trim()) {
+        runGroupAutoRelay({
+          app,
+          group: (body as any).__group,
+          initialReply: result.reply,
+          initialSpeakerId: targetAgentId,
+          originalUserMessage: rawUserMessage,
+          timeoutMs,
+          modelOverride,
+        }).catch((err) => {
+          app.log.error(`[group/relay] chain failed: ${err instanceof Error ? err.message : String(err)}`);
+        });
+      }
 
       return ok(reply, {
         agentId: targetAgentId,

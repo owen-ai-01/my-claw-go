@@ -12,6 +12,11 @@ type Group = {
   type: GroupType;
   leaderId: string;
   members: string[];
+  relay?: {
+    enabled?: boolean;
+    maxTurns?: number; // max auto-handoff turns after leader response
+    cooldownMs?: number; // delay between handoff turns
+  };
   channels?: {
     telegram?: {
       groupId?: string;
@@ -103,8 +108,13 @@ export async function createGroup(params: {
   type: GroupType;
   leaderId: string;
   members: string[];
+  relay?: {
+    enabled?: boolean;
+    maxTurns?: number;
+    cooldownMs?: number;
+  };
 }) {
-  const { id, name, description, type, leaderId, members } = params;
+  const { id, name, description, type, leaderId, members, relay } = params;
 
   if (!id || !/^[a-z0-9_-]+$/i.test(id)) {
     throw new BridgeError('INVALID_GROUP_ID', 'Group ID must be alphanumeric with hyphens/underscores', 400);
@@ -136,6 +146,11 @@ export async function createGroup(params: {
     type,
     leaderId,
     members: [...new Set(members)],
+    relay: {
+      enabled: relay?.enabled ?? true,
+      maxTurns: Math.min(Math.max(Number(relay?.maxTurns || 6), 1), 20),
+      cooldownMs: Math.min(Math.max(Number(relay?.cooldownMs || 900), 0), 10_000),
+    },
     createdAt: now,
     updatedAt: now,
   };
@@ -152,6 +167,11 @@ export async function updateGroup(groupId: string, patch: {
   type?: GroupType;
   leaderId?: string;
   members?: string[];
+  relay?: {
+    enabled?: boolean;
+    maxTurns?: number;
+    cooldownMs?: number;
+  };
 }) {
   const store = await ensureGroupStore();
   const index = store.groups.findIndex((g) => g.id === groupId);
@@ -189,6 +209,19 @@ export async function updateGroup(groupId: string, patch: {
       throw new BridgeError('INVALID_LEADER', 'Leader must be a member of the group', 400);
     }
     group.leaderId = patch.leaderId;
+  }
+
+  if (patch.relay !== undefined) {
+    const prev = group.relay || {};
+    group.relay = {
+      enabled: patch.relay.enabled ?? prev.enabled ?? true,
+      maxTurns: patch.relay.maxTurns !== undefined
+        ? Math.min(Math.max(Number(patch.relay.maxTurns), 1), 20)
+        : (prev.maxTurns ?? 6),
+      cooldownMs: patch.relay.cooldownMs !== undefined
+        ? Math.min(Math.max(Number(patch.relay.cooldownMs), 0), 10_000)
+        : (prev.cooldownMs ?? 900),
+    };
   }
 
   group.updatedAt = new Date().toISOString();

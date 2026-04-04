@@ -1380,6 +1380,24 @@ function ChatLayout() {
             routedAgentId: data.data?.routedAgentId,
           },
         ]);
+
+        // Group auto-relay may continue in background; short polling to pull fresh turns
+        let pollCount = 0;
+        const pollGroupHistory = async () => {
+          try {
+            const res = await fetch(`/api/chat/history?groupId=${encodeURIComponent(selectedGroupId)}`, { cache: 'no-store' });
+            const history = await res.json().catch(() => ({})) as { ok?: boolean; data?: { messages?: ChatMessage[] } };
+            if (history?.ok && history?.data?.messages) {
+              setMessages(history.data.messages);
+            }
+          } catch {}
+
+          pollCount += 1;
+          if (pollCount < 10) {
+            setTimeout(pollGroupHistory, 900);
+          }
+        };
+        setTimeout(pollGroupHistory, 400);
       } else {
         setActiveTaskStatus(data.data?.status || 'queued');
         await fetch(`/api/chat/history?agentId=${encodeURIComponent(selectedAgentId)}`, { cache: 'no-store' })
