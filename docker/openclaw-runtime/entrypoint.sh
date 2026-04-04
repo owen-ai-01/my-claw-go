@@ -18,7 +18,7 @@ cat > /home/openclaw/.openclaw/keep-gateway.sh <<'EOS'
 #!/usr/bin/env bash
 set -euo pipefail
 export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
-export NODE_OPTIONS="${NODE_OPTIONS:-} --max-old-space-size=768"
+export NODE_OPTIONS="${NODE_OPTIONS:-} --max-old-space-size=1536"
 while true; do
   /usr/local/bin/openclaw gateway run --allow-unconfigured --auth none --bind loopback --port 18789 >> /home/openclaw/.openclaw/gateway.log 2>&1 || true
   sleep 2
