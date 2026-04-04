@@ -287,7 +287,7 @@ function AgentConfigDrawer({
           body: JSON.stringify({
             enabled: draftTelegramEnabled,
             bindingEnabled: draftTelegramBindingEnabled,
-            botToken: draftTelegramBotToken,
+            botToken: draftTelegramBotToken.trim() || undefined,
             allowFrom: draftTelegramAllowFrom.trim() ? draftTelegramAllowFrom.split(',').map(s => s.trim()).filter(Boolean) : undefined,
           }),
         }),

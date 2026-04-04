@@ -530,9 +530,8 @@ export async function updateAgentTelegram(agentId: string, patch: UpdateTelegram
   }
   if (typeof patch.botToken === 'string') {
     const trimmed = patch.botToken.trim();
-    if (!trimmed) {
-      delete nextAccount.botToken;
-    } else {
+    // UX rule: empty input means "do not modify existing token"
+    if (trimmed) {
       nextAccount.botToken = trimmed;
     }
   }
