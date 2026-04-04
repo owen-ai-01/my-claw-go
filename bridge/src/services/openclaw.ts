@@ -514,20 +514,35 @@ export async function sendChatMessage(params: {
   channel?: string;
   chatScope?: string;
   model?: string; // optional model override from platform router
+  persistTranscript?: boolean;
 }) {
-  const { message, rawMessage, agentId, transcriptAgentId, timeoutMs = 90000, channel = 'direct', chatScope = 'default', model } = params;
+  const {
+    message,
+    rawMessage,
+    agentId,
+    transcriptAgentId,
+    timeoutMs = 90000,
+    channel = 'direct',
+    chatScope = 'default',
+    model,
+    persistTranscript = true,
+  } = params;
   const transcriptMessage = rawMessage || message;
   const transcriptOwner = transcriptAgentId || agentId;
 
   try {
     const result = await sendChatViaGateway({ message, agentId, timeoutMs, model });
-    await appendChatTranscript({ role: 'user', text: transcriptMessage, agentId: transcriptOwner, channel, chatScope });
-    await appendChatTranscript({ role: 'assistant', text: result.reply || '', agentId: transcriptOwner, channel, chatScope, meta: { model: result.model, routedAgentId: agentId } });
+    if (persistTranscript) {
+      await appendChatTranscript({ role: 'user', text: transcriptMessage, agentId: transcriptOwner, channel, chatScope });
+      await appendChatTranscript({ role: 'assistant', text: result.reply || '', agentId: transcriptOwner, channel, chatScope, meta: { model: result.model, routedAgentId: agentId } });
+    }
     return result;
   } catch (error) {
     const errText = error instanceof Error ? error.message : String(error);
-    await appendChatTranscript({ role: 'user', text: transcriptMessage, agentId: transcriptOwner, channel, chatScope });
-    await appendChatTranscript({ role: 'assistant', text: errText.trim(), agentId: transcriptOwner, channel, chatScope, meta: { routedAgentId: agentId } });
+    if (persistTranscript) {
+      await appendChatTranscript({ role: 'user', text: transcriptMessage, agentId: transcriptOwner, channel, chatScope });
+      await appendChatTranscript({ role: 'assistant', text: errText.trim(), agentId: transcriptOwner, channel, chatScope, meta: { routedAgentId: agentId } });
+    }
     await appendActivity({
       at: Date.now(),
       agentId,

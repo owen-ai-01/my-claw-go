@@ -250,9 +250,27 @@ async function runGroupAutoRelay(params: {
       channel: 'group',
       chatScope: group.id,
       model: modelOverride,
+      persistTranscript: false,
     });
 
-    previousReply = relayResult.reply || '';
+    const relayNormalized = normalizeReplyMention({
+      reply: relayResult.reply || '',
+      members: group.members || [],
+      currentSpeaker: nextAgentId,
+      leaderId: group.leaderId,
+      forceRelay: true,
+    });
+
+    await appendChatTranscript({
+      role: 'assistant',
+      text: relayNormalized,
+      agentId: group.leaderId,
+      channel: 'group',
+      chatScope: group.id,
+      meta: { model: relayResult.model, routedAgentId: nextAgentId },
+    });
+
+    previousReply = relayNormalized;
     currentSpeaker = nextAgentId;
   }
 }
@@ -371,6 +389,7 @@ export async function chatRoutes(app: FastifyInstance) {
         channel,
         chatScope,
         model: modelOverride,
+        persistTranscript: !groupId,
       });
       const agentDurationMs = Date.now() - agentStartedAt;
       const routeDurationMs = Date.now() - routeStartedAt;
@@ -395,9 +414,24 @@ export async function chatRoutes(app: FastifyInstance) {
           forceRelay,
         });
 
-        if (normalized !== finalReply) {
-          finalReply = normalized;
-        }
+        finalReply = normalized;
+
+        // Persist normalized group transcript (single source of truth)
+        await appendChatTranscript({
+          role: 'user',
+          text: rawUserMessage,
+          agentId: group.leaderId,
+          channel: 'group',
+          chatScope: groupId,
+        });
+        await appendChatTranscript({
+          role: 'assistant',
+          text: finalReply,
+          agentId: group.leaderId,
+          channel: 'group',
+          chatScope: groupId,
+          meta: { model: result.model, routedAgentId: targetAgentId },
+        });
 
         // Fire-and-forget group auto relay chain (leader may @ next member)
         runGroupAutoRelay({
