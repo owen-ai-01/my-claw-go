@@ -95,6 +95,38 @@ function agentEmoji(agent: Partial<AgentItem>) {
   return agent.identity?.emoji?.trim() || '🤖';
 }
 
+function normalizeMentionsForDisplay(content: string, memberIds: string[], currentSpeakerId?: string) {
+  const safe = String(content || '');
+  if (!safe || !Array.isArray(memberIds) || memberIds.length === 0) return safe;
+
+  const mentions = [...safe.matchAll(/@([a-zA-Z0-9_-]+)/g)].map((m) => String(m[1] || ''));
+  if (mentions.length === 0) return safe;
+
+  const memberSet = new Set(memberIds);
+  const pool = memberIds.filter((id) => id !== currentSpeakerId);
+  const fallback = pool[0] || memberIds[0];
+
+  let chosen = mentions.find((id) => memberSet.has(id) && id !== currentSpeakerId) || null;
+  if (!chosen) chosen = fallback;
+  if (!chosen) return safe;
+
+  let used = false;
+  return safe.replace(/@([a-zA-Z0-9_-]+)/g, () => {
+    if (!used) {
+      used = true;
+      return `@${chosen}`;
+    }
+    return '';
+  });
+}
+
+function formatMessageTime(createdAt?: string) {
+  if (!createdAt) return '';
+  const d = new Date(createdAt);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
 /** Render message text with @agentId highlighted as colored badges */
 function renderMessageContent(
   content: string,
@@ -1858,6 +1890,10 @@ function ChatLayout() {
                   ? (msg.routedAgentId || selectedGroup.leaderId)
                   : selectedAgent.id;
                 const speakerAgent = agents.find((agent) => agent.id === speakerId) || selectedAgent;
+                const displayContent = selectedGroup
+                  ? normalizeMentionsForDisplay(msg.content, selectedGroup.members, speakerId)
+                  : msg.content;
+                const timeText = formatMessageTime(msg.createdAt);
 
                 return (
                   <div key={msg.id || `${selectedAgentId}-${msg.role}-${idx}`} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -1874,9 +1910,14 @@ function ChatLayout() {
                       ) : null}
                       <div className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap break-words [overflow-wrap:anywhere] ${msg.role === 'user' ? 'bg-primary text-primary-foreground rounded-br-sm' : 'bg-muted text-foreground rounded-bl-sm'}`}>
                         {selectedGroup
-                          ? renderMessageContent(msg.content, selectedGroupMembers)
+                          ? renderMessageContent(displayContent, selectedGroupMembers)
                           : msg.content}
                       </div>
+                      {timeText ? (
+                        <div className={`mt-1 text-[10px] text-muted-foreground ${msg.role === 'user' ? 'text-right mr-1' : 'ml-1'}`}>
+                          {timeText}
+                        </div>
+                      ) : null}
                     </div>
                   </div>
                 );
