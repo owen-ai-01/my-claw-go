@@ -66,7 +66,7 @@ async function buildGroupContext(params: {
   ];
 
   if (mode === 'human-entry') {
-    lines.push(`[Mode: human-entry. The human spoke to the group. Leader should coordinate and may @mention next member.]`);
+    lines.push('[Mode: human-entry. The human spoke to the group. If you are directly mentioned, respond first; otherwise leader responds and coordinates.]');
     if (mentionedAgentId) lines.push(`[Human mentioned: @${mentionedAgentId}]`);
     if (originalUserMessage) lines.push(`[Human message]: ${originalUserMessage}`);
   } else {
@@ -131,29 +131,33 @@ function normalizeReplyMention(params: {
   const safeReply = String(reply || '').trim();
   if (!safeReply) return safeReply;
 
+  const mentionIds = [...safeReply.matchAll(/@([a-zA-Z0-9_-]+)/g)].map((m) => String(m[1] || ''));
   const memberSet = new Set((members || []).map((m) => String(m)));
   const pool = (members || []).filter((m) => m !== currentSpeaker);
-  let pickIdx = 0;
-  const nextCandidate = () => {
-    if (pool.length > 0) {
-      const v = pool[pickIdx % pool.length];
-      pickIdx += 1;
-      return v;
-    }
-    return leaderId;
-  };
+  const fallback = pool[0] || (leaderId !== currentSpeaker ? leaderId : null);
 
-  // 1) Hard restriction: every @mention must be a valid group member
-  let normalized = safeReply.replace(/@([a-zA-Z0-9_-]+)/g, (_full, id) => {
-    const mentionId = String(id || '');
-    if (memberSet.has(mentionId)) return `@${mentionId}`;
-    return `@${nextCandidate()}`;
+  let chosen = mentionIds.find((id) => memberSet.has(id) && id !== currentSpeaker) || null;
+  if (!chosen && (mentionIds.length > 0 || forceRelay)) {
+    chosen = fallback;
+  }
+
+  if (!chosen) {
+    return safeReply;
+  }
+
+  let used = false;
+  let normalized = safeReply.replace(/@([a-zA-Z0-9_-]+)/g, () => {
+    if (!used) {
+      used = true;
+      return `@${chosen}`;
+    }
+    return '';
   });
 
-  // 2) If this is relay intent, ensure there is at least one valid handoff mention
-  const validMention = pickFirstMentionInText(normalized, members || []);
-  if (forceRelay && !validMention) {
-    normalized = `${normalized}\n\n@${nextCandidate()} 该你了。`;
+  normalized = normalized.replace(/\s{2,}/g, ' ').trim();
+
+  if (!used && forceRelay) {
+    normalized = `${normalized}\n\n@${chosen} 该你了。`.trim();
   }
 
   return normalized;
@@ -340,10 +344,17 @@ export async function chatRoutes(app: FastifyInstance) {
         const nextRunId = Date.now();
         groupRelayControl.set(groupId, { runId: nextRunId, stopped: false });
 
-        targetAgentId = group.leaderId;
+        const preferredTarget = mentionedAgentId || group.leaderId;
+        targetAgentId = preferredTarget;
+        try {
+          await ensureAgentExists(targetAgentId);
+        } catch {
+          targetAgentId = group.leaderId;
+          await ensureAgentExists(targetAgentId);
+        }
+
         channel = 'group';
         chatScope = groupId;
-        await ensureAgentExists(targetAgentId);
 
         const groupCtxPrefix = await buildGroupContext({
           groupId,

@@ -17,18 +17,25 @@ type BridgeHistoryMessage = {
 };
 
 function normalizeMentionsToMembers(text: string, members: string[], currentSpeakerId?: string) {
-  const safe = String(text || '');
+  const safe = String(text || '').trim();
   if (!safe || !Array.isArray(members) || members.length === 0) return safe;
 
   const memberSet = new Set(members);
   const pool = members.filter((m) => m !== currentSpeakerId);
-  let idx = 0;
-  const fallback = () => (pool[idx++ % Math.max(pool.length, 1)] || members[0]);
+  const fallback = pool[0] || members[0];
 
-  return safe.replace(/@([a-zA-Z0-9_-]+)/g, (_full, id) => {
-    const token = String(id || '');
-    if (memberSet.has(token)) return `@${token}`;
-    return `@${fallback()}`;
+  const mentions = [...safe.matchAll(/@([a-zA-Z0-9_-]+)/g)].map((m) => String(m[1] || ''));
+  let chosen = mentions.find((m) => memberSet.has(m) && m !== currentSpeakerId) || null;
+  if (!chosen && mentions.length > 0) chosen = fallback;
+  if (!chosen) return safe;
+
+  let used = false;
+  return safe.replace(/@([a-zA-Z0-9_-]+)/g, () => {
+    if (!used) {
+      used = true;
+      return `@${chosen}`;
+    }
+    return '';
   });
 }
 
