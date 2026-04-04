@@ -19,6 +19,28 @@ type GroupChatResponse = {
   error?: string | { message?: string };
 };
 
+function normalizeMentionsToMembers(text: string, members: string[], currentSpeakerId?: string) {
+  const safe = String(text || '');
+  if (!safe || !Array.isArray(members) || members.length === 0) return safe;
+
+  const memberSet = new Set(members);
+  const pool = members.filter((m) => m !== currentSpeakerId);
+  let idx = 0;
+  const fallback = () => (pool[idx++ % Math.max(pool.length, 1)] || members[0]);
+
+  let normalized = safe.replace(/@([a-zA-Z0-9_-]+)/g, (_full, id) => {
+    const token = String(id || '');
+    if (memberSet.has(token)) return `@${token}`;
+    return `@${fallback()}`;
+  });
+
+  if (!/@[a-zA-Z0-9_-]+/.test(normalized)) {
+    normalized = `${normalized}\n\n@${fallback()} 该你了。`;
+  }
+
+  return normalized;
+}
+
 export async function POST(req: Request) {
   const session = await auth.api.getSession({ headers: await headers() });
   const userId = session?.user?.id;
@@ -89,12 +111,28 @@ export async function POST(req: Request) {
         );
       }
 
+      // Safety net: enforce member-only @mentions at platform edge, too.
+      let normalizedReply = payload.data.reply;
+      try {
+        const groupRes = await fetch(`${bridge.target.bridge.baseUrl}/groups/${encodeURIComponent(groupId)}`, {
+          headers: { authorization: `Bearer ${bridge.target.bridge.token}` },
+          cache: 'no-store',
+        });
+        const groupPayload = (await groupRes.json().catch(() => ({}))) as { ok?: boolean; data?: { members?: string[] } };
+        const members = Array.isArray(groupPayload?.data?.members) ? groupPayload.data!.members! : [];
+        if (members.length > 0) {
+          normalizedReply = normalizeMentionsToMembers(payload.data.reply || '', members, payload.data.routedAgentId || agentId);
+        }
+      } catch {
+        // ignore mention normalization fallback errors
+      }
+
       await settleDirectChatBilling({
         taskId: `group:${groupId}:${Date.now()}`,
         userId,
         agentId: payload.data.routedAgentId || agentId,
         message,
-        reply: payload.data.reply,
+        reply: normalizedReply,
         model: payload.data.model,
         usage: payload.data.usage,
         bridgeRaw: {
@@ -109,7 +147,7 @@ export async function POST(req: Request) {
         ok: true,
         data: {
           status: 'done',
-          reply: payload.data.reply,
+          reply: normalizedReply,
           model: payload.data.model,
           routedAgentId: payload.data.routedAgentId || agentId,
         },
