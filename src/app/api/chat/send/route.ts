@@ -53,6 +53,7 @@ export async function POST(req: Request) {
     message?: string;
     agentId?: string;
     groupId?: string;
+    groupMembers?: string[];
     timeoutMs?: number;
     model?: string; // 'auto' | specific model id
   };
@@ -112,20 +113,25 @@ export async function POST(req: Request) {
         );
       }
 
-      // Safety net: enforce member-only @mentions at platform edge, too.
+      // Safety net: enforce member-only + non-self @mentions at platform edge.
       let normalizedReply = payload.data.reply;
-      try {
-        const groupRes = await fetch(`${bridge.target.bridge.baseUrl}/groups/${encodeURIComponent(groupId)}`, {
-          headers: { authorization: `Bearer ${bridge.target.bridge.token}` },
-          cache: 'no-store',
-        });
-        const groupPayload = (await groupRes.json().catch(() => ({}))) as { ok?: boolean; data?: { members?: string[] } };
-        const members = Array.isArray(groupPayload?.data?.members) ? groupPayload.data!.members! : [];
-        if (members.length > 0) {
-          normalizedReply = normalizeMentionsToMembers(payload.data.reply || '', members, payload.data.routedAgentId || agentId);
+      let members = Array.isArray(body.groupMembers) ? body.groupMembers.map(String).filter(Boolean) : [];
+
+      if (members.length === 0) {
+        try {
+          const groupRes = await fetch(`${bridge.target.bridge.baseUrl}/groups/${encodeURIComponent(groupId)}`, {
+            headers: { authorization: `Bearer ${bridge.target.bridge.token}` },
+            cache: 'no-store',
+          });
+          const groupPayload = (await groupRes.json().catch(() => ({}))) as { ok?: boolean; data?: { members?: string[] } };
+          members = Array.isArray(groupPayload?.data?.members) ? groupPayload.data!.members! : [];
+        } catch {
+          members = [];
         }
-      } catch {
-        // ignore mention normalization fallback errors
+      }
+
+      if (members.length > 0) {
+        normalizedReply = normalizeMentionsToMembers(payload.data.reply || '', members, payload.data.routedAgentId || agentId);
       }
 
       await settleDirectChatBilling({

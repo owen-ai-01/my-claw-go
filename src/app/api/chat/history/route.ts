@@ -49,6 +49,7 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const groupId = url.searchParams.get('groupId');
   const agentId = url.searchParams.get('agentId') || 'main';
+  const membersQuery = url.searchParams.get('members') || '';
 
   try {
     if (groupId) {
@@ -80,16 +81,20 @@ export async function GET(req: Request) {
       }
 
       // Edge safety: normalize history @mentions to valid members for rendering consistency.
-      let members: string[] = [];
-      try {
-        const groupRes = await fetch(`${bridge.target.bridge.baseUrl}/groups/${encodeURIComponent(groupId)}`, {
-          headers: { authorization: `Bearer ${bridge.target.bridge.token}` },
-          cache: 'no-store',
-        });
-        const groupPayload = (await groupRes.json().catch(() => ({}))) as { ok?: boolean; data?: { members?: string[] } };
-        members = Array.isArray(groupPayload?.data?.members) ? groupPayload.data!.members! : [];
-      } catch {
-        members = [];
+      let members: string[] = membersQuery
+        ? membersQuery.split(',').map((s) => s.trim()).filter(Boolean)
+        : [];
+      if (members.length === 0) {
+        try {
+          const groupRes = await fetch(`${bridge.target.bridge.baseUrl}/groups/${encodeURIComponent(groupId)}`, {
+            headers: { authorization: `Bearer ${bridge.target.bridge.token}` },
+            cache: 'no-store',
+          });
+          const groupPayload = (await groupRes.json().catch(() => ({}))) as { ok?: boolean; data?: { members?: string[] } };
+          members = Array.isArray(groupPayload?.data?.members) ? groupPayload.data!.members! : [];
+        } catch {
+          members = [];
+        }
       }
 
       return NextResponse.json({

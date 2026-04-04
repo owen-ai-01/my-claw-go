@@ -1273,7 +1273,13 @@ function ChatLayout() {
       setHistoryLoading(true);
       try {
         const targetId = selectedGroupId || selectedAgentId;
-        const queryParam = selectedGroupId ? `groupId=${encodeURIComponent(selectedGroupId)}` : `agentId=${encodeURIComponent(selectedAgentId)}`;
+        const selectedGroupForQuery = selectedGroupId ? groups.find((g) => g.id === selectedGroupId) : null;
+        const groupMembersQuery = selectedGroupForQuery?.members?.length
+          ? `&members=${encodeURIComponent(selectedGroupForQuery.members.join(','))}`
+          : '';
+        const queryParam = selectedGroupId
+          ? `groupId=${encodeURIComponent(selectedGroupId)}${groupMembersQuery}`
+          : `agentId=${encodeURIComponent(selectedAgentId)}`;
         const res = await fetch(`/api/chat/history?${queryParam}`, { cache: 'no-store' });
         const data = (await res.json().catch(() => ({}))) as {
           ok?: boolean;
@@ -1294,7 +1300,7 @@ function ChatLayout() {
       }
     };
     load();
-  }, [selectedAgentId, selectedGroupId]);
+  }, [selectedAgentId, selectedGroupId, groups]);
 
   useEffect(() => {
     const agentIdForOffice = selectedGroupId ? '' : selectedAgentId;
@@ -1355,8 +1361,10 @@ function ChatLayout() {
 
     try {
       const payload: any = { message: trimmed, timeoutMs: 90000 };
-      if (selectedGroupId) payload.groupId = selectedGroupId;
-      else payload.agentId = selectedAgentId;
+      if (selectedGroupId) {
+        payload.groupId = selectedGroupId;
+        payload.groupMembers = selectedGroup?.members || [];
+      } else payload.agentId = selectedAgentId;
 
       const res = await fetch('/api/chat/send', {
         method: 'POST',
@@ -1407,7 +1415,10 @@ function ChatLayout() {
         let pollCount = 0;
         const pollGroupHistory = async () => {
           try {
-            const res = await fetch(`/api/chat/history?groupId=${encodeURIComponent(selectedGroupId)}`, { cache: 'no-store' });
+            const membersQuery = selectedGroup?.members?.length
+              ? `&members=${encodeURIComponent(selectedGroup.members.join(','))}`
+              : '';
+            const res = await fetch(`/api/chat/history?groupId=${encodeURIComponent(selectedGroupId)}${membersQuery}`, { cache: 'no-store' });
             const history = await res.json().catch(() => ({})) as { ok?: boolean; data?: { messages?: ChatMessage[] } };
             if (history?.ok && history?.data?.messages) {
               setMessages(history.data.messages);
