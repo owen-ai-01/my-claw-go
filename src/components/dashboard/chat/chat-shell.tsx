@@ -1843,18 +1843,22 @@ function ChatLayout() {
               </div>
             ) : (
               visibleMessages.map((msg, idx) => {
-                const routedAgent = msg.routedAgentId ? agents.find((agent) => agent.id === msg.routedAgentId) || selectedAgent : selectedAgent;
+                const speakerId = selectedGroup
+                  ? (msg.routedAgentId || selectedGroup.leaderId)
+                  : selectedAgent.id;
+                const speakerAgent = agents.find((agent) => agent.id === speakerId) || selectedAgent;
+
                 return (
                   <div key={msg.id || `${selectedAgentId}-${msg.role}-${idx}`} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                     {msg.role === 'assistant' && (
                       <div className="mr-2 mt-1 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary select-none">
-                        {selectedGroup ? agentEmoji(routedAgent) : agentEmoji(selectedAgent)}
+                        {selectedGroup ? agentEmoji(speakerAgent) : agentEmoji(selectedAgent)}
                       </div>
                     )}
                     <div>
-                      {msg.role === 'assistant' && selectedGroup && msg.routedAgentId ? (
+                      {msg.role === 'assistant' && selectedGroup ? (
                         <div className="mb-1 ml-1 text-[11px] text-muted-foreground">
-                          {agentLabel(routedAgent)} · @{msg.routedAgentId}
+                          {agentLabel(speakerAgent)} · @{speakerId}
                         </div>
                       ) : null}
                       <div className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap break-words [overflow-wrap:anywhere] ${msg.role === 'user' ? 'bg-primary text-primary-foreground rounded-br-sm' : 'bg-muted text-foreground rounded-bl-sm'}`}>

@@ -79,7 +79,7 @@ async function buildGroupContext(params: {
   }
 
   lines.push(
-    '[Reply rules: 1) Stay in role. 2) Keep momentum. 3) If handoff is needed, @mention exactly one next member from this group. 4) Do not say system errors/apologies unless truly failed.]',
+    '[Reply rules: 1) Stay in role. 2) Keep momentum. 3) If handoff is needed, @mention exactly one next member from this group using exact @agentId from Members list. 4) Never use placeholder mentions like @someone/@next/@anyone. 5) Do not say system errors/apologies unless truly failed.]',
     ''
   );
 
@@ -92,6 +92,31 @@ function sleep(ms: number) {
 
 function pickFirstMentionInText(text: string, members: string[]) {
   return extractMentionedAgentId(text || '', members);
+}
+
+function looksLikePlaceholderMention(text: string) {
+  const lower = String(text || '').toLowerCase();
+  return lower.includes('@someone') || lower.includes('@next') || lower.includes('@anyone') || lower.includes('@teammate');
+}
+
+function shouldForceRelayFromUserPrompt(text: string) {
+  const lower = String(text || '').toLowerCase();
+  return (
+    lower.includes('随机 @') ||
+    lower.includes('随机@') ||
+    lower.includes('继续 @') ||
+    lower.includes('继续@') ||
+    lower.includes('下一个') ||
+    lower.includes('一直结束') ||
+    lower.includes('接龙')
+  );
+}
+
+function pickFallbackNextMember(members: string[], currentSpeaker: string, leaderId: string) {
+  const pool = members.filter((m) => m !== currentSpeaker);
+  if (pool.length === 0) return leaderId;
+  // deterministic-ish fallback: prefer first non-speaker member
+  return pool[0] || leaderId;
 }
 
 function hasRelayStopCommand(text: string) {
@@ -130,10 +155,15 @@ async function runGroupAutoRelay(params: {
       break;
     }
 
-    const nextMention = pickFirstMentionInText(previousReply, group.members || []);
-    if (!nextMention) break;
+    let nextMention = pickFirstMentionInText(previousReply, group.members || []);
+    if (!nextMention) {
+      const forceRelay = shouldForceRelayFromUserPrompt(originalUserMessage) || looksLikePlaceholderMention(previousReply);
+      if (!forceRelay) break;
+      nextMention = pickFallbackNextMember(group.members || [], currentSpeaker, group.leaderId);
+      app.log.info(`[group/relay] fallback next member => ${nextMention}`);
+    }
 
-    let nextAgentId = nextMention;
+    let nextAgentId = String(nextMention);
     try {
       await ensureAgentExists(nextAgentId);
     } catch {
