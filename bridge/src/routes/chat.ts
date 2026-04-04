@@ -101,11 +101,6 @@ function pickFirstMentionInText(text: string, members: string[]) {
   return extractMentionedAgentId(text || '', members);
 }
 
-function looksLikePlaceholderMention(text: string) {
-  const lower = String(text || '').toLowerCase();
-  return lower.includes('@someone') || lower.includes('@next') || lower.includes('@anyone') || lower.includes('@teammate');
-}
-
 function shouldForceRelayFromUserPrompt(text: string) {
   const lower = String(text || '').toLowerCase();
   return (
@@ -143,8 +138,15 @@ function normalizeReplyMention(params: {
   const fallback = pool[0] || (leaderId !== currentSpeaker ? leaderId : null);
 
   let chosen = mentionIds.find((id) => memberSet.has(id) && id !== currentSpeaker) || null;
-  if (!chosen && (mentionIds.length > 0 || forceRelay)) {
+
+  // Default policy: do NOT force handoff unless user explicitly asked relay.
+  if (!chosen && forceRelay) {
     chosen = fallback;
+  }
+
+  // If not forcing relay and no valid handoff target, strip invalid/self mentions and stop here.
+  if (!chosen && !forceRelay) {
+    return safeReply.replace(/@([a-zA-Z0-9_-]+)/g, '').replace(/\s{2,}/g, ' ').trim();
   }
 
   if (!chosen) {
@@ -206,9 +208,10 @@ async function runGroupAutoRelay(params: {
   initialSpeakerId: string;
   originalUserMessage: string;
   timeoutMs: number;
+  relayRequestedByUser: boolean;
   modelOverride?: string;
 }): Promise<{ usage?: UsageLike; turns: number }> {
-  const { app, group, runId, initialReply, initialSpeakerId, originalUserMessage, timeoutMs, modelOverride } = params;
+  const { app, group, runId, initialReply, initialSpeakerId, originalUserMessage, timeoutMs, relayRequestedByUser, modelOverride } = params;
   const relayEnabled = group?.relay?.enabled !== false;
   if (!relayEnabled) return { turns: 0 };
 
@@ -230,8 +233,7 @@ async function runGroupAutoRelay(params: {
 
     let nextMention = pickFirstMentionInText(previousReply, group.members || []);
     if (!nextMention) {
-      const forceRelay = shouldForceRelayFromUserPrompt(originalUserMessage) || looksLikePlaceholderMention(previousReply);
-      if (!forceRelay) break;
+      if (!relayRequestedByUser) break;
       nextMention = pickFallbackNextMember(group.members || [], currentSpeaker, group.leaderId);
       app.log.info(`[group/relay] fallback next member => ${nextMention}`);
     }
@@ -452,13 +454,13 @@ export async function chatRoutes(app: FastifyInstance) {
       let billedUsage: UsageLike | undefined = result.usage as UsageLike | undefined;
       if (groupId && (body as any).__group && finalReply?.trim()) {
         const group = (body as any).__group;
-        const forceRelay = shouldForceRelayFromUserPrompt(rawUserMessage);
+        const relayRequestedByUser = shouldForceRelayFromUserPrompt(rawUserMessage);
         const normalized = normalizeReplyMention({
           reply: finalReply,
           members: group.members || [],
           currentSpeaker: targetAgentId,
           leaderId: group.leaderId,
-          forceRelay,
+          forceRelay: relayRequestedByUser,
         });
 
         finalReply = normalized;
@@ -480,21 +482,25 @@ export async function chatRoutes(app: FastifyInstance) {
           meta: { model: result.model, routedAgentId: targetAgentId },
         });
 
-        // Run relay chain and aggregate usage for billing
-        try {
-          const relay = await runGroupAutoRelay({
-            app,
-            group,
-            runId: Number((body as any).__relayRunId || Date.now()),
-            initialReply: finalReply,
-            initialSpeakerId: targetAgentId,
-            originalUserMessage: rawUserMessage,
-            timeoutMs,
-            modelOverride,
-          });
-          billedUsage = sumUsage(billedUsage, relay.usage);
-        } catch (err) {
-          app.log.error(`[group/relay] chain failed: ${err instanceof Error ? err.message : String(err)}`);
+        // Run relay only when user explicitly asks chain OR current reply has a valid non-self mention.
+        const hasValidHandoff = !!pickFirstMentionInText(finalReply, group.members || []);
+        if (relayRequestedByUser || hasValidHandoff) {
+          try {
+            const relay = await runGroupAutoRelay({
+              app,
+              group,
+              runId: Number((body as any).__relayRunId || Date.now()),
+              initialReply: finalReply,
+              initialSpeakerId: targetAgentId,
+              originalUserMessage: rawUserMessage,
+              timeoutMs,
+              relayRequestedByUser,
+              modelOverride,
+            });
+            billedUsage = sumUsage(billedUsage, relay.usage);
+          } catch (err) {
+            app.log.error(`[group/relay] chain failed: ${err instanceof Error ? err.message : String(err)}`);
+          }
         }
       }
 
