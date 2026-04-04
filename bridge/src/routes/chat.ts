@@ -119,6 +119,32 @@ function pickFallbackNextMember(members: string[], currentSpeaker: string, leade
   return pool[0] || leaderId;
 }
 
+function normalizeReplyMention(params: {
+  reply: string;
+  members: string[];
+  currentSpeaker: string;
+  leaderId: string;
+  forceRelay: boolean;
+}) {
+  const { reply, members, currentSpeaker, leaderId, forceRelay } = params;
+  const safeReply = String(reply || '').trim();
+  if (!safeReply || !forceRelay) return safeReply;
+
+  const validMention = pickFirstMentionInText(safeReply, members);
+  if (validMention) return safeReply;
+
+  const fallback = pickFallbackNextMember(members, currentSpeaker, leaderId);
+  if (!fallback) return safeReply;
+
+  // if message has any @token but not valid member, replace first one
+  if (/@[a-zA-Z0-9_-]+/.test(safeReply)) {
+    return safeReply.replace(/@[a-zA-Z0-9_-]+/, `@${fallback}`);
+  }
+
+  // otherwise append a canonical handoff
+  return `${safeReply}\n\n@${fallback} 该你了。`;
+}
+
 function hasRelayStopCommand(text: string) {
   const lower = String(text || '').toLowerCase();
   return lower.includes('#stop') || lower.includes('#pause') || lower.includes('/stop-relay');
@@ -343,13 +369,28 @@ export async function chatRoutes(app: FastifyInstance) {
         `${result.timing ? ` connectMs=${result.timing.connectMs} chatSendMs=${result.timing.chatSendMs} agentWaitMs=${result.timing.agentWaitMs} chatHistoryMs=${result.timing.chatHistoryMs} totalGatewayMs=${result.timing.totalGatewayMs}` : ''}`
       );
 
-      // Fire-and-forget group auto relay chain (leader may @ next member)
-      if (groupId && (body as any).__group && result.reply?.trim()) {
+      let finalReply = result.reply;
+      if (groupId && (body as any).__group && finalReply?.trim()) {
+        const group = (body as any).__group;
+        const forceRelay = shouldForceRelayFromUserPrompt(rawUserMessage);
+        const normalized = normalizeReplyMention({
+          reply: finalReply,
+          members: group.members || [],
+          currentSpeaker: targetAgentId,
+          leaderId: group.leaderId,
+          forceRelay,
+        });
+
+        if (normalized !== finalReply) {
+          finalReply = normalized;
+        }
+
+        // Fire-and-forget group auto relay chain (leader may @ next member)
         runGroupAutoRelay({
           app,
-          group: (body as any).__group,
+          group,
           runId: Number((body as any).__relayRunId || Date.now()),
-          initialReply: result.reply,
+          initialReply: finalReply,
           initialSpeakerId: targetAgentId,
           originalUserMessage: rawUserMessage,
           timeoutMs,
@@ -364,7 +405,7 @@ export async function chatRoutes(app: FastifyInstance) {
         routedAgentId: targetAgentId,
         mentionedAgentId: (body as any).__mentionedAgentId || null,
         groupId: groupId || undefined,
-        reply: result.reply,
+        reply: finalReply,
         model: result.model,
         usage: result.usage,
         raw: result.raw,
