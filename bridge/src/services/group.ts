@@ -3,13 +3,10 @@ import path from 'node:path';
 import { BridgeError } from '../lib/errors.js';
 import { OPENCLAW_CONFIG_PATH, OPENCLAW_HOME } from '../lib/paths.js';
 
-type GroupType = 'project' | 'department' | 'temporary';
-
 type Group = {
   id: string;
   name: string;
   description?: string;
-  type: GroupType;
   leaderId: string;
   members: string[];
   relay?: {
@@ -54,9 +51,24 @@ async function readGroupStore(): Promise<GroupStore> {
   try {
     const raw = await fs.readFile(GROUPS_STORE_PATH, 'utf8');
     const parsed = JSON.parse(raw) as Partial<GroupStore>;
+    const groups = (Array.isArray(parsed.groups) ? parsed.groups : []).map((g: any) => ({
+      id: String(g?.id || ''),
+      name: String(g?.name || ''),
+      description: typeof g?.description === 'string' ? g.description : undefined,
+      leaderId: String(g?.leaderId || ''),
+      members: Array.isArray(g?.members) ? g.members.map((m: any) => String(m)).filter(Boolean) : [],
+      relay: g?.relay && typeof g.relay === 'object' ? {
+        enabled: typeof g.relay.enabled === 'boolean' ? g.relay.enabled : undefined,
+        maxTurns: Number.isFinite(Number(g.relay.maxTurns)) ? Number(g.relay.maxTurns) : undefined,
+        cooldownMs: Number.isFinite(Number(g.relay.cooldownMs)) ? Number(g.relay.cooldownMs) : undefined,
+      } : undefined,
+      channels: g?.channels,
+      createdAt: typeof g?.createdAt === 'string' ? g.createdAt : new Date().toISOString(),
+      updatedAt: typeof g?.updatedAt === 'string' ? g.updatedAt : new Date().toISOString(),
+    })) as Group[];
     return {
       version: 1,
-      groups: Array.isArray(parsed.groups) ? parsed.groups : [],
+      groups,
     };
   } catch (error: any) {
     if (error?.code === 'ENOENT') {
@@ -105,7 +117,6 @@ export async function createGroup(params: {
   id: string;
   name: string;
   description?: string;
-  type: GroupType;
   leaderId: string;
   members: string[];
   relay?: {
@@ -114,7 +125,7 @@ export async function createGroup(params: {
     cooldownMs?: number;
   };
 }) {
-  const { id, name, description, type, leaderId, members, relay } = params;
+  const { id, name, description, leaderId, members, relay } = params;
 
   if (!id || !/^[a-z0-9_-]+$/i.test(id)) {
     throw new BridgeError('INVALID_GROUP_ID', 'Group ID must be alphanumeric with hyphens/underscores', 400);
@@ -143,7 +154,6 @@ export async function createGroup(params: {
     id,
     name: name.trim(),
     description: description?.trim(),
-    type,
     leaderId,
     members: [...new Set(members)],
     relay: {
@@ -164,7 +174,6 @@ export async function createGroup(params: {
 export async function updateGroup(groupId: string, patch: {
   name?: string;
   description?: string;
-  type?: GroupType;
   leaderId?: string;
   members?: string[];
   relay?: {
@@ -193,9 +202,6 @@ export async function updateGroup(groupId: string, patch: {
     group.description = patch.description.trim() || undefined;
   }
 
-  if (patch.type !== undefined) {
-    group.type = patch.type;
-  }
 
   if (patch.members !== undefined) {
     if (patch.members.length < 2) {

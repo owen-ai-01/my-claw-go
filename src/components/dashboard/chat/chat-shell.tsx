@@ -732,7 +732,6 @@ type Group = {
   id: string;
   name: string;
   description?: string;
-  type: 'project' | 'department' | 'temporary';
   leaderId: string;
   members: string[];
   relay?: {
@@ -793,7 +792,6 @@ function CreateGroupModal({
   const [groupId, setGroupId] = useState('');
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [type, setType] = useState<'project' | 'department' | 'temporary'>('project');
   const [leaderId, setLeaderId] = useState(agents[0]?.id || 'main');
   const [memberIds, setMemberIds] = useState<string[]>(agents.slice(0, 1).map((a) => a.id));
   const [submitting, setSubmitting] = useState(false);
@@ -821,7 +819,6 @@ function CreateGroupModal({
           id: groupId.trim(),
           name: name.trim(),
           description: description.trim() || undefined,
-          type,
           leaderId,
           members: memberIds,
         }),
@@ -850,33 +847,19 @@ function CreateGroupModal({
         {/* Body */}
         <div className="flex-1 overflow-y-auto px-5 py-4">
           <form id="create-group-form" onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="mb-1.5 block text-sm font-medium">Group ID <span className="text-red-500">*</span></label>
-                <input
-                  type="text"
-                  value={groupId}
-                  onChange={(e) => setGroupId(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ''))}
-                  placeholder="e.g. tech-team"
-                  className="w-full rounded-xl border bg-muted/30 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/50"
-                  required
-                />
-                {groupId && !idValid && (
-                  <p className="mt-1 text-xs text-red-500">2–32 chars, lowercase / numbers / hyphens</p>
-                )}
-              </div>
-              <div>
-                <label className="mb-1.5 block text-sm font-medium">Type</label>
-                <select
-                  value={type}
-                  onChange={(e) => setType(e.target.value as typeof type)}
-                  className="w-full rounded-xl border bg-muted/30 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/50"
-                >
-                  <option value="project">Project</option>
-                  <option value="department">Department</option>
-                  <option value="temporary">Temporary</option>
-                </select>
-              </div>
+            <div>
+              <label className="mb-1.5 block text-sm font-medium">Group ID <span className="text-red-500">*</span></label>
+              <input
+                type="text"
+                value={groupId}
+                onChange={(e) => setGroupId(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ''))}
+                placeholder="e.g. tech-team"
+                className="w-full rounded-xl border bg-muted/30 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/50"
+                required
+              />
+              {groupId && !idValid && (
+                <p className="mt-1 text-xs text-red-500">2–32 chars, lowercase / numbers / hyphens</p>
+              )}
             </div>
 
             <div>
@@ -985,7 +968,6 @@ function EditGroupModal({
 }) {
   const [name, setName] = useState(group.name);
   const [description, setDescription] = useState(group.description || '');
-  const [type, setType] = useState<Group['type']>(group.type);
   const [leaderId, setLeaderId] = useState(group.leaderId);
   const [memberIds, setMemberIds] = useState<string[]>(group.members);
   const [relayEnabled, setRelayEnabled] = useState(group.relay?.enabled !== false);
@@ -1019,7 +1001,6 @@ function EditGroupModal({
         body: JSON.stringify({
           name: name.trim(),
           description: description.trim() || undefined,
-          type,
           leaderId,
           members: memberIds,
           relay: {
@@ -1070,23 +1051,9 @@ function EditGroupModal({
 
         <div className="flex-1 overflow-y-auto px-5 py-4">
           <form id="edit-group-form" onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="mb-1.5 block text-sm font-medium">Group ID</label>
-                <input value={group.id} disabled className="w-full rounded-xl border bg-muted/50 px-3 py-2 text-sm text-muted-foreground" />
-              </div>
-              <div>
-                <label className="mb-1.5 block text-sm font-medium">Type</label>
-                <select
-                  value={type}
-                  onChange={(e) => setType(e.target.value as Group['type'])}
-                  className="w-full rounded-xl border bg-muted/30 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/50"
-                >
-                  <option value="project">Project</option>
-                  <option value="department">Department</option>
-                  <option value="temporary">Temporary</option>
-                </select>
-              </div>
+            <div>
+              <label className="mb-1.5 block text-sm font-medium">Group ID</label>
+              <input value={group.id} disabled className="w-full rounded-xl border bg-muted/50 px-3 py-2 text-sm text-muted-foreground" />
             </div>
 
             <div>
@@ -1766,7 +1733,11 @@ function ChatLayout() {
                               <div className="min-w-0 flex-1">
                                 <div className="flex items-center gap-1.5">
                                   <p className="truncate text-sm font-medium">{group.name}</p>
-                                  <span className="shrink-0 rounded-full bg-purple-100 px-1.5 py-0.5 text-[10px] text-purple-700">{group.type}</span>
+                                  {group.relay?.enabled !== false ? (
+                                    <span className="shrink-0 rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] text-emerald-700">relay on</span>
+                                  ) : (
+                                    <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">relay off</span>
+                                  )}
                                 </div>
                                 <p className="mt-0.5 text-xs text-muted-foreground">
                                   {group.members.length} members · Leader: {leaderAgent ? agentLabel(leaderAgent) : `@${group.leaderId}`}
@@ -1800,7 +1771,6 @@ function ChatLayout() {
                 {selectedGroup && (
                   <>
                     <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                      <span className="rounded-full bg-muted px-2.5 py-1">Type: {selectedGroup.type}</span>
                       <span className="rounded-full bg-muted px-2.5 py-1">Members: {selectedGroup.members.length}</span>
                       <span className="rounded-full bg-muted px-2.5 py-1">Leader: {selectedGroupLeader ? agentLabel(selectedGroupLeader) : `@${selectedGroup.leaderId}`}</span>
                       {selectedGroup.description ? <span className="max-w-full truncate rounded-full bg-muted px-2.5 py-1">{selectedGroup.description}</span> : null}

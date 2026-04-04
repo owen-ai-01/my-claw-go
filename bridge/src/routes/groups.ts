@@ -20,14 +20,13 @@ export async function groupRoutes(app: FastifyInstance) {
 
   app.post('/groups', async (req: any, reply) => {
     try {
-      const { id, name, description, type, leaderId, members, relay } = req.body || {};
+      const { id, name, description, leaderId, members, relay } = req.body || {};
       if (!id) return fail(reply, 'INVALID_PARAMS', 'id is required', 400);
       if (!name) return fail(reply, 'INVALID_PARAMS', 'name is required', 400);
-      if (!type) return fail(reply, 'INVALID_PARAMS', 'type is required', 400);
       if (!leaderId) return fail(reply, 'INVALID_PARAMS', 'leaderId is required', 400);
       if (!members) return fail(reply, 'INVALID_PARAMS', 'members is required', 400);
 
-      const data = await createGroup({ id, name, description, type, leaderId, members, relay });
+      const data = await createGroup({ id, name, description, leaderId, members, relay });
       return ok(reply, data);
     } catch (error: any) {
       return fail(reply, error.code || 'INTERNAL_ERROR', error.message || 'create group failed', error.statusCode || 500);
