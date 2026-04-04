@@ -507,22 +507,24 @@ export async function checkOpenClawHealth() {
 
 export async function sendChatMessage(params: {
   message: string;
+  rawMessage?: string; // original user text without group context prefix (for transcript)
   agentId: string;
   timeoutMs?: number;
   channel?: string;
   chatScope?: string;
   model?: string; // optional model override from platform router
 }) {
-  const { message, agentId, timeoutMs = 90000, channel = 'direct', chatScope = 'default', model } = params;
+  const { message, rawMessage, agentId, timeoutMs = 90000, channel = 'direct', chatScope = 'default', model } = params;
+  const transcriptMessage = rawMessage || message;
 
   try {
     const result = await sendChatViaGateway({ message, agentId, timeoutMs, model });
-    await appendChatTranscript({ role: 'user', text: message, agentId, channel, chatScope });
+    await appendChatTranscript({ role: 'user', text: transcriptMessage, agentId, channel, chatScope });
     await appendChatTranscript({ role: 'assistant', text: result.reply || '', agentId, channel, chatScope, meta: { model: result.model } });
     return result;
   } catch (error) {
     const errText = error instanceof Error ? error.message : String(error);
-    await appendChatTranscript({ role: 'user', text: message, agentId, channel, chatScope });
+    await appendChatTranscript({ role: 'user', text: transcriptMessage, agentId, channel, chatScope });
     await appendChatTranscript({ role: 'assistant', text: errText.trim(), agentId, channel, chatScope });
     await appendActivity({
       at: Date.now(),
