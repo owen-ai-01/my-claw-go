@@ -79,6 +79,7 @@ async function buildGroupContext(params: {
   }
 
   lines.push(
+    `[Valid mention IDs only: ${(members || []).map((m) => `@${m}`).join(', ')}]`,
     '[Reply rules: 1) Stay in role. 2) Keep momentum. 3) If handoff is needed, @mention exactly one next member from this group using exact @agentId from Members list. 4) Never use placeholder mentions like @someone/@next/@anyone. 5) Do not say system errors/apologies unless truly failed.]',
     ''
   );
@@ -128,21 +129,34 @@ function normalizeReplyMention(params: {
 }) {
   const { reply, members, currentSpeaker, leaderId, forceRelay } = params;
   const safeReply = String(reply || '').trim();
-  if (!safeReply || !forceRelay) return safeReply;
+  if (!safeReply) return safeReply;
 
-  const validMention = pickFirstMentionInText(safeReply, members);
-  if (validMention) return safeReply;
+  const memberSet = new Set((members || []).map((m) => String(m)));
+  const pool = (members || []).filter((m) => m !== currentSpeaker);
+  let pickIdx = 0;
+  const nextCandidate = () => {
+    if (pool.length > 0) {
+      const v = pool[pickIdx % pool.length];
+      pickIdx += 1;
+      return v;
+    }
+    return leaderId;
+  };
 
-  const fallback = pickFallbackNextMember(members, currentSpeaker, leaderId);
-  if (!fallback) return safeReply;
+  // 1) Hard restriction: every @mention must be a valid group member
+  let normalized = safeReply.replace(/@([a-zA-Z0-9_-]+)/g, (_full, id) => {
+    const mentionId = String(id || '');
+    if (memberSet.has(mentionId)) return `@${mentionId}`;
+    return `@${nextCandidate()}`;
+  });
 
-  // if message has any @token but not valid member, replace first one
-  if (/@[a-zA-Z0-9_-]+/.test(safeReply)) {
-    return safeReply.replace(/@[a-zA-Z0-9_-]+/, `@${fallback}`);
+  // 2) If this is relay intent, ensure there is at least one valid handoff mention
+  const validMention = pickFirstMentionInText(normalized, members || []);
+  if (forceRelay && !validMention) {
+    normalized = `${normalized}\n\n@${nextCandidate()} 该你了。`;
   }
 
-  // otherwise append a canonical handoff
-  return `${safeReply}\n\n@${fallback} 该你了。`;
+  return normalized;
 }
 
 function hasRelayStopCommand(text: string) {
