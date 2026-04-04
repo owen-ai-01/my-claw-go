@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { fail, ok } from '../lib/response.js';
 import { ensureAgentExists, getAgent } from '../services/agent.js';
-import { readChatTranscript } from '../services/chat-store.js';
+import { appendChatTranscript, readChatTranscript } from '../services/chat-store.js';
 import { sendChatMessage } from '../services/openclaw.js';
 import { getBridgeState } from '../services/state.js';
 import { getGroup } from '../services/group.js';
@@ -94,16 +94,25 @@ function pickFirstMentionInText(text: string, members: string[]) {
   return extractMentionedAgentId(text || '', members);
 }
 
+function hasRelayStopCommand(text: string) {
+  const lower = String(text || '').toLowerCase();
+  return lower.includes('#stop') || lower.includes('#pause') || lower.includes('/stop-relay');
+}
+
+type RelayControl = { runId: number; stopped: boolean };
+const groupRelayControl = new Map<string, RelayControl>();
+
 async function runGroupAutoRelay(params: {
   app: FastifyInstance;
   group: any;
+  runId: number;
   initialReply: string;
   initialSpeakerId: string;
   originalUserMessage: string;
   timeoutMs: number;
   modelOverride?: string;
 }) {
-  const { app, group, initialReply, initialSpeakerId, originalUserMessage, timeoutMs, modelOverride } = params;
+  const { app, group, runId, initialReply, initialSpeakerId, originalUserMessage, timeoutMs, modelOverride } = params;
   const relayEnabled = group?.relay?.enabled !== false;
   if (!relayEnabled) return;
 
@@ -112,8 +121,15 @@ async function runGroupAutoRelay(params: {
 
   let currentSpeaker = initialSpeakerId;
   let previousReply = initialReply;
+  const seenEdges = new Set<string>();
 
   for (let turn = 1; turn <= maxTurns; turn += 1) {
+    const control = groupRelayControl.get(group.id);
+    if (!control || control.runId !== runId || control.stopped) {
+      app.log.info(`[group/relay] stop chain group=${group.id} runId=${runId}`);
+      break;
+    }
+
     const nextMention = pickFirstMentionInText(previousReply, group.members || []);
     if (!nextMention) break;
 
@@ -124,6 +140,18 @@ async function runGroupAutoRelay(params: {
       app.log.warn(`[group/relay] mentioned agent ${nextAgentId} unavailable, fallback to leader ${group.leaderId}`);
       nextAgentId = group.leaderId;
     }
+
+    if (nextAgentId === currentSpeaker) {
+      app.log.info(`[group/relay] self-handoff detected (${currentSpeaker}), stopping chain`);
+      break;
+    }
+
+    const edge = `${currentSpeaker}->${nextAgentId}`;
+    if (seenEdges.has(edge)) {
+      app.log.info(`[group/relay] duplicate edge ${edge}, stopping loop`);
+      break;
+    }
+    seenEdges.add(edge);
 
     await sleep(cooldownMs);
 
@@ -145,7 +173,7 @@ async function runGroupAutoRelay(params: {
 
     const relayResult = await sendChatMessage({
       message: relayPrompt,
-      rawMessage: ' ', // keep relay internal prompts hidden from rendered history
+      rawMessage: '[relay]',
       agentId: nextAgentId,
       transcriptAgentId: group.leaderId,
       timeoutMs: Math.min(Math.max(timeoutMs, 15000), 45000),
@@ -203,6 +231,27 @@ export async function chatRoutes(app: FastifyInstance) {
         const group = await getGroup(groupId);
         const mentionedAgentId = extractMentionedAgentId(message, group.members);
 
+        // Manual stop/pause command from human director
+        if (hasRelayStopCommand(message)) {
+          const prev = groupRelayControl.get(groupId);
+          groupRelayControl.set(groupId, { runId: prev?.runId || Date.now(), stopped: true });
+          await appendChatTranscript({ role: 'user', text: message, agentId: group.leaderId, channel: 'group', chatScope: groupId });
+          await appendChatTranscript({ role: 'assistant', text: '⏸️ 已暂停本群自动接力（relay）。你可以继续@群主重新发起。', agentId: group.leaderId, channel: 'group', chatScope: groupId });
+          return ok(reply, {
+            agentId: group.leaderId,
+            routedAgentId: group.leaderId,
+            groupId,
+            reply: '⏸️ 已暂停本群自动接力（relay）。你可以继续@群主重新发起。',
+            model: undefined,
+            usage: undefined,
+            raw: null,
+            timing: { bridgeRouteMs: Date.now() - routeStartedAt, openclawAgentMs: 0 },
+          });
+        }
+
+        const nextRunId = Date.now();
+        groupRelayControl.set(groupId, { runId: nextRunId, stopped: false });
+
         targetAgentId = group.leaderId;
         channel = 'group';
         chatScope = groupId;
@@ -223,6 +272,7 @@ export async function chatRoutes(app: FastifyInstance) {
         (req.body as any).__groupMessage = message;
         (req.body as any).__groupContextMessage = `${groupCtxPrefix}Now respond as @${targetAgentId}.`;
         (req.body as any).__mentionedAgentId = mentionedAgentId;
+        (req.body as any).__relayRunId = nextRunId;
       } else {
         // Agent 消息
         const state = await getBridgeState();
@@ -268,6 +318,7 @@ export async function chatRoutes(app: FastifyInstance) {
         runGroupAutoRelay({
           app,
           group: (body as any).__group,
+          runId: Number((body as any).__relayRunId || Date.now()),
           initialReply: result.reply,
           initialSpeakerId: targetAgentId,
           originalUserMessage: rawUserMessage,

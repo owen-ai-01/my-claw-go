@@ -735,6 +735,11 @@ type Group = {
   type: 'project' | 'department' | 'temporary';
   leaderId: string;
   members: string[];
+  relay?: {
+    enabled?: boolean;
+    maxTurns?: number;
+    cooldownMs?: number;
+  };
 };
 
 type AgentStatus = {
@@ -983,6 +988,9 @@ function EditGroupModal({
   const [type, setType] = useState<Group['type']>(group.type);
   const [leaderId, setLeaderId] = useState(group.leaderId);
   const [memberIds, setMemberIds] = useState<string[]>(group.members);
+  const [relayEnabled, setRelayEnabled] = useState(group.relay?.enabled !== false);
+  const [relayMaxTurns, setRelayMaxTurns] = useState<number>(group.relay?.maxTurns ?? 6);
+  const [relayCooldownMs, setRelayCooldownMs] = useState<number>(group.relay?.cooldownMs ?? 900);
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState('');
@@ -1014,6 +1022,11 @@ function EditGroupModal({
           type,
           leaderId,
           members: memberIds,
+          relay: {
+            enabled: relayEnabled,
+            maxTurns: Math.min(Math.max(Number(relayMaxTurns || 6), 1), 20),
+            cooldownMs: Math.min(Math.max(Number(relayCooldownMs || 900), 0), 10000),
+          },
         }),
       });
       const data = await res.json().catch(() => ({})) as { ok?: boolean; error?: string };
@@ -1131,6 +1144,48 @@ function EditGroupModal({
                   return <option key={id} value={id}>{agent ? agentLabel(agent) : id}</option>;
                 })}
               </select>
+            </div>
+
+            <div className="rounded-xl border bg-muted/20 p-3">
+              <label className="flex items-center justify-between text-sm font-medium">
+                <span>Auto Relay</span>
+                <input
+                  type="checkbox"
+                  checked={relayEnabled}
+                  onChange={(e) => setRelayEnabled(e.target.checked)}
+                  className="h-4 w-4"
+                />
+              </label>
+              <p className="mt-1 text-xs text-muted-foreground">Leader can @mention next member and trigger automatic handoff chain.</p>
+
+              <div className="mt-3 grid grid-cols-2 gap-3">
+                <div>
+                  <label className="mb-1 block text-xs text-muted-foreground">Max relay turns</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={20}
+                    value={relayMaxTurns}
+                    onChange={(e) => setRelayMaxTurns(Number(e.target.value || 6))}
+                    disabled={!relayEnabled}
+                    className="w-full rounded-lg border bg-background px-2 py-1.5 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs text-muted-foreground">Cooldown (ms)</label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={10000}
+                    step={100}
+                    value={relayCooldownMs}
+                    onChange={(e) => setRelayCooldownMs(Number(e.target.value || 900))}
+                    disabled={!relayEnabled}
+                    className="w-full rounded-lg border bg-background px-2 py-1.5 text-sm"
+                  />
+                </div>
+              </div>
+              <p className="mt-2 text-[11px] text-muted-foreground">Stop command in group: <code>#stop</code> or <code>#pause</code></p>
             </div>
           </form>
         </div>
