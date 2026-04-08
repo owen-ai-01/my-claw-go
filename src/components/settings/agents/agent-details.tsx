@@ -269,6 +269,10 @@ export function AgentDetails({ agentId }: { agentId: string }) {
   const [savingDoc, setSavingDoc] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [editingBasics, setEditingBasics] = useState(false);
+  const [basicsDraft, setBasicsDraft] = useState({ role: '', description: '', department: '', model: '' });
+  const [savingBasics, setSavingBasics] = useState(false);
+  const [basicsError, setBasicsError] = useState('');
 
   useEffect(() => {
     const load = async () => {
@@ -413,41 +417,113 @@ export function AgentDetails({ agentId }: { agentId: string }) {
 
         <div className="flex flex-col gap-6">
           <div className="rounded-2xl border bg-card p-6 shadow-sm">
-            <h2 className="text-lg font-semibold">Agent Basics</h2>
-            <dl className="mt-4 space-y-3 text-sm">
-              <div>
-                <dt className="text-muted-foreground">Role</dt>
-                <dd className="mt-1 break-all font-medium">{agent.role || '—'}</dd>
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <h2 className="text-lg font-semibold">Agent Basics</h2>
+              {!editingBasics ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setBasicsDraft({ role: agent.role || '', description: agent.description || '', department: agent.department || '', model: agent.model || '' });
+                    setBasicsError('');
+                    setEditingBasics(true);
+                  }}
+                  className="rounded-lg border px-3 py-1.5 text-xs hover:bg-muted"
+                >
+                  Edit
+                </button>
+              ) : (
+                <div className="flex gap-2">
+                  <button type="button" onClick={() => setEditingBasics(false)} className="rounded-lg border px-3 py-1.5 text-xs hover:bg-muted">Cancel</button>
+                  <button
+                    type="button"
+                    disabled={savingBasics}
+                    onClick={async () => {
+                      setSavingBasics(true);
+                      setBasicsError('');
+                      try {
+                        const res = await fetch(`/api/agents/${encodeURIComponent(agentId)}`, {
+                          method: 'PATCH',
+                          headers: { 'content-type': 'application/json' },
+                          body: JSON.stringify({
+                            role: basicsDraft.role,
+                            description: basicsDraft.description,
+                            department: basicsDraft.department,
+                            model: basicsDraft.model,
+                          }),
+                        });
+                        const data = await res.json().catch(() => ({})) as { ok?: boolean; data?: AgentDetailRecord; error?: string };
+                        if (!res.ok || data.ok !== true) throw new Error(data.error || 'Failed to save');
+                        if (data.data) setAgent(data.data);
+                        setEditingBasics(false);
+                      } catch (err) {
+                        setBasicsError(err instanceof Error ? err.message : 'Failed to save');
+                      } finally {
+                        setSavingBasics(false);
+                      }
+                    }}
+                    className="rounded-lg bg-primary px-3 py-1.5 text-xs text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                  >
+                    {savingBasics ? 'Saving…' : 'Save'}
+                  </button>
+                </div>
+              )}
+            </div>
+            {basicsError && <p className="mb-3 text-xs text-red-500">{basicsError}</p>}
+            {editingBasics ? (
+              <div className="space-y-3 text-sm">
+                <div>
+                  <label className="text-xs text-muted-foreground">Role</label>
+                  <input value={basicsDraft.role} onChange={(e) => setBasicsDraft((d) => ({ ...d, role: e.target.value }))} className="mt-1 w-full rounded-xl border bg-muted/30 px-3 py-2 text-sm outline-none" placeholder="e.g. SEO strategist" />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">Department</label>
+                  <input value={basicsDraft.department} onChange={(e) => setBasicsDraft((d) => ({ ...d, department: e.target.value }))} className="mt-1 w-full rounded-xl border bg-muted/30 px-3 py-2 text-sm outline-none" placeholder="e.g. Marketing" />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">Description</label>
+                  <textarea value={basicsDraft.description} onChange={(e) => setBasicsDraft((d) => ({ ...d, description: e.target.value }))} rows={3} className="mt-1 w-full rounded-xl border bg-muted/30 px-3 py-2 text-sm outline-none" placeholder="Brief intro for this agent…" />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">Model</label>
+                  <input value={basicsDraft.model} onChange={(e) => setBasicsDraft((d) => ({ ...d, model: e.target.value }))} className="mt-1 w-full rounded-xl border bg-muted/30 px-3 py-2 text-sm outline-none" placeholder="Leave blank for default" />
+                </div>
               </div>
-              <div>
-                <dt className="text-muted-foreground">Department</dt>
-                <dd className="mt-1 break-all font-medium">{agent.department || '—'}</dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground">Description</dt>
-                <dd className="mt-1 break-all font-medium">{agent.description || '—'}</dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground">Enabled</dt>
-                <dd className="mt-1 break-all font-medium">{agent.enabled === false ? 'No' : 'Yes'}</dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground">Model</dt>
-                <dd className="mt-1 break-all font-medium">{agent.model || 'Use default'}</dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground">Workspace</dt>
-                <dd className="mt-1 break-all font-medium">{agent.workspace || '—'}</dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground">AGENTS.md Path</dt>
-                <dd className="mt-1 break-all font-medium">{agent.agentsMdPath || '—'}</dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground">Identity Theme</dt>
-                <dd className="mt-1 break-all font-medium">{agent.identity?.theme || '—'}</dd>
-              </div>
-            </dl>
+            ) : (
+              <dl className="space-y-3 text-sm">
+                <div>
+                  <dt className="text-muted-foreground">Role</dt>
+                  <dd className="mt-1 break-all font-medium">{agent.role || '—'}</dd>
+                </div>
+                <div>
+                  <dt className="text-muted-foreground">Department</dt>
+                  <dd className="mt-1 break-all font-medium">{agent.department || '—'}</dd>
+                </div>
+                <div>
+                  <dt className="text-muted-foreground">Description</dt>
+                  <dd className="mt-1 break-all font-medium">{agent.description || '—'}</dd>
+                </div>
+                <div>
+                  <dt className="text-muted-foreground">Enabled</dt>
+                  <dd className="mt-1 break-all font-medium">{agent.enabled === false ? 'No' : 'Yes'}</dd>
+                </div>
+                <div>
+                  <dt className="text-muted-foreground">Model</dt>
+                  <dd className="mt-1 break-all font-medium">{agent.model || 'Use default'}</dd>
+                </div>
+                <div>
+                  <dt className="text-muted-foreground">Workspace</dt>
+                  <dd className="mt-1 break-all font-medium">{agent.workspace || '—'}</dd>
+                </div>
+                <div>
+                  <dt className="text-muted-foreground">AGENTS.md Path</dt>
+                  <dd className="mt-1 break-all font-medium">{agent.agentsMdPath || '—'}</dd>
+                </div>
+                <div>
+                  <dt className="text-muted-foreground">Identity Theme</dt>
+                  <dd className="mt-1 break-all font-medium">{agent.identity?.theme || '—'}</dd>
+                </div>
+              </dl>
+            )}
           </div>
 
           <div className="rounded-2xl border bg-card p-6 shadow-sm">

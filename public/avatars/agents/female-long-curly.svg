@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs><clipPath id="c"><circle cx="100" cy="100" r="100"/></clipPath></defs>
+  <g clip-path="url(#c)">
+    <rect width="200" height="200" fill="#c0aede"/>
+    <!-- Curly hair body (puffy sides) -->
+    <ellipse cx="61" cy="95" rx="22" ry="55" fill="#1a1008"/>
+    <ellipse cx="139" cy="95" rx="22" ry="55" fill="#1a1008"/>
+    <!-- Curly hair bumps left -->
+    <circle cx="45" cy="72" r="14" fill="#1a1008"/>
+    <circle cx="50" cy="90" r="13" fill="#1a1008"/>
+    <circle cx="46" cy="110" r="13" fill="#1a1008"/>
+    <!-- Curly hair bumps right -->
+    <circle cx="155" cy="72" r="14" fill="#1a1008"/>
+    <circle cx="150" cy="90" r="13" fill="#1a1008"/>
+    <circle cx="154" cy="110" r="13" fill="#1a1008"/>
+    <!-- Clothing -->
+    <ellipse cx="100" cy="232" rx="88" ry="68" fill="#6b4c8a"/>
+    <!-- Neck -->
+    <rect x="87" y="156" width="26" height="38" rx="5" fill="#c68642"/>
+    <!-- Face -->
+    <ellipse cx="100" cy="118" rx="42" ry="50" fill="#c68642"/>
+    <!-- Hair top (curly dome) -->
+    <ellipse cx="100" cy="68" rx="50" ry="36" fill="#1a1008"/>
+    <circle cx="78" cy="52" r="14" fill="#1a1008"/>
+    <circle cx="100" cy="46" r="16" fill="#1a1008"/>
+    <circle cx="122" cy="52" r="14" fill="#1a1008"/>
+    <!-- Eyebrows -->
+    <path d="M 76 104 Q 85 100 94 104" stroke="#1a1008" stroke-width="2.8" fill="none" stroke-linecap="round"/>
+    <path d="M 106 104 Q 115 100 124 104" stroke="#1a1008" stroke-width="2.8" fill="none" stroke-linecap="round"/>
+    <!-- Eyes -->
+    <ellipse cx="85" cy="115" rx="8" ry="8.5" fill="white"/>
+    <ellipse cx="115" cy="115" rx="8" ry="8.5" fill="white"/>
+    <circle cx="85" cy="116" r="5" fill="#1a1008"/>
+    <circle cx="115" cy="116" r="5" fill="#1a1008"/>
+    <circle cx="87" cy="113.5" r="2" fill="white"/>
+    <circle cx="117" cy="113.5" r="2" fill="white"/>
+    <!-- Nose -->
+    <ellipse cx="100" cy="136" rx="5" ry="3" fill="#a06030" opacity="0.35"/>
+    <!-- Mouth -->
+    <path d="M 87 150 Q 100 161 113 150" stroke="#8b4040" stroke-width="2.8" fill="none" stroke-linecap="round"/>
+    <!-- Cheeks -->
+    <ellipse cx="67" cy="132" rx="12" ry="8" fill="#ff8888" opacity="0.14"/>
+    <ellipse cx="133" cy="132" rx="12" ry="8" fill="#ff8888" opacity="0.14"/>
+  </g>
+</svg>

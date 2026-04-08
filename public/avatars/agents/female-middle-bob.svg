@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs><clipPath id="c"><circle cx="100" cy="100" r="100"/></clipPath></defs>
+  <g clip-path="url(#c)">
+    <rect width="200" height="200" fill="#b5ead7"/>
+    <!-- Bob hair sides (chin length) -->
+    <rect x="55" y="72" width="18" height="85" rx="9" fill="#2d1a0e"/>
+    <rect x="127" y="72" width="18" height="85" rx="9" fill="#2d1a0e"/>
+    <!-- Bob bottom curve -->
+    <ellipse cx="100" cy="155" rx="47" ry="10" fill="#2d1a0e"/>
+    <!-- Clothing -->
+    <ellipse cx="100" cy="232" rx="88" ry="68" fill="#3a6e5a"/>
+    <!-- Neck -->
+    <rect x="87" y="155" width="26" height="38" rx="5" fill="#fddbb4"/>
+    <!-- Face -->
+    <ellipse cx="100" cy="118" rx="43" ry="51" fill="#fddbb4"/>
+    <!-- Hair top -->
+    <ellipse cx="100" cy="72" rx="47" ry="28" fill="#2d1a0e"/>
+    <!-- Eyebrows (slightly arched, professional) -->
+    <path d="M 76 103 Q 84 99 93 103" stroke="#2d1a0e" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+    <path d="M 107 103 Q 116 99 124 103" stroke="#2d1a0e" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+    <!-- Eyes -->
+    <ellipse cx="84" cy="114" rx="8" ry="8.5" fill="white"/>
+    <ellipse cx="116" cy="114" rx="8" ry="8.5" fill="white"/>
+    <circle cx="84" cy="115" r="5" fill="#3d2310"/>
+    <circle cx="116" cy="115" r="5" fill="#3d2310"/>
+    <circle cx="86" cy="113" r="2" fill="white"/>
+    <circle cx="118" cy="113" r="2" fill="white"/>
+    <!-- Eyelashes -->
+    <path d="M 77 109 L 74 105" stroke="#2d1a0e" stroke-width="1.2" stroke-linecap="round"/>
+    <path d="M 84 107 L 84 103" stroke="#2d1a0e" stroke-width="1.2" stroke-linecap="round"/>
+    <path d="M 91 109 L 94 105" stroke="#2d1a0e" stroke-width="1.2" stroke-linecap="round"/>
+    <path d="M 109 109 L 106 105" stroke="#2d1a0e" stroke-width="1.2" stroke-linecap="round"/>
+    <path d="M 116 107 L 116 103" stroke="#2d1a0e" stroke-width="1.2" stroke-linecap="round"/>
+    <path d="M 123 109 L 126 105" stroke="#2d1a0e" stroke-width="1.2" stroke-linecap="round"/>
+    <!-- Nose -->
+    <ellipse cx="100" cy="134" rx="5" ry="3" fill="#e0a882" opacity="0.38"/>
+    <!-- Mouth (subtle smile) -->
+    <path d="M 88 149 Q 100 160 112 149" stroke="#c06050" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+    <!-- Cheeks -->
+    <ellipse cx="66" cy="130" rx="12" ry="8" fill="#ff8888" opacity="0.15"/>
+    <ellipse cx="134" cy="130" rx="12" ry="8" fill="#ff8888" opacity="0.15"/>
+    <!-- Pearl earring -->
+    <circle cx="57" cy="122" r="4" fill="#f0f0e8"/>
+    <circle cx="143" cy="122" r="4" fill="#f0f0e8"/>
+  </g>
+</svg>

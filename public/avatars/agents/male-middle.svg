@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs><clipPath id="c"><circle cx="100" cy="100" r="100"/></clipPath></defs>
+  <g clip-path="url(#c)">
+    <rect width="200" height="200" fill="#c0aede"/>
+    <!-- Clothing (suit) -->
+    <ellipse cx="100" cy="232" rx="88" ry="68" fill="#1e2d4a"/>
+    <!-- Shirt/tie hint -->
+    <ellipse cx="100" cy="210" rx="20" ry="30" fill="#f0f0f0"/>
+    <rect x="97" y="188" width="6" height="28" rx="3" fill="#8a3030"/>
+    <!-- Neck -->
+    <rect x="87" y="155" width="26" height="38" rx="5" fill="#fddbb4"/>
+    <!-- Face -->
+    <ellipse cx="100" cy="118" rx="43" ry="52" fill="#fddbb4"/>
+    <!-- Hair (side-parted, professional) -->
+    <ellipse cx="100" cy="72" rx="46" ry="26" fill="#1a1008"/>
+    <!-- Side part -->
+    <path d="M 76 56 L 86 80" stroke="#2a1a0e" stroke-width="2" fill="none"/>
+    <!-- Hair left volume -->
+    <ellipse cx="70" cy="74" rx="18" ry="18" fill="#1a1008"/>
+    <!-- Hair sides -->
+    <ellipse cx="59" cy="94" rx="10" ry="20" fill="#1a1008"/>
+    <ellipse cx="141" cy="94" rx="10" ry="20" fill="#1a1008"/>
+    <!-- Sideburns (defined) -->
+    <rect x="56" y="110" width="8" height="22" rx="4" fill="#1a1008"/>
+    <rect x="136" y="110" width="8" height="22" rx="4" fill="#1a1008"/>
+    <!-- Eyebrows (strong) -->
+    <path d="M 73 106 Q 84 102 93 105" stroke="#1a1008" stroke-width="3.2" fill="none" stroke-linecap="round"/>
+    <path d="M 107 105 Q 116 102 127 106" stroke="#1a1008" stroke-width="3.2" fill="none" stroke-linecap="round"/>
+    <!-- Eyes -->
+    <ellipse cx="84" cy="116" rx="8" ry="8" fill="white"/>
+    <ellipse cx="116" cy="116" rx="8" ry="8" fill="white"/>
+    <circle cx="84" cy="117" r="5" fill="#2d1a0e"/>
+    <circle cx="116" cy="117" r="5" fill="#2d1a0e"/>
+    <circle cx="86" cy="115" r="2" fill="white"/>
+    <circle cx="118" cy="115" r="2" fill="white"/>
+    <!-- Nose -->
+    <path d="M 96 133 Q 93 144 97 148 Q 100 150 103 148 Q 107 144 104 133" stroke="#e0a882" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+    <!-- Mouth (confident) -->
+    <path d="M 88 152 Q 100 161 112 152" stroke="#b06050" stroke-width="2.8" fill="none" stroke-linecap="round"/>
+    <!-- Short beard/stubble -->
+    <ellipse cx="100" cy="164" rx="28" ry="10" fill="#1a1008" opacity="0.12"/>
+    <ellipse cx="85" cy="156" rx="8" ry="5" fill="#1a1008" opacity="0.08"/>
+    <ellipse cx="115" cy="156" rx="8" ry="5" fill="#1a1008" opacity="0.08"/>
+  </g>
+</svg>

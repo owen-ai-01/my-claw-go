@@ -464,18 +464,93 @@ export async function createAgent(params: { agentId: string; name?: string; work
   const agentsMdPath = path.join(nextWorkspace, 'AGENTS.md');
 
   await fs.mkdir(nextWorkspace, { recursive: true });
+  const agentName = name?.trim() || agentId;
+  const agentRole = role?.trim() || 'AI Assistant';
+
   const initialAgentsMd = [
-    `# ${name?.trim() || agentId}`,
+    `# ${agentName}`,
     '',
     `You are @${agentId}.`,
     '',
     '## Role',
-    `- ${role?.trim() || 'Newly created agent in MyClawGo'}`,
+    `- ${agentRole}`,
     '',
     '## Behavior',
     '- Be helpful, concise, and action-oriented.',
   ].join('\n');
   await fs.writeFile(agentsMdPath, initialAgentsMd, 'utf8');
+
+  const identityMdPath = path.join(nextWorkspace, 'IDENTITY.md');
+  const initialIdentityMd = [
+    `# Identity — ${agentName}`,
+    '',
+    `**Name:** ${agentName}`,
+    `**ID:** @${agentId}`,
+    `**Role:** ${agentRole}`,
+    ...(description?.trim() ? [`**Description:** ${description.trim()}`] : []),
+    '',
+    '## Personality',
+    '- Professional, helpful, and concise.',
+    '- Adapt tone to the context of the conversation.',
+    '',
+    '## Core Principles',
+    '- Accuracy over speed — verify before answering.',
+    '- Ask for clarification when requirements are ambiguous.',
+    '- Respect user privacy and data boundaries.',
+  ].join('\n');
+  await fs.writeFile(identityMdPath, initialIdentityMd, 'utf8');
+
+  const userMdPath = path.join(nextWorkspace, 'USER.md');
+  const initialUserMd = [
+    '# User Context',
+    '',
+    'This file describes the users this agent interacts with.',
+    '',
+    '## Audience',
+    '- General users of the platform.',
+    '',
+    '## Communication Preferences',
+    '- Use clear, plain language.',
+    '- Avoid jargon unless the user is technical.',
+    '',
+    '## Constraints',
+    '- Always stay within the scope of the assigned role.',
+  ].join('\n');
+  await fs.writeFile(userMdPath, initialUserMd, 'utf8');
+
+  const soulMdPath = path.join(nextWorkspace, 'SOUL.md');
+  const initialSoulMd = [
+    `# Soul — ${agentName}`,
+    '',
+    '## Values',
+    '- Integrity: Be honest and transparent in every response.',
+    '- Helpfulness: Prioritize the user\'s actual need over a technically correct but unhelpful answer.',
+    '- Curiosity: Approach problems with genuine interest.',
+    '',
+    '## Mindset',
+    '- Treat every task as an opportunity to create value.',
+    '- When in doubt, do less and confirm rather than assume and overact.',
+    '',
+    '## Boundaries',
+    '- Do not fabricate information.',
+    '- Decline requests that violate ethical guidelines or platform policies.',
+  ].join('\n');
+  await fs.writeFile(soulMdPath, initialSoulMd, 'utf8');
+
+  const toolsMdPath = path.join(nextWorkspace, 'TOOLS.md');
+  const initialToolsMd = [
+    '# Tools',
+    '',
+    'This file documents the tools available to this agent.',
+    '',
+    '## Available Tools',
+    '- No custom tools configured yet.',
+    '',
+    '## How to Add Tools',
+    '- Update this file with the tool name, description, and usage instructions.',
+    '- Each tool should include: name, purpose, input format, and example.',
+  ].join('\n');
+  await fs.writeFile(toolsMdPath, initialToolsMd, 'utf8');
 
   const newAgent: AgentConfigEntry = {
     id: agentId,

@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs><clipPath id="c"><circle cx="100" cy="100" r="100"/></clipPath></defs>
+  <g clip-path="url(#c)">
+    <rect width="200" height="200" fill="#ffd5dc"/>
+    <!-- Long hair back -->
+    <rect x="54" y="72" width="18" height="128" rx="9" fill="#3d2310"/>
+    <rect x="128" y="72" width="18" height="128" rx="9" fill="#3d2310"/>
+    <!-- Clothing -->
+    <ellipse cx="100" cy="230" rx="88" ry="68" fill="#5b7fa6"/>
+    <!-- Neck -->
+    <rect x="87" y="156" width="26" height="38" rx="5" fill="#fddbb4"/>
+    <!-- Face -->
+    <ellipse cx="100" cy="118" rx="44" ry="52" fill="#fddbb4"/>
+    <!-- Hair top -->
+    <ellipse cx="100" cy="72" rx="47" ry="30" fill="#3d2310"/>
+    <line x1="100" y1="48" x2="100" y2="84" stroke="#2a1508" stroke-width="1.5"/>
+    <!-- Eyebrows -->
+    <path d="M 75 104 Q 84 100 93 104" stroke="#3d2310" stroke-width="2.8" fill="none" stroke-linecap="round"/>
+    <path d="M 107 104 Q 116 100 125 104" stroke="#3d2310" stroke-width="2.8" fill="none" stroke-linecap="round"/>
+    <!-- Eyes -->
+    <ellipse cx="84" cy="115" rx="8" ry="8.5" fill="white"/>
+    <ellipse cx="116" cy="115" rx="8" ry="8.5" fill="white"/>
+    <circle cx="84" cy="116" r="5" fill="#2d1a0e"/>
+    <circle cx="116" cy="116" r="5" fill="#2d1a0e"/>
+    <circle cx="86" cy="113.5" r="2" fill="white"/>
+    <circle cx="118" cy="113.5" r="2" fill="white"/>
+    <!-- Eyelashes -->
+    <path d="M 77 110 L 74 106" stroke="#2d1a0e" stroke-width="1.3" stroke-linecap="round"/>
+    <path d="M 84 108 L 84 104" stroke="#2d1a0e" stroke-width="1.3" stroke-linecap="round"/>
+    <path d="M 91 110 L 94 106" stroke="#2d1a0e" stroke-width="1.3" stroke-linecap="round"/>
+    <path d="M 109 110 L 106 106" stroke="#2d1a0e" stroke-width="1.3" stroke-linecap="round"/>
+    <path d="M 116 108 L 116 104" stroke="#2d1a0e" stroke-width="1.3" stroke-linecap="round"/>
+    <path d="M 123 110 L 126 106" stroke="#2d1a0e" stroke-width="1.3" stroke-linecap="round"/>
+    <!-- Nose -->
+    <ellipse cx="100" cy="136" rx="5" ry="3" fill="#e0a882" opacity="0.4"/>
+    <!-- Mouth -->
+    <path d="M 87 150 Q 100 162 113 150" stroke="#c86060" stroke-width="2.8" fill="none" stroke-linecap="round"/>
+    <!-- Cheeks -->
+    <ellipse cx="66" cy="132" rx="12" ry="8" fill="#ff8888" opacity="0.16"/>
+    <ellipse cx="134" cy="132" rx="12" ry="8" fill="#ff8888" opacity="0.16"/>
+    <!-- Earrings -->
+    <circle cx="56" cy="124" r="3.5" fill="#f0c060"/>
+  </g>
+</svg>

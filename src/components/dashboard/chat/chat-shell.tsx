@@ -272,6 +272,10 @@ function AgentConfigDrawer({
           body: JSON.stringify({
             name: draftName,
             model: draftModel,
+            role: draftRole,
+            description: draftDescription,
+            department: draftDepartment,
+            enabled: draftEnabled,
           }),
         }),
         ...docKeys.map((docKey) =>
@@ -632,6 +636,8 @@ function AddAgentDrawer({
         body: JSON.stringify({
           agentId: agentId.trim(),
           name: name.trim() || undefined,
+          role: role.trim() || undefined,
+          description: description.trim() || undefined,
           avatar: avatar.trim() || undefined,
           emoji: emoji.trim() || undefined,
           model: model.trim() || undefined,

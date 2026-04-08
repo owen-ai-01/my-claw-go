@@ -57,12 +57,6 @@ export function useSidebarLinks(): NestedMenuItem[] {
       external: false,
     },
     {
-      title: 'Tasks',
-      icon: <ListTodoIcon className="size-4 shrink-0" />,
-      href: Routes.Tasks,
-      external: false,
-    },
-    {
       title: t('admin.title'),
       icon: <SettingsIcon className="size-4 shrink-0" />,
       authorizeOnly: [], // isDemo ? ['admin', 'user'] : ['admin'],
@@ -85,7 +79,7 @@ export function useSidebarLinks(): NestedMenuItem[] {
           href: Routes.SettingsProfile,
           external: false,
         },
-        { title: 'Agents', icon: <BotIcon className="size-4 shrink-0" />, href: Routes.SettingsAgents, external: false },
+
         {
           title: t('settings.billing.title'),
           icon: <CreditCardIcon className="size-4 shrink-0" />,

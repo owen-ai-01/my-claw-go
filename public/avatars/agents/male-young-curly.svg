@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs><clipPath id="c"><circle cx="100" cy="100" r="100"/></clipPath></defs>
+  <g clip-path="url(#c)">
+    <rect width="200" height="200" fill="#d1d4f9"/>
+    <!-- Clothing -->
+    <ellipse cx="100" cy="232" rx="88" ry="68" fill="#3a5c8a"/>
+    <!-- Neck -->
+    <rect x="87" y="156" width="26" height="38" rx="5" fill="#c68642"/>
+    <!-- Face -->
+    <ellipse cx="100" cy="120" rx="42" ry="51" fill="#c68642"/>
+    <!-- Curly hair cap -->
+    <ellipse cx="100" cy="74" rx="48" ry="30" fill="#1a1008"/>
+    <!-- Curly bumps top -->
+    <circle cx="76" cy="60" r="14" fill="#1a1008"/>
+    <circle cx="100" cy="54" r="16" fill="#1a1008"/>
+    <circle cx="124" cy="60" r="14" fill="#1a1008"/>
+    <!-- Curly bumps sides -->
+    <circle cx="60" cy="78" r="12" fill="#1a1008"/>
+    <circle cx="140" cy="78" r="12" fill="#1a1008"/>
+    <!-- Sideburns -->
+    <rect x="58" y="106" width="8" height="16" rx="4" fill="#1a1008"/>
+    <rect x="134" y="106" width="8" height="16" rx="4" fill="#1a1008"/>
+    <!-- Eyebrows -->
+    <path d="M 74 107 Q 84 103 93 106" stroke="#1a1008" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <path d="M 107 106 Q 116 103 126 107" stroke="#1a1008" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <!-- Eyes -->
+    <ellipse cx="84" cy="117" rx="8" ry="8" fill="white"/>
+    <ellipse cx="116" cy="117" rx="8" ry="8" fill="white"/>
+    <circle cx="84" cy="118" r="5" fill="#1a1008"/>
+    <circle cx="116" cy="118" r="5" fill="#1a1008"/>
+    <circle cx="86" cy="116" r="2" fill="white"/>
+    <circle cx="118" cy="116" r="2" fill="white"/>
+    <!-- Nose -->
+    <path d="M 96 134 Q 93 145 97 149 Q 100 151 103 149 Q 107 145 104 134" stroke="#a06030" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+    <!-- Mouth -->
+    <path d="M 88 153 Q 100 163 112 153" stroke="#8b4030" stroke-width="2.8" fill="none" stroke-linecap="round"/>
+    <!-- Stubble -->
+    <ellipse cx="100" cy="163" rx="25" ry="8" fill="#1a1008" opacity="0.08"/>
+  </g>
+</svg>
