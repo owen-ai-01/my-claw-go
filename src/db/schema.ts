@@ -13,6 +13,7 @@ export const user = pgTable("user", {
 	banReason: text('ban_reason'),
 	banExpires: timestamp('ban_expires'),
 	customerId: text('customer_id'),
+	utmSource: text('utm_source'),
 }, (table) => ({
 	userIdIdx: index("user_id_idx").on(table.id),
 	userCustomerIdIdx: index("user_customer_id_idx").on(table.customerId),

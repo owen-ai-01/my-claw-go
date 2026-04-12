@@ -21,6 +21,7 @@ import { Providers } from './providers';
 
 import '@/styles/globals.css';
 import { JsonLd } from '@/components/seo/json-ld';
+import { RootUtmCapture } from '@/components/shared/root-utm-capture';
 import { websiteConfig } from '@/config/website';
 import { getBaseUrl, getImageUrl } from '@/lib/urls/urls';
 
@@ -108,6 +109,7 @@ export default async function LocaleLayout({
         <NuqsAdapter>
           <NextIntlClientProvider>
             <Providers locale={locale}>
+              <RootUtmCapture />
               {children}
 
               <Toaster richColors position="top-right" offset={64} />
