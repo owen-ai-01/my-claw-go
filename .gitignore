@@ -73,3 +73,6 @@ next-env.d.ts
 
 bridge/node_modules/
 bridge/dist/
+
+# deploy logs
+logs/

@@ -1836,8 +1836,15 @@ function ChatLayout() {
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm">
-                    {selectedGroup ? '👥' : agentEmoji(selectedAgent)}
+                  <div className="flex-shrink-0 h-8 w-8 rounded-full bg-primary/10 overflow-hidden">
+                    {selectedGroup ? (
+                      <div className="flex h-full w-full items-center justify-center text-sm">👥</div>
+                    ) : selectedAgent.identity?.avatar ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={selectedAgent.identity.avatar} alt={agentLabel(selectedAgent)} className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-sm">{agentEmoji(selectedAgent)}</div>
+                    )}
                   </div>
                   <div className="min-w-0">
                     <p className="truncate text-sm font-semibold">{currentTitle}</p>
@@ -1932,8 +1939,19 @@ function ChatLayout() {
                 return (
                   <div key={msg.id || `${selectedAgentId}-${msg.role}-${idx}`} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                     {msg.role === 'assistant' && (
-                      <div className="mr-2 mt-1 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary select-none">
-                        {selectedGroup ? agentEmoji(speakerAgent) : agentEmoji(selectedAgent)}
+                      <div className="mr-2 mt-1 h-7 w-7 flex-shrink-0 overflow-hidden rounded-full bg-primary/10">
+                        {(selectedGroup ? speakerAgent : selectedAgent).identity?.avatar ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={(selectedGroup ? speakerAgent : selectedAgent).identity!.avatar}
+                            alt={agentLabel(selectedGroup ? speakerAgent : selectedAgent)}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center text-xs font-bold text-primary select-none">
+                            {selectedGroup ? agentEmoji(speakerAgent) : agentEmoji(selectedAgent)}
+                          </div>
+                        )}
                       </div>
                     )}
                     <div>
@@ -1961,8 +1979,15 @@ function ChatLayout() {
             {/* Typing indicator — shown while sending OR while background task is running */}
             {isWaiting && (
               <div className="flex justify-start">
-                <div className="mr-2 mt-1 flex-shrink-0 w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary select-none">
-                  {agentEmoji(selectedAgent)}
+                <div className="mr-2 mt-1 flex-shrink-0 w-7 h-7 rounded-full bg-primary/10 overflow-hidden">
+                  {selectedAgent.identity?.avatar ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={selectedAgent.identity.avatar} alt={agentLabel(selectedAgent)} className="h-full w-full object-cover" />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-xs font-bold text-primary select-none">
+                      {agentEmoji(selectedAgent)}
+                    </div>
+                  )}
                 </div>
                 <div className="bg-muted rounded-2xl rounded-bl-sm px-4 py-3">
                   <span className="flex gap-1 items-center h-4">
