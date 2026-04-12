@@ -13,7 +13,7 @@ import type { UserSession } from './session-store';
 const execFileAsync = promisify(execFile);
 
 const OPENCLAW_IMAGE =
-  process.env.MYCLAWGO_OPENCLAW_IMAGE || 'myclawgo-openclaw:2026.3.13';
+  process.env.MYCLAWGO_OPENCLAW_IMAGE || 'myclawgo-openclaw:2026.4.11';
 const HOST_OPENCLAW_CONFIG =
   process.env.MYCLAWGO_SEED_CONFIG_PATH ||
   '/home/openclaw/docker-openclaw-seed/openclaw.json';
