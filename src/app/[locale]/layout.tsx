@@ -92,7 +92,6 @@ export default async function LocaleLayout({
     <html suppressHydrationWarning lang={locale}>
       <head>
         <AffonsoScript />
-        <AffonsoScript />
         <PromotekitScript />
         <JsonLd data={jsonLd} />
       </head>

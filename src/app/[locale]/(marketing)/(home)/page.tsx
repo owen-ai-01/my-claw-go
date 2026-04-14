@@ -129,14 +129,6 @@ export default async function HomePage(props: HomePageProps) {
     url: baseUrl,
     description:
       'Hosted OpenClaw workspace for non-technical users — no VPS, no setup.',
-    potentialAction: {
-      '@type': 'SearchAction',
-      target: {
-        '@type': 'EntryPoint',
-        urlTemplate: `${baseUrl}/search?q={search_term_string}`,
-      },
-      'query-input': 'required name=search_term_string',
-    },
   };
 
   const faqLd = {
