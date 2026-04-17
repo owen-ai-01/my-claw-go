@@ -332,10 +332,11 @@ export async function ensureUserContainer(session: UserSession) {
       .map((k) => ({ key: k, value: process.env[k] }))
       .filter((e) => Boolean(e.value));
 
-    envs.push({
-      key: 'BRIDGE_TOKEN',
-      value: process.env.MYCLAWGO_BRIDGE_TOKEN || 'bridge-test-token',
-    });
+    const bridgeToken = process.env.MYCLAWGO_BRIDGE_TOKEN;
+    if (!bridgeToken) {
+      return { ok: false as const, error: 'MYCLAWGO_BRIDGE_TOKEN is not configured. Container cannot start without bridge authentication.' };
+    }
+    envs.push({ key: 'BRIDGE_TOKEN', value: bridgeToken });
 
     const limits = await getContainerLimitsForUser(session.id);
     const args = [
@@ -377,6 +378,11 @@ export async function ensureUserContainer(session: UserSession) {
       if (
         message.includes('--storage-opt is supported only for overlay over xfs')
       ) {
+        console.warn(
+          `[MyClawGo] WARNING: --storage-opt not supported on this host (not overlay/xfs). ` +
+          `Container ${containerName} will be created WITHOUT disk quota. ` +
+          `This allows unbounded disk usage per container. Configure XFS + overlay driver to enforce limits.`
+        );
         const argsWithoutDisk = args.filter((_, idx) => {
           if (args[idx] === '--storage-opt') return false;
           if (idx > 0 && args[idx - 1] === '--storage-opt') return false;

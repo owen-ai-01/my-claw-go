@@ -4,7 +4,10 @@ import { getSession } from './session-store';
 
 const execFileAsync = promisify(execFile);
 const BRIDGE_PORT = Number(process.env.MYCLAWGO_BRIDGE_PORT || 18080);
-const BRIDGE_TOKEN = process.env.MYCLAWGO_BRIDGE_TOKEN || 'bridge-test-token';
+const BRIDGE_TOKEN = process.env.MYCLAWGO_BRIDGE_TOKEN;
+if (!BRIDGE_TOKEN) {
+  throw new Error('MYCLAWGO_BRIDGE_TOKEN is not set. Bridge authentication is required.');
+}
 
 async function getContainerIp(containerName: string) {
   const { stdout } = await execFileAsync('docker', [

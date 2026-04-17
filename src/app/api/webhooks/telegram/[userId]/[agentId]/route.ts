@@ -12,7 +12,12 @@ export async function POST(
   }
 
   const secret = req.headers.get('x-telegram-bot-api-secret-token');
-  if (route.bot.webhookSecret && secret !== route.bot.webhookSecret) {
+  if (!route.bot.webhookSecret) {
+    // Webhook secret not configured — reject to prevent unauthenticated message injection.
+    // Re-register the bot via Settings to generate a secret.
+    return NextResponse.json({ ok: false, error: 'Webhook secret not configured. Please re-register your Telegram bot.' }, { status: 401 });
+  }
+  if (secret !== route.bot.webhookSecret) {
     return NextResponse.json({ ok: false, error: 'Invalid webhook secret' }, { status: 401 });
   }
 

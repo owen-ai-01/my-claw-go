@@ -35,7 +35,10 @@ async function readAll(): Promise<Record<string, UserSession>> {
 
 async function writeAll(data: Record<string, UserSession>) {
   await ensureBase();
-  await fs.writeFile(SESSIONS_FILE, JSON.stringify(data, null, 2));
+  // Atomic write: write to tmp then rename to avoid partial reads under concurrency
+  const tmpFile = `${SESSIONS_FILE}.tmp`;
+  await fs.writeFile(tmpFile, JSON.stringify(data, null, 2));
+  await fs.rename(tmpFile, SESSIONS_FILE);
 }
 
 export function createSessionId() {

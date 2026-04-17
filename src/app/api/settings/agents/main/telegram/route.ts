@@ -84,6 +84,9 @@ export async function POST(req: Request) {
     const now = new Date();
     const encryptedToken = encryptConfigValue(botToken);
 
+    // Generate a fresh webhook secret on every save so the receiver can always validate.
+    const webhookSecret = crypto.randomBytes(32).toString('hex');
+
     if (bot) {
       await db
         .update(userAgentTelegramBot)
@@ -93,7 +96,7 @@ export async function POST(req: Request) {
           botUsername: verified.botUsername,
           botTelegramId: verified.botTelegramId,
           webhookPath: null,
-          webhookSecret: null,
+          webhookSecret,
           lastVerifiedAt: now,
           lastError: null,
           updatedAt: now,
@@ -108,6 +111,7 @@ export async function POST(req: Request) {
         botTokenEncrypted: encryptedToken,
         botUsername: verified.botUsername,
         botTelegramId: verified.botTelegramId,
+        webhookSecret,
         lastVerifiedAt: now,
         lastError: null,
         createdAt: now,

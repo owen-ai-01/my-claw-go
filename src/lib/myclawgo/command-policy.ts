@@ -9,6 +9,7 @@ export const SAFE_COMMAND_PATTERNS: RegExp[] = [
   /^openclaw\s+agents\s+add\s+[a-zA-Z0-9_.-]+$/i,
   /^openclaw\s+agent\s+--(?:message|agent|thinking|model|help)\b[\s\S]*$/i,
   /^clawhub\s+install\s+[a-zA-Z0-9_.@/-]+$/i,
+  /^clawhub\s+install\s+[a-zA-Z0-9_.@/-]+\s+--dir\s+[a-zA-Z0-9_.@/.-]+\s+--force$/i,
   /^clawhub\s+list$/i,
   /^clawhub\s+search\s+[^\n]+$/i,
 ];

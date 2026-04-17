@@ -32,8 +32,11 @@ if ! pgrep -u openclaw -f "keep-gateway.sh" >/dev/null 2>&1; then
 fi
 
 if [ -f /opt/myclawgo-bridge/current/dist/server.js ] && ! pgrep -u openclaw -f "current/dist/server.js" >/dev/null 2>&1; then
-  BRIDGE_TOKEN_VALUE="${BRIDGE_TOKEN:-bridge-test-token}"
-  su - openclaw -c "cd /opt/myclawgo-bridge/current && BRIDGE_PORT=18080 BRIDGE_TOKEN=${BRIDGE_TOKEN_VALUE} nohup node dist/server.js >> /home/openclaw/.openclaw/bridge.log 2>&1 </dev/null &" || true
+  if [ -z "${BRIDGE_TOKEN:-}" ]; then
+    echo "[FATAL] BRIDGE_TOKEN is not set. Refusing to start bridge with no authentication." >&2
+    exit 1
+  fi
+  su - openclaw -c "cd /opt/myclawgo-bridge/current && BRIDGE_PORT=18080 BRIDGE_TOKEN=${BRIDGE_TOKEN} nohup node dist/server.js >> /home/openclaw/.openclaw/bridge.log 2>&1 </dev/null &" || true
 fi
 
 if [ "${1:-}" = "sleep-infinity" ]; then
