@@ -3,13 +3,17 @@ import { and, eq } from 'drizzle-orm';
 import { getDb } from '@/db';
 import { userAgent, userAgentTelegramBot } from '@/db/schema';
 
-function getEncryptionSecret() {
-  return (
+function getEncryptionSecret(): string {
+  const secret =
     process.env.MYCLAWGO_CONFIG_SECRET ||
     process.env.BETTER_AUTH_SECRET ||
-    process.env.AUTH_SECRET ||
-    'dev-only-openclaw-secret-change-me'
-  );
+    process.env.AUTH_SECRET;
+  if (!secret) {
+    throw new Error(
+      '[FATAL] No encryption secret configured. Set MYCLAWGO_CONFIG_SECRET (or BETTER_AUTH_SECRET / AUTH_SECRET) in your environment.',
+    );
+  }
+  return secret;
 }
 
 export function encryptConfigValue(value: string) {
