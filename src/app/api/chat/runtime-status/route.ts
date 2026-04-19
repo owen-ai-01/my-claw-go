@@ -1,5 +1,4 @@
 import { execFile } from 'node:child_process';
-import fs from 'node:fs/promises';
 import { promisify } from 'node:util';
 import { auth } from '@/lib/auth';
 import { getSession } from '@/lib/myclawgo/session-store';
@@ -31,15 +30,6 @@ async function runtimeLooksReady(userId: string) {
     return {
       state: 'not_created' as const,
       reason: 'missing-session',
-    };
-  }
-
-  try {
-    await fs.access(`${session.userDataDir}/openclaw.json`);
-  } catch {
-    return {
-      state: 'not_created' as const,
-      reason: 'missing-config',
     };
   }
 
