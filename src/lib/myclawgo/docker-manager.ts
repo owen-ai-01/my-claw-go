@@ -234,9 +234,10 @@ async function updateContainerAuthProfile(
     usageStats: {},
   };
   const b64 = Buffer.from(JSON.stringify(profile, null, 2)).toString('base64');
+  // Write the key then restart the gateway so it picks up the new key from disk.
   await dockerExec(
     containerName,
-    `printf '%s' ${JSON.stringify(b64)} | base64 -d > ${authProfilesPath} && chown openclaw:openclaw ${authProfilesPath}`
+    `printf '%s' ${JSON.stringify(b64)} | base64 -d > ${authProfilesPath} && chown openclaw:openclaw ${authProfilesPath} && pkill -f openclaw-gateway || true`
   );
 }
 
