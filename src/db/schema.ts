@@ -1,4 +1,4 @@
-import { boolean, integer, jsonb, pgTable, text, timestamp, index } from "drizzle-orm/pg-core";
+import { boolean, integer, jsonb, pgTable, text, timestamp, index, uniqueIndex } from "drizzle-orm/pg-core";
 
 export const user = pgTable("user", {
 	id: text("id").primaryKey(),
@@ -105,7 +105,7 @@ export const userCredit = pgTable("user_credit", {
 	createdAt: timestamp("created_at").notNull().defaultNow(),
 	updatedAt: timestamp("updated_at").notNull().defaultNow(),
 }, (table) => ({
-	userCreditUserIdIdx: index("user_credit_user_id_idx").on(table.userId),
+	userCreditUserIdIdx: uniqueIndex("user_credit_user_id_idx").on(table.userId),
 }));
 
 export const creditTransaction = pgTable("credit_transaction", {

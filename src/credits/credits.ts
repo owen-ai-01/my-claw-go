@@ -132,32 +132,25 @@ export async function addCredits({
     console.error('addCredits, invalid expire days', userId, expireDays);
     throw new Error('Invalid expire days');
   }
-  // Update user credit balance atomically
+  // Upsert user credit balance atomically — safe under concurrent inserts
   const db = await getDb();
-  const existing = await db
-    .select({ id: userCredit.id })
-    .from(userCredit)
-    .where(eq(userCredit.userId, userId))
-    .limit(1);
-  if (existing.length > 0) {
-    console.log('addCredits, update user credit atomically', userId, '+', amount);
-    await db
-      .update(userCredit)
-      .set({
-        currentCredits: sql`${userCredit.currentCredits} + ${amount}`,
-        updatedAt: new Date(),
-      })
-      .where(eq(userCredit.userId, userId));
-  } else {
-    console.log('addCredits, insert user credit', userId, amount);
-    await db.insert(userCredit).values({
+  console.log('addCredits, upsert user credit atomically', userId, '+', amount);
+  await db
+    .insert(userCredit)
+    .values({
       id: randomUUID(),
       userId,
       currentCredits: amount,
       createdAt: new Date(),
       updatedAt: new Date(),
+    })
+    .onConflictDoUpdate({
+      target: userCredit.userId,
+      set: {
+        currentCredits: sql`${userCredit.currentCredits} + ${amount}`,
+        updatedAt: new Date(),
+      },
     });
-  }
   // Write credit transaction record
   await saveCreditTransaction({
     userId,
