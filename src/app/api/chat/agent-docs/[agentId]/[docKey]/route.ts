@@ -101,10 +101,19 @@ export async function PUT(
     return NextResponse.json({ ok: false, error: 'Runtime container not found' }, { status: 404 });
   }
 
+  const MAX_DOC_SIZE = 5 * 1024 * 1024; // 5MB
+  const WORKSPACE_PREFIX = '/home/openclaw/';
+
   try {
     const body = (await req.json().catch(() => ({}))) as { content?: string };
     const content = typeof body.content === 'string' ? body.content : '';
+    if (Buffer.byteLength(content, 'utf8') > MAX_DOC_SIZE) {
+      return NextResponse.json({ ok: false, error: 'Content too large (max 5MB)' }, { status: 413 });
+    }
     const workspace = await resolveAgentWorkspace(agentId);
+    if (!workspace.startsWith(WORKSPACE_PREFIX)) {
+      return NextResponse.json({ ok: false, error: 'Invalid workspace path' }, { status: 400 });
+    }
     const docPath = path.posix.join(workspace, DOC_FILE_MAP[docKey]);
     const dirPath = path.posix.dirname(docPath);
     const b64 = Buffer.from(content, 'utf8').toString('base64');

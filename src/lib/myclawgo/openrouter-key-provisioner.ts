@@ -68,8 +68,8 @@ async function getUserTier(userId: string): Promise<string> {
   return 'pro';
 }
 
-/** Call OpenRouter management API. */
-async function orFetch(path: string, options: RequestInit) {
+/** Call OpenRouter management API with exponential backoff retry (max 3 attempts). */
+async function orFetch(path: string, options: RequestInit, attempt = 1): Promise<Response> {
   const res = await fetch(`${OPENROUTER_API_BASE}${path}`, {
     ...options,
     headers: {
@@ -80,6 +80,12 @@ async function orFetch(path: string, options: RequestInit) {
   });
   if (!res.ok) {
     const body = await res.text().catch(() => '');
+    // Retry on 429 / 5xx, but not on 4xx auth/validation errors
+    if (attempt < 3 && (res.status === 429 || res.status >= 500)) {
+      const delay = 500 * 2 ** (attempt - 1); // 500ms, 1000ms
+      await new Promise((r) => setTimeout(r, delay));
+      return orFetch(path, options, attempt + 1);
+    }
     throw new Error(`OpenRouter API ${options.method ?? 'GET'} ${path} failed (${res.status}): ${body}`);
   }
   return res;
