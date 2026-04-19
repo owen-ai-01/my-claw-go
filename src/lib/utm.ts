@@ -44,13 +44,17 @@ export function extractUtmSource(searchParams: URLSearchParams): string | null {
  * Reads the UTM source value from a raw Cookie header string.
  * Returns null if the cookie is absent or empty.
  */
-export function readUtmFromCookieHeader(cookieHeader: string | null): string | null {
+export function readUtmFromCookieHeader(
+  cookieHeader: string | null
+): string | null {
   if (!cookieHeader) return null;
   const match = cookieHeader
     .split(';')
     .map((c) => c.trim())
     .find((c) => c.startsWith(`${UTM_COOKIE_NAME}=`));
   if (!match) return null;
-  const val = decodeURIComponent(match.slice(UTM_COOKIE_NAME.length + 1)).trim();
+  const val = decodeURIComponent(
+    match.slice(UTM_COOKIE_NAME.length + 1)
+  ).trim();
   return val || null;
 }

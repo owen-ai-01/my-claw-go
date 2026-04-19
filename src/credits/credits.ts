@@ -279,7 +279,10 @@ export async function consumeCredits({
   // Update balance atomically
   await db
     .update(userCredit)
-    .set({ currentCredits: sql`${userCredit.currentCredits} - ${amount}`, updatedAt: new Date() })
+    .set({
+      currentCredits: sql`${userCredit.currentCredits} - ${amount}`,
+      updatedAt: new Date(),
+    })
     .where(eq(userCredit.userId, userId));
   // Write usage record
   await saveCreditTransaction({

@@ -1,6 +1,6 @@
 import { auth } from '@/lib/auth';
-import { checkUserMembership } from '@/lib/myclawgo/membership';
 import { ensureUserContainer } from '@/lib/myclawgo/docker-manager';
+import { checkUserMembership } from '@/lib/myclawgo/membership';
 import { ensureSessionById } from '@/lib/myclawgo/session-store';
 import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
@@ -10,7 +10,10 @@ export async function POST() {
     const session = await auth.api.getSession({ headers: await headers() });
     const userId = session?.user?.id;
     if (!userId) {
-      return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json(
+        { ok: false, error: 'Unauthorized' },
+        { status: 401 }
+      );
     }
 
     // Membership check — only paid users can create a runtime
@@ -31,7 +34,10 @@ export async function POST() {
 
     if (!runtime.ok) {
       return NextResponse.json(
-        { ok: false, error: runtime.error || 'Failed to create MyClawGo runtime' },
+        {
+          ok: false,
+          error: runtime.error || 'Failed to create MyClawGo runtime',
+        },
         { status: 500 }
       );
     }

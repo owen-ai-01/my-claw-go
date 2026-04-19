@@ -96,7 +96,8 @@ export async function sendDirectChat(params: {
   const data = (await res.json().catch(() => ({}))) as OpenRouterResponse;
 
   if (!res.ok || data.error) {
-    const msg = data.error?.message || `OpenRouter API error: HTTP ${res.status}`;
+    const msg =
+      data.error?.message || `OpenRouter API error: HTTP ${res.status}`;
     throw new Error(msg);
   }
 

@@ -1,9 +1,5 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Routes } from '@/routes';
-import { toast } from 'sonner';
 import {
   Sheet,
   SheetContent,
@@ -11,6 +7,10 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
+import { Routes } from '@/routes';
+import { useRouter } from 'next/navigation';
+import { useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
 
 type Group = {
   id: string;
@@ -33,7 +33,9 @@ type AgentItem = {
 };
 
 function agentLabel(agent: Partial<AgentItem>) {
-  return agent.name?.trim() || agent.identity?.name?.trim() || agent.id || 'Agent';
+  return (
+    agent.name?.trim() || agent.identity?.name?.trim() || agent.id || 'Agent'
+  );
 }
 
 function agentEmoji(agent: Partial<AgentItem>) {
@@ -41,7 +43,9 @@ function agentEmoji(agent: Partial<AgentItem>) {
 }
 
 function toggleValue(list: string[], value: string) {
-  return list.includes(value) ? list.filter((item) => item !== value) : [...list, value];
+  return list.includes(value)
+    ? list.filter((item) => item !== value)
+    : [...list, value];
 }
 
 function CreateGroupDrawer({
@@ -58,7 +62,9 @@ function CreateGroupDrawer({
   const [groupId, setGroupId] = useState('');
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [type, setType] = useState<'project' | 'department' | 'temporary'>('project');
+  const [type, setType] = useState<'project' | 'department' | 'temporary'>(
+    'project'
+  );
   const [leaderId, setLeaderId] = useState('');
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
@@ -66,7 +72,14 @@ function CreateGroupDrawer({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!groupId.trim() || !name.trim() || !leaderId || selectedMembers.length < 2 || submitting) return;
+    if (
+      !groupId.trim() ||
+      !name.trim() ||
+      !leaderId ||
+      selectedMembers.length < 2 ||
+      submitting
+    )
+      return;
 
     setSubmitting(true);
     setError(null);
@@ -87,7 +100,9 @@ function CreateGroupDrawer({
 
       const data = await res.json().catch(() => ({}));
       if (!res.ok || data.ok !== true) {
-        throw new Error(data?.error?.message || data?.error || 'Failed to create group');
+        throw new Error(
+          data?.error?.message || data?.error || 'Failed to create group'
+        );
       }
 
       toast.success(`Group ${name} created successfully`);
@@ -100,7 +115,8 @@ function CreateGroupDrawer({
       onSuccess();
       onOpenChange(false);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to create group';
+      const message =
+        err instanceof Error ? err.message : 'Failed to create group';
       setError(message);
       toast.error(message);
     } finally {
@@ -113,12 +129,19 @@ function CreateGroupDrawer({
       <SheetContent side="right" className="w-full sm:max-w-xl p-0 gap-0">
         <SheetHeader className="border-b px-5 py-4">
           <SheetTitle className="text-base">Create Group</SheetTitle>
-          <SheetDescription>Assemble a team of AI agents to work together.</SheetDescription>
+          <SheetDescription>
+            Assemble a team of AI agents to work together.
+          </SheetDescription>
         </SheetHeader>
 
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-5 py-5">
+        <form
+          onSubmit={handleSubmit}
+          className="flex-1 overflow-y-auto px-5 py-5"
+        >
           {error ? (
-            <div className="mb-4 rounded-xl border border-red-300 bg-red-50 p-3 text-sm text-red-700">{error}</div>
+            <div className="mb-4 rounded-xl border border-red-300 bg-red-50 p-3 text-sm text-red-700">
+              {error}
+            </div>
           ) : null}
 
           <div className="space-y-4">
@@ -171,24 +194,39 @@ function CreateGroupDrawer({
             </div>
 
             <div>
-              <label className="text-sm font-medium">Select Members * (min 2)</label>
+              <label className="text-sm font-medium">
+                Select Members * (min 2)
+              </label>
               <div className="mt-2 space-y-2">
                 {agents.map((agent) => (
-                  <label key={agent.id} className="flex cursor-pointer items-center gap-3 rounded-xl border p-3 hover:bg-muted/50">
+                  <label
+                    key={agent.id}
+                    className="flex cursor-pointer items-center gap-3 rounded-xl border p-3 hover:bg-muted/50"
+                  >
                     <input
                       type="checkbox"
                       checked={selectedMembers.includes(agent.id)}
-                      onChange={() => setSelectedMembers((prev) => toggleValue(prev, agent.id))}
+                      onChange={() =>
+                        setSelectedMembers((prev) =>
+                          toggleValue(prev, agent.id)
+                        )
+                      }
                     />
                     <span className="text-lg">{agentEmoji(agent)}</span>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium">{agentLabel(agent)}</p>
-                      <p className="truncate text-xs text-muted-foreground">@{agent.id}</p>
+                      <p className="truncate text-sm font-medium">
+                        {agentLabel(agent)}
+                      </p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        @{agent.id}
+                      </p>
                     </div>
                   </label>
                 ))}
               </div>
-              <p className="mt-1 text-xs text-muted-foreground">Selected: {selectedMembers.length}</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Selected: {selectedMembers.length}
+              </p>
             </div>
 
             <div>
@@ -210,7 +248,9 @@ function CreateGroupDrawer({
                   );
                 })}
               </select>
-              <p className="mt-1 text-xs text-muted-foreground">Must be a selected member</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Must be a selected member
+              </p>
             </div>
           </div>
 
@@ -225,7 +265,13 @@ function CreateGroupDrawer({
             </button>
             <button
               type="submit"
-              disabled={!groupId.trim() || !name.trim() || !leaderId || selectedMembers.length < 2 || submitting}
+              disabled={
+                !groupId.trim() ||
+                !name.trim() ||
+                !leaderId ||
+                selectedMembers.length < 2 ||
+                submitting
+              }
               className="flex-1 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
             >
               {submitting ? 'Creating…' : 'Create Group'}
@@ -279,7 +325,14 @@ function GroupConfigDrawer({
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
-    if (!group || !name.trim() || !leaderId || selectedMembers.length < 2 || saving) return;
+    if (
+      !group ||
+      !name.trim() ||
+      !leaderId ||
+      selectedMembers.length < 2 ||
+      saving
+    )
+      return;
 
     setSaving(true);
     setError(null);
@@ -297,13 +350,16 @@ function GroupConfigDrawer({
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || data.ok !== true) {
-        throw new Error(data?.error?.message || data?.error || 'Failed to update group');
+        throw new Error(
+          data?.error?.message || data?.error || 'Failed to update group'
+        );
       }
       toast.success(`Group ${name} updated successfully`);
       onSaved();
       onOpenChange(false);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to update group';
+      const message =
+        err instanceof Error ? err.message : 'Failed to update group';
       setError(message);
       toast.error(message);
     } finally {
@@ -316,16 +372,21 @@ function GroupConfigDrawer({
     setDeleting(true);
     setError(null);
     try {
-      const res = await fetch(`/api/groups/${encodeURIComponent(group.id)}`, { method: 'DELETE' });
+      const res = await fetch(`/api/groups/${encodeURIComponent(group.id)}`, {
+        method: 'DELETE',
+      });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || data.ok !== true) {
-        throw new Error(data?.error?.message || data?.error || 'Failed to delete group');
+        throw new Error(
+          data?.error?.message || data?.error || 'Failed to delete group'
+        );
       }
       toast.success(`Group ${group.name} deleted`);
       onDeleted();
       onOpenChange(false);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to delete group';
+      const message =
+        err instanceof Error ? err.message : 'Failed to delete group';
       setError(message);
       toast.error(message);
     } finally {
@@ -351,12 +412,19 @@ function GroupConfigDrawer({
       <SheetContent side="right" className="w-full sm:max-w-xl p-0 gap-0">
         <SheetHeader className="border-b px-5 py-4">
           <SheetTitle className="text-base">Group Settings</SheetTitle>
-          <SheetDescription>Manage members, leader and group profile for @{group.id}.</SheetDescription>
+          <SheetDescription>
+            Manage members, leader and group profile for @{group.id}.
+          </SheetDescription>
         </SheetHeader>
 
-        <form onSubmit={handleSave} className="flex-1 overflow-y-auto px-5 py-5">
+        <form
+          onSubmit={handleSave}
+          className="flex-1 overflow-y-auto px-5 py-5"
+        >
           {error ? (
-            <div className="mb-4 rounded-xl border border-red-300 bg-red-50 p-3 text-sm text-red-700">{error}</div>
+            <div className="mb-4 rounded-xl border border-red-300 bg-red-50 p-3 text-sm text-red-700">
+              {error}
+            </div>
           ) : null}
 
           <div className="space-y-4">
@@ -403,7 +471,10 @@ function GroupConfigDrawer({
               <label className="text-sm font-medium">Members * (min 2)</label>
               <div className="mt-2 space-y-2">
                 {agents.map((agent) => (
-                  <label key={agent.id} className="flex cursor-pointer items-center gap-3 rounded-xl border p-3 hover:bg-muted/50">
+                  <label
+                    key={agent.id}
+                    className="flex cursor-pointer items-center gap-3 rounded-xl border p-3 hover:bg-muted/50"
+                  >
                     <input
                       type="checkbox"
                       checked={selectedMembers.includes(agent.id)}
@@ -411,13 +482,19 @@ function GroupConfigDrawer({
                     />
                     <span className="text-lg">{agentEmoji(agent)}</span>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium">{agentLabel(agent)}</p>
-                      <p className="truncate text-xs text-muted-foreground">@{agent.id}</p>
+                      <p className="truncate text-sm font-medium">
+                        {agentLabel(agent)}
+                      </p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        @{agent.id}
+                      </p>
                     </div>
                   </label>
                 ))}
               </div>
-              <p className="mt-1 text-xs text-muted-foreground">Selected: {selectedMembers.length}</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Selected: {selectedMembers.length}
+              </p>
             </div>
 
             <div>
@@ -439,7 +516,9 @@ function GroupConfigDrawer({
                   );
                 })}
               </select>
-              <p className="mt-1 text-xs text-muted-foreground">Leader must also be a member</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Leader must also be a member
+              </p>
             </div>
 
             <div className="rounded-xl border bg-muted/20 p-3 text-xs text-muted-foreground">
@@ -460,7 +539,13 @@ function GroupConfigDrawer({
             </button>
             <button
               type="submit"
-              disabled={!name.trim() || !leaderId || selectedMembers.length < 2 || saving || deleting}
+              disabled={
+                !name.trim() ||
+                !leaderId ||
+                selectedMembers.length < 2 ||
+                saving ||
+                deleting
+              }
               className="flex-1 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
             >
               {saving ? 'Saving…' : 'Save Changes'}
@@ -468,8 +553,13 @@ function GroupConfigDrawer({
           </div>
 
           <div className="mt-8 rounded-2xl border border-red-200 bg-red-50 p-4">
-            <div className="text-sm font-semibold text-red-700">Danger Zone</div>
-            <p className="mt-1 text-xs text-red-600">Deleting a group removes its structure. Existing agents remain intact.</p>
+            <div className="text-sm font-semibold text-red-700">
+              Danger Zone
+            </div>
+            <p className="mt-1 text-xs text-red-600">
+              Deleting a group removes its structure. Existing agents remain
+              intact.
+            </p>
             <div className="mt-4 flex gap-3">
               {confirmDelete ? (
                 <>
@@ -525,10 +615,18 @@ function GroupCard({
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <h3 className="truncate text-base font-semibold">{group.name}</h3>
-          <p className="mt-0.5 truncate text-sm text-muted-foreground">@{group.id}</p>
-          {group.description && <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{group.description}</p>}
+          <p className="mt-0.5 truncate text-sm text-muted-foreground">
+            @{group.id}
+          </p>
+          {group.description && (
+            <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">
+              {group.description}
+            </p>
+          )}
         </div>
-        <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">{group.type}</span>
+        <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
+          {group.type}
+        </span>
       </div>
 
       <div className="mt-4 space-y-2 text-sm">
@@ -589,7 +687,10 @@ export function GroupsShell() {
       if (groupsData.ok && groupsData.data?.groups) {
         setGroups(groupsData.data.groups);
         if (selectedGroup) {
-          const nextSelected = groupsData.data.groups.find((item: Group) => item.id === selectedGroup.id) || null;
+          const nextSelected =
+            groupsData.data.groups.find(
+              (item: Group) => item.id === selectedGroup.id
+            ) || null;
           setSelectedGroup(nextSelected);
         }
       }
@@ -616,7 +717,9 @@ export function GroupsShell() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Groups</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Assemble AI teams to work together on projects and tasks.</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Assemble AI teams to work together on projects and tasks.
+          </p>
         </div>
         <button
           type="button"
@@ -628,14 +731,20 @@ export function GroupsShell() {
       </div>
 
       {error ? (
-        <div className="rounded-xl border border-red-300 bg-red-50 p-4 text-sm text-red-700">{error}</div>
+        <div className="rounded-xl border border-red-300 bg-red-50 p-4 text-sm text-red-700">
+          {error}
+        </div>
       ) : loading ? (
-        <div className="rounded-xl border bg-card p-8 text-center text-sm text-muted-foreground">Loading groups...</div>
+        <div className="rounded-xl border bg-card p-8 text-center text-sm text-muted-foreground">
+          Loading groups...
+        </div>
       ) : groups.length === 0 ? (
         <div className="rounded-xl border bg-card p-8 text-center">
           <div className="mb-4 text-4xl">👥</div>
           <h3 className="text-lg font-semibold">No groups yet</h3>
-          <p className="mt-2 text-sm text-muted-foreground">Create your first AI team to enable collaborative work.</p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Create your first AI team to enable collaborative work.
+          </p>
           <button
             type="button"
             onClick={() => setCreateOpen(true)}
@@ -647,12 +756,22 @@ export function GroupsShell() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {groups.map((group) => (
-            <GroupCard key={group.id} group={group} agents={agents} onManage={openManage} />
+            <GroupCard
+              key={group.id}
+              group={group}
+              agents={agents}
+              onManage={openManage}
+            />
           ))}
         </div>
       )}
 
-      <CreateGroupDrawer open={createOpen} onOpenChange={setCreateOpen} onSuccess={loadData} agents={agents} />
+      <CreateGroupDrawer
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        onSuccess={loadData}
+        agents={agents}
+      />
       <GroupConfigDrawer
         open={manageOpen}
         onOpenChange={setManageOpen}

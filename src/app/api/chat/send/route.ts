@@ -1,7 +1,11 @@
 import { auth } from '@/lib/auth';
-import { checkUserCredits } from '@/lib/myclawgo/membership';
-import { createDirectChatTask, settleDirectChatBilling, type DirectChatUsage } from '@/lib/myclawgo/user-chat';
 import { requireUserBridgeTarget } from '@/lib/myclawgo/bridge-fetch';
+import { checkUserCredits } from '@/lib/myclawgo/membership';
+import {
+  type DirectChatUsage,
+  createDirectChatTask,
+  settleDirectChatBilling,
+} from '@/lib/myclawgo/user-chat';
 import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 
@@ -19,7 +23,11 @@ type GroupChatResponse = {
   error?: string | { message?: string };
 };
 
-function normalizeMentionsToMembers(text: string, members: string[], currentSpeakerId?: string) {
+function normalizeMentionsToMembers(
+  text: string,
+  members: string[],
+  currentSpeakerId?: string
+) {
   const safe = String(text || '').trim();
   if (!safe || !Array.isArray(members) || members.length === 0) return safe;
 
@@ -27,8 +35,11 @@ function normalizeMentionsToMembers(text: string, members: string[], currentSpea
   const pool = members.filter((m) => m !== currentSpeakerId);
   const fallback = pool[0] || members[0];
 
-  const mentions = [...safe.matchAll(/@([a-zA-Z0-9_-]+)/g)].map((m) => String(m[1] || ''));
-  let chosen = mentions.find((m) => memberSet.has(m) && m !== currentSpeakerId) || null;
+  const mentions = [...safe.matchAll(/@([a-zA-Z0-9_-]+)/g)].map((m) =>
+    String(m[1] || '')
+  );
+  let chosen =
+    mentions.find((m) => memberSet.has(m) && m !== currentSpeakerId) || null;
   if (!chosen && mentions.length > 0) chosen = fallback;
   if (!chosen) return safe;
 
@@ -46,7 +57,10 @@ export async function POST(req: Request) {
   const session = await auth.api.getSession({ headers: await headers() });
   const userId = session?.user?.id;
   if (!userId) {
-    return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json(
+      { ok: false, error: 'Unauthorized' },
+      { status: 401 }
+    );
   }
 
   const body = (await req.json().catch(() => ({}))) as {
@@ -60,7 +74,10 @@ export async function POST(req: Request) {
 
   const message = String(body.message || '').trim();
   if (!message) {
-    return NextResponse.json({ ok: false, error: 'message is required' }, { status: 400 });
+    return NextResponse.json(
+      { ok: false, error: 'message is required' },
+      { status: 400 }
+    );
   }
 
   const agentId = String(body.agentId || 'main');
@@ -84,30 +101,43 @@ export async function POST(req: Request) {
       const bridge = await requireUserBridgeTarget();
       if (!bridge.ok) return bridge.response;
 
-      const upstreamRes = await fetch(`${bridge.target.bridge.baseUrl}/chat/send`, {
-        method: 'POST',
-        headers: {
-          authorization: `Bearer ${bridge.target.bridge.token}`,
-          'content-type': 'application/json',
-        },
-        body: JSON.stringify({
-          message,
-          groupId,
-          agentId,
-          timeoutMs: body.timeoutMs || 90000,
-        }),
-        cache: 'no-store',
-        signal: AbortSignal.timeout(body.timeoutMs || 90000),
-      });
+      const upstreamRes = await fetch(
+        `${bridge.target.bridge.baseUrl}/chat/send`,
+        {
+          method: 'POST',
+          headers: {
+            authorization: `Bearer ${bridge.target.bridge.token}`,
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify({
+            message,
+            groupId,
+            agentId,
+            timeoutMs: body.timeoutMs || 90000,
+          }),
+          cache: 'no-store',
+          signal: AbortSignal.timeout(body.timeoutMs || 90000),
+        }
+      );
 
-      const payload = (await upstreamRes.json().catch(() => ({ ok: false, error: 'Invalid bridge response' }))) as GroupChatResponse;
+      const payload = (await upstreamRes.json().catch(() => ({
+        ok: false,
+        error: 'Invalid bridge response',
+      }))) as GroupChatResponse;
 
-      if (!upstreamRes.ok || payload.ok !== true || !payload.data?.reply?.trim()) {
+      if (
+        !upstreamRes.ok ||
+        payload.ok !== true ||
+        !payload.data?.reply?.trim()
+      ) {
         return NextResponse.json(
           {
             ok: false,
             code: 'group_chat_failed',
-            error: typeof payload.error === 'string' ? payload.error : payload.error?.message || 'Group chat failed',
+            error:
+              typeof payload.error === 'string'
+                ? payload.error
+                : payload.error?.message || 'Group chat failed',
           },
           { status: upstreamRes.ok ? 502 : upstreamRes.status }
         );
@@ -115,23 +145,39 @@ export async function POST(req: Request) {
 
       // Safety net: enforce member-only + non-self @mentions at platform edge.
       let normalizedReply = payload.data.reply;
-      let members = Array.isArray(body.groupMembers) ? body.groupMembers.map(String).filter(Boolean) : [];
+      let members = Array.isArray(body.groupMembers)
+        ? body.groupMembers.map(String).filter(Boolean)
+        : [];
 
       if (members.length === 0) {
         try {
-          const groupRes = await fetch(`${bridge.target.bridge.baseUrl}/groups/${encodeURIComponent(groupId)}`, {
-            headers: { authorization: `Bearer ${bridge.target.bridge.token}` },
-            cache: 'no-store',
-          });
-          const groupPayload = (await groupRes.json().catch(() => ({}))) as { ok?: boolean; data?: { members?: string[] } };
-          members = Array.isArray(groupPayload?.data?.members) ? groupPayload.data!.members! : [];
+          const groupRes = await fetch(
+            `${bridge.target.bridge.baseUrl}/groups/${encodeURIComponent(groupId)}`,
+            {
+              headers: {
+                authorization: `Bearer ${bridge.target.bridge.token}`,
+              },
+              cache: 'no-store',
+            }
+          );
+          const groupPayload = (await groupRes.json().catch(() => ({}))) as {
+            ok?: boolean;
+            data?: { members?: string[] };
+          };
+          members = Array.isArray(groupPayload?.data?.members)
+            ? groupPayload.data!.members!
+            : [];
         } catch {
           members = [];
         }
       }
 
       if (members.length > 0) {
-        normalizedReply = normalizeMentionsToMembers(payload.data.reply || '', members, payload.data.routedAgentId || agentId);
+        normalizedReply = normalizeMentionsToMembers(
+          payload.data.reply || '',
+          members,
+          payload.data.routedAgentId || agentId
+        );
       }
 
       await settleDirectChatBilling({
@@ -185,7 +231,8 @@ export async function POST(req: Request) {
       {
         ok: false,
         code: 'chat_task_create_failed',
-        error: error instanceof Error ? error.message : 'Failed to create chat task',
+        error:
+          error instanceof Error ? error.message : 'Failed to create chat task',
       },
       { status: 500 }
     );

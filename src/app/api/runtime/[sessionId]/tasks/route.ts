@@ -5,13 +5,13 @@ import {
   estimateUsage,
   estimateUsdCostByModel,
 } from '@/lib/myclawgo/billing';
-import { createRuntimeTask } from '@/lib/myclawgo/runtime-task-queue';
 import { isSafeCommandInput } from '@/lib/myclawgo/command-policy';
 import {
   ensureUserContainer,
   runOpenClawChatInContainer,
   runWhitelistedCommandInContainer,
 } from '@/lib/myclawgo/docker-manager';
+import { createRuntimeTask } from '@/lib/myclawgo/runtime-task-queue';
 import { getSession, touchSession } from '@/lib/myclawgo/session-store';
 import { appendMessage, readChatHistory } from '@/lib/myclawgo/user-data';
 import { headers } from 'next/headers';
@@ -23,7 +23,6 @@ const OWNER_EMAIL =
 function isOwner(email?: string | null) {
   return email === OWNER_EMAIL;
 }
-
 
 function firstQuestionErrorHint(
   isFirstQuestion: boolean,
@@ -108,12 +107,14 @@ async function runTaskMessage(
     );
   }
 
-
   if (isCommand) {
     if (!isSafeCommandInput(message)) {
       throw new Error('Command is not allowed.');
     }
-    const cmdResult = await runWhitelistedCommandInContainer(runtimeSession, message);
+    const cmdResult = await runWhitelistedCommandInContainer(
+      runtimeSession,
+      message
+    );
     if (!cmdResult.ok) {
       throw new Error(
         firstQuestionErrorHint(
@@ -228,11 +229,17 @@ export async function POST(
   const authSession = await auth.api.getSession({ headers: await headers() });
   const currentUserId = authSession?.user?.id;
   if (!currentUserId) {
-    return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json(
+      { ok: false, error: 'Unauthorized' },
+      { status: 401 }
+    );
   }
   if (currentUserId !== sessionId) {
     return NextResponse.json(
-      { ok: false, error: 'Forbidden: session does not belong to current user' },
+      {
+        ok: false,
+        error: 'Forbidden: session does not belong to current user',
+      },
       { status: 403 }
     );
   }
@@ -240,7 +247,9 @@ export async function POST(
   const existingHistory = await readChatHistory(sessionId).catch(() => []);
   const isFirstQuestion = existingHistory.length === 0;
 
-  await appendMessage(sessionId, { role: 'user', text: message }).catch(() => {});
+  await appendMessage(sessionId, { role: 'user', text: message }).catch(
+    () => {}
+  );
 
   const task = await createRuntimeTask(
     sessionId,

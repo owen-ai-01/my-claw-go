@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 import { getDb } from '@/db';
 import { runtimeTask } from '@/db/schema';
-import { eq, and, lt, inArray } from 'drizzle-orm';
+import { and, eq, inArray, lt } from 'drizzle-orm';
 
 export type TaskStatus = 'queued' | 'running' | 'done' | 'failed';
 
@@ -56,7 +56,11 @@ export async function createRuntimeTask(
     try {
       await db
         .update(runtimeTask)
-        .set({ status: 'running', startedAt: new Date(), updatedAt: new Date() })
+        .set({
+          status: 'running',
+          startedAt: new Date(),
+          updatedAt: new Date(),
+        })
         .where(eq(runtimeTask.id, id));
 
       const result = await runner();
@@ -71,7 +75,8 @@ export async function createRuntimeTask(
         })
         .where(eq(runtimeTask.id, id));
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Task failed';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Task failed';
       await db
         .update(runtimeTask)
         .set({

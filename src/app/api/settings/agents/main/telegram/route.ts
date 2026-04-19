@@ -6,8 +6,8 @@ import {
   encryptConfigValue,
   getMainAgentTelegramBot,
 } from '@/lib/myclawgo/agent-config';
-import { eq } from 'drizzle-orm';
 import { applyMainAgentTelegramConfigToRuntime } from '@/lib/myclawgo/runtime-agent-sync';
+import { eq } from 'drizzle-orm';
 import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 
@@ -37,7 +37,10 @@ export async function GET() {
   const session = await auth.api.getSession({ headers: await headers() });
   const userId = session?.user?.id;
   if (!userId) {
-    return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json(
+      { ok: false, error: 'Unauthorized' },
+      { status: 401 }
+    );
   }
 
   const { mainAgent, bot } = await getMainAgentTelegramBot(userId);
@@ -68,13 +71,19 @@ export async function POST(req: Request) {
   const session = await auth.api.getSession({ headers: await headers() });
   const userId = session?.user?.id;
   if (!userId) {
-    return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json(
+      { ok: false, error: 'Unauthorized' },
+      { status: 401 }
+    );
   }
 
   const body = await req.json().catch(() => ({}));
   const botToken = String(body?.botToken || '').trim();
   if (!botToken) {
-    return NextResponse.json({ ok: false, error: 'Telegram bot token is required' }, { status: 400 });
+    return NextResponse.json(
+      { ok: false, error: 'Telegram bot token is required' },
+      { status: 400 }
+    );
   }
 
   try {
@@ -140,7 +149,10 @@ export async function POST(req: Request) {
     return NextResponse.json(
       {
         ok: false,
-        error: error instanceof Error ? error.message : 'Failed to save Telegram bot config',
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Failed to save Telegram bot config',
       },
       { status: 400 }
     );

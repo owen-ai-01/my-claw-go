@@ -79,6 +79,7 @@ export function StartBox({
           placeholder={placeholder}
         />
         <button
+          type="button"
           onClick={onSubmit}
           disabled={loading}
           className="h-12 rounded-xl bg-white px-6 text-sm font-semibold text-slate-900 transition hover:bg-slate-200 disabled:opacity-60"

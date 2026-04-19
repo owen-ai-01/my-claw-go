@@ -8,7 +8,10 @@ export async function GET() {
   const session = await auth.api.getSession({ headers: reqHeaders });
   const userId = session?.user?.id;
   if (!userId) {
-    return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json(
+      { ok: false, error: 'Unauthorized' },
+      { status: 401 }
+    );
   }
 
   const target = await resolveUserGatewayProxyTarget(userId);

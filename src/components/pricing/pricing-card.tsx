@@ -91,7 +91,10 @@ export function PricingCard({
     formattedPrice = t('freePrice');
   } else if (price && price.amount > 0) {
     // For yearly subscriptions, display the monthly equivalent price.
-    const displayAmount = interval === PlanIntervals.YEAR ? Math.round(price.amount / 12) : price.amount;
+    const displayAmount =
+      interval === PlanIntervals.YEAR
+        ? Math.round(price.amount / 12)
+        : price.amount;
     formattedPrice = formatPrice(displayAmount, price.currency);
     if (interval === PlanIntervals.MONTH || interval === PlanIntervals.YEAR) {
       priceLabel = t('perMonth');
@@ -162,7 +165,9 @@ export function PricingCard({
               >
                 {t('discount50')}
               </Badge>
-              <span className="text-xs text-muted-foreground">{t('billedAnnually')}</span>
+              <span className="text-xs text-muted-foreground">
+                {t('billedAnnually')}
+              </span>
             </div>
           )}
         </div>

@@ -7,12 +7,21 @@ export async function requireUserBridgeTarget() {
   const session = await auth.api.getSession({ headers: await headers() });
   const userId = session?.user?.id;
   if (!userId) {
-    return { ok: false as const, response: NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 }) };
+    return {
+      ok: false as const,
+      response: NextResponse.json(
+        { ok: false, error: 'Unauthorized' },
+        { status: 401 }
+      ),
+    };
   }
 
   const target = await resolveUserBridgeTarget(userId);
   if (!target.ok) {
-    return { ok: false as const, response: NextResponse.json(target, { status: 503 }) };
+    return {
+      ok: false as const,
+      response: NextResponse.json(target, { status: 503 }),
+    };
   }
 
   return { ok: true as const, userId, target };
@@ -27,7 +36,9 @@ export async function forwardBridgeGet(path: string) {
       headers: { authorization: `Bearer ${bridge.target.bridge.token}` },
       cache: 'no-store',
     });
-    const payload = await upstream.json().catch(() => ({ ok: false, error: 'Invalid bridge response' }));
+    const payload = await upstream
+      .json()
+      .catch(() => ({ ok: false, error: 'Invalid bridge response' }));
     return NextResponse.json(payload, { status: upstream.status });
   } catch (error) {
     return NextResponse.json(
@@ -41,7 +52,11 @@ export async function forwardBridgeGet(path: string) {
   }
 }
 
-export async function forwardBridgeJson(method: 'PUT' | 'PATCH' | 'POST', path: string, body: unknown) {
+export async function forwardBridgeJson(
+  method: 'PUT' | 'PATCH' | 'POST',
+  path: string,
+  body: unknown
+) {
   const bridge = await requireUserBridgeTarget();
   if (!bridge.ok) return bridge.response;
 
@@ -55,7 +70,9 @@ export async function forwardBridgeJson(method: 'PUT' | 'PATCH' | 'POST', path: 
       body: JSON.stringify(body),
       cache: 'no-store',
     });
-    const payload = await upstream.json().catch(() => ({ ok: false, error: 'Invalid bridge response' }));
+    const payload = await upstream
+      .json()
+      .catch(() => ({ ok: false, error: 'Invalid bridge response' }));
     return NextResponse.json(payload, { status: upstream.status });
   } catch (error) {
     return NextResponse.json(
@@ -79,7 +96,9 @@ export async function forwardBridgeDelete(path: string) {
       headers: { authorization: `Bearer ${bridge.target.bridge.token}` },
       cache: 'no-store',
     });
-    const payload = await upstream.json().catch(() => ({ ok: false, error: 'Invalid bridge response' }));
+    const payload = await upstream
+      .json()
+      .catch(() => ({ ok: false, error: 'Invalid bridge response' }));
     return NextResponse.json(payload, { status: upstream.status });
   } catch (error) {
     return NextResponse.json(

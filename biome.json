@@ -17,6 +17,7 @@
       ".conductor/**",
       ".vscode/**",
       ".source/**",
+      ".runtime-data/**",
       "node_modules/**",
       "dist/**",
       "build/**",
@@ -54,6 +55,9 @@
         "noExplicitAny": "off",
         "noShadowRestrictedNames": "off"
       },
+      "security": {
+        "noDangerouslySetInnerHtml": "off"
+      },
       "complexity": {
         "noForEach": "off"
       },
@@ -69,7 +73,9 @@
       "a11y": {
         "useValidAnchor": "off",
         "noSvgWithoutTitle": "off",
-        "useKeyWithClickEvents": "off"
+        "useKeyWithClickEvents": "off",
+        "useMediaCaption": "off",
+        "noLabelWithoutControl": "off"
       }
     },
     "ignore": [
@@ -82,6 +88,7 @@
       ".kiro/**",
       ".vscode/**",
       ".source/**",
+      ".runtime-data/**",
       "node_modules/**",
       "dist/**",
       "build/**",

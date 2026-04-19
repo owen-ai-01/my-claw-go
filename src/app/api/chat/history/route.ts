@@ -1,6 +1,9 @@
 import { auth } from '@/lib/auth';
 import { requireUserBridgeTarget } from '@/lib/myclawgo/bridge-fetch';
-import { getLatestChatTask, listUserChatMessages } from '@/lib/myclawgo/user-chat';
+import {
+  getLatestChatTask,
+  listUserChatMessages,
+} from '@/lib/myclawgo/user-chat';
 import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 
@@ -16,7 +19,11 @@ type BridgeHistoryMessage = {
   };
 };
 
-function normalizeMentionsToMembers(text: string, members: string[], currentSpeakerId?: string) {
+function normalizeMentionsToMembers(
+  text: string,
+  members: string[],
+  currentSpeakerId?: string
+) {
   const safe = String(text || '').trim();
   if (!safe || !Array.isArray(members) || members.length === 0) return safe;
 
@@ -24,8 +31,11 @@ function normalizeMentionsToMembers(text: string, members: string[], currentSpea
   const pool = members.filter((m) => m !== currentSpeakerId);
   const fallback = pool[0] || members[0];
 
-  const mentions = [...safe.matchAll(/@([a-zA-Z0-9_-]+)/g)].map((m) => String(m[1] || ''));
-  let chosen = mentions.find((m) => memberSet.has(m) && m !== currentSpeakerId) || null;
+  const mentions = [...safe.matchAll(/@([a-zA-Z0-9_-]+)/g)].map((m) =>
+    String(m[1] || '')
+  );
+  let chosen =
+    mentions.find((m) => memberSet.has(m) && m !== currentSpeakerId) || null;
   if (!chosen && mentions.length > 0) chosen = fallback;
   if (!chosen) return safe;
 
@@ -43,7 +53,10 @@ export async function GET(req: Request) {
   const session = await auth.api.getSession({ headers: await headers() });
   const userId = session?.user?.id;
   if (!userId) {
-    return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json(
+      { ok: false, error: 'Unauthorized' },
+      { status: 401 }
+    );
   }
 
   const url = new URL(req.url);
@@ -63,7 +76,9 @@ export async function GET(req: Request) {
           cache: 'no-store',
         }
       );
-      const payload = (await upstream.json().catch(() => ({ ok: false, error: 'Invalid bridge response' }))) as {
+      const payload = (await upstream
+        .json()
+        .catch(() => ({ ok: false, error: 'Invalid bridge response' }))) as {
         ok?: boolean;
         data?: { messages?: BridgeHistoryMessage[] };
         error?: string | { message?: string };
@@ -74,7 +89,10 @@ export async function GET(req: Request) {
           {
             ok: false,
             code: 'group_history_failed',
-            error: typeof payload.error === 'string' ? payload.error : payload.error?.message || 'Group history failed',
+            error:
+              typeof payload.error === 'string'
+                ? payload.error
+                : payload.error?.message || 'Group history failed',
           },
           { status: upstream.ok ? 502 : upstream.status }
         );
@@ -82,16 +100,29 @@ export async function GET(req: Request) {
 
       // Edge safety: normalize history @mentions to valid members for rendering consistency.
       let members: string[] = membersQuery
-        ? membersQuery.split(',').map((s) => s.trim()).filter(Boolean)
+        ? membersQuery
+            .split(',')
+            .map((s) => s.trim())
+            .filter(Boolean)
         : [];
       if (members.length === 0) {
         try {
-          const groupRes = await fetch(`${bridge.target.bridge.baseUrl}/groups/${encodeURIComponent(groupId)}`, {
-            headers: { authorization: `Bearer ${bridge.target.bridge.token}` },
-            cache: 'no-store',
-          });
-          const groupPayload = (await groupRes.json().catch(() => ({}))) as { ok?: boolean; data?: { members?: string[] } };
-          members = Array.isArray(groupPayload?.data?.members) ? groupPayload.data!.members! : [];
+          const groupRes = await fetch(
+            `${bridge.target.bridge.baseUrl}/groups/${encodeURIComponent(groupId)}`,
+            {
+              headers: {
+                authorization: `Bearer ${bridge.target.bridge.token}`,
+              },
+              cache: 'no-store',
+            }
+          );
+          const groupPayload = (await groupRes.json().catch(() => ({}))) as {
+            ok?: boolean;
+            data?: { members?: string[] };
+          };
+          members = Array.isArray(groupPayload?.data?.members)
+            ? groupPayload.data!.members!
+            : [];
         } catch {
           members = [];
         }
@@ -101,11 +132,16 @@ export async function GET(req: Request) {
         ok: true,
         data: {
           messages: (payload.data?.messages || []).map((message) => {
-            const routedAgentId = message.routedAgentId || message.metadata?.routedAgentId || undefined;
+            const routedAgentId =
+              message.routedAgentId ||
+              message.metadata?.routedAgentId ||
+              undefined;
             const rawContent = message.content || message.text || '';
-            const content = members.length > 0 && (message.role || 'assistant') === 'assistant'
-              ? normalizeMentionsToMembers(rawContent, members, routedAgentId)
-              : rawContent;
+            const content =
+              members.length > 0 &&
+              (message.role || 'assistant') === 'assistant'
+                ? normalizeMentionsToMembers(rawContent, members, routedAgentId)
+                : rawContent;
             return {
               id: message.id,
               role: message.role || 'assistant',

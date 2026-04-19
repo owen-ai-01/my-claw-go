@@ -306,8 +306,7 @@ export function ImageEditor({
   // Since stage size matches image size, scale should be 1
   useEffect(() => {
     if (
-      mainImage &&
-      mainImage.complete &&
+      mainImage?.complete &&
       mainImage.naturalWidth > 0 &&
       mainImage.naturalHeight > 0
     ) {
@@ -530,15 +529,14 @@ export function ImageEditor({
           x: 0,
           y: (stageSize.height - stageSize.width / imageAspect) / 2,
         };
-      } else {
-        // Image is taller - fit to height
-        return {
-          width: stageSize.height * imageAspect,
-          height: stageSize.height,
-          x: (stageSize.width - stageSize.height * imageAspect) / 2,
-          y: 0,
-        };
       }
+      // Image is taller - fit to height
+      return {
+        width: stageSize.height * imageAspect,
+        height: stageSize.height,
+        x: (stageSize.width - stageSize.height * imageAspect) / 2,
+        y: 0,
+      };
     }
     return { width: stageSize.width, height: stageSize.height, x: 0, y: 0 };
   };
@@ -565,7 +563,7 @@ export function ImageEditor({
   if (!isMounted) {
     return (
       <div className="w-full h-full flex flex-col items-center justify-center bg-muted rounded-lg min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4" />
         <p className="text-sm text-muted-foreground">Loading editor...</p>
       </div>
     );
@@ -598,7 +596,7 @@ export function ImageEditor({
   if (isLoadingImage || (!mainImage && mainImageUrl)) {
     return (
       <div className="w-full h-full flex flex-col items-center justify-center bg-muted rounded-lg min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4" />
         <p className="text-sm text-muted-foreground">Loading image...</p>
       </div>
     );
@@ -699,7 +697,7 @@ export function ImageEditor({
         </Layer>
 
         {/* Main Image Layer - This should be on top of background */}
-        {mainImage && mainImage.complete ? (
+        {mainImage?.complete ? (
           <Layer pixelRatio={pixelRatio}>
             <Group
               ref={mainImageRef}

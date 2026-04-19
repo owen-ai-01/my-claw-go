@@ -5,9 +5,7 @@ import { NextResponse } from 'next/server';
 
 export async function GET(
   _req: Request,
-  {
-    params,
-  }: { params: Promise<{ sessionId: string; taskId: string }> }
+  { params }: { params: Promise<{ sessionId: string; taskId: string }> }
 ) {
   const { sessionId, taskId } = await params;
 
@@ -15,19 +13,28 @@ export async function GET(
   const currentUserId = authSession?.user?.id;
 
   if (!currentUserId) {
-    return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json(
+      { ok: false, error: 'Unauthorized' },
+      { status: 401 }
+    );
   }
 
   if (currentUserId !== sessionId) {
     return NextResponse.json(
-      { ok: false, error: 'Forbidden: session does not belong to current user' },
+      {
+        ok: false,
+        error: 'Forbidden: session does not belong to current user',
+      },
       { status: 403 }
     );
   }
 
   const task = await getRuntimeTask(taskId);
   if (!task || task.sessionId !== sessionId) {
-    return NextResponse.json({ ok: false, error: 'Task not found' }, { status: 404 });
+    return NextResponse.json(
+      { ok: false, error: 'Task not found' },
+      { status: 404 }
+    );
   }
 
   return NextResponse.json({

@@ -1,5 +1,5 @@
-import fs from 'node:fs/promises';
 import { execFile } from 'node:child_process';
+import fs from 'node:fs/promises';
 import { promisify } from 'node:util';
 import { auth } from '@/lib/auth';
 import { getSession } from '@/lib/myclawgo/session-store';
@@ -16,7 +16,10 @@ async function dockerContainerExists(containerName: string) {
       '--format',
       '{{.Names}}',
     ]);
-    return stdout.split('\n').map((line) => line.trim()).includes(containerName);
+    return stdout
+      .split('\n')
+      .map((line) => line.trim())
+      .includes(containerName);
   } catch {
     return false;
   }
@@ -60,7 +63,10 @@ export async function GET() {
   const session = await auth.api.getSession({ headers: await headers() });
   const userId = session?.user?.id;
   if (!userId) {
-    return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json(
+      { ok: false, error: 'Unauthorized' },
+      { status: 401 }
+    );
   }
 
   const status = await runtimeLooksReady(userId);

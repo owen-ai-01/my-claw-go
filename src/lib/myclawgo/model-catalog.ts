@@ -10,17 +10,41 @@ export const AVAILABLE_MODELS: ModelOption[] = [
   { id: 'openrouter/openai/gpt-5.4', label: 'OpenAI · GPT-5.4' },
 
   // Anthropic
-  { id: 'openrouter/anthropic/claude-haiku-4.5', label: 'Anthropic · Claude Haiku 4.5' },
-  { id: 'openrouter/anthropic/claude-sonnet-4.5', label: 'Anthropic · Claude Sonnet 4.5' },
-  { id: 'openrouter/anthropic/claude-sonnet-4.6', label: 'Anthropic · Claude Sonnet 4.6' },
-  { id: 'openrouter/anthropic/claude-opus-4.6', label: 'Anthropic · Claude Opus 4.6' },
+  {
+    id: 'openrouter/anthropic/claude-haiku-4.5',
+    label: 'Anthropic · Claude Haiku 4.5',
+  },
+  {
+    id: 'openrouter/anthropic/claude-sonnet-4.5',
+    label: 'Anthropic · Claude Sonnet 4.5',
+  },
+  {
+    id: 'openrouter/anthropic/claude-sonnet-4.6',
+    label: 'Anthropic · Claude Sonnet 4.6',
+  },
+  {
+    id: 'openrouter/anthropic/claude-opus-4.6',
+    label: 'Anthropic · Claude Opus 4.6',
+  },
 
   // Google
-  { id: 'openrouter/google/gemini-2.0-flash-exp', label: 'Google · Gemini 2.0 Flash Exp' },
-  { id: 'openrouter/google/gemini-2.0-flash-001', label: 'Google · Gemini 2.0 Flash 001' },
-  { id: 'openrouter/google/gemini-2.5-flash-lite', label: 'Google · Gemini 2.5 Flash Lite' },
+  {
+    id: 'openrouter/google/gemini-2.0-flash-exp',
+    label: 'Google · Gemini 2.0 Flash Exp',
+  },
+  {
+    id: 'openrouter/google/gemini-2.0-flash-001',
+    label: 'Google · Gemini 2.0 Flash 001',
+  },
+  {
+    id: 'openrouter/google/gemini-2.5-flash-lite',
+    label: 'Google · Gemini 2.5 Flash Lite',
+  },
   { id: 'openrouter/google/gemini-2.5-pro', label: 'Google · Gemini 2.5 Pro' },
-  { id: 'openrouter/google/gemini-3-pro-preview', label: 'Google · Gemini 3 Pro Preview' },
+  {
+    id: 'openrouter/google/gemini-3-pro-preview',
+    label: 'Google · Gemini 3 Pro Preview',
+  },
 
   // DeepSeek
   { id: 'openrouter/deepseek/deepseek-v3', label: 'DeepSeek · V3' },
@@ -40,7 +64,10 @@ export const AVAILABLE_MODELS: ModelOption[] = [
 
   // Moonshot / Kimi
   { id: 'openrouter/moonshotai/kimi-k2', label: 'Moonshot · Kimi K2' },
-  { id: 'openrouter/moonshotai/kimi-k2-thinking', label: 'Moonshot · Kimi K2 Thinking' },
+  {
+    id: 'openrouter/moonshotai/kimi-k2-thinking',
+    label: 'Moonshot · Kimi K2 Thinking',
+  },
   { id: 'openrouter/moonshotai/kimi-k2.5', label: 'Moonshot · Kimi K2.5' },
 ];
 

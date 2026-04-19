@@ -1,21 +1,21 @@
+import { getUserCredits } from '@/credits/credits';
 /**
  * Server-side membership check for API routes.
  * Queries the payment table directly (no server-action context needed).
  */
 import { getDb } from '@/db';
 import { payment } from '@/db/schema';
-import { getUserCredits } from '@/credits/credits';
-import { and, desc, eq, or } from 'drizzle-orm';
 import { PaymentScenes, PaymentTypes } from '@/payment/types';
+import { and, desc, eq, or } from 'drizzle-orm';
 
-export type MembershipResult =
-  | { isPaid: true }
-  | { isPaid: false };
+export type MembershipResult = { isPaid: true } | { isPaid: false };
 
 /**
  * Check if a user has an active paid plan (lifetime or active/trialing subscription).
  */
-export async function checkUserMembership(userId: string): Promise<MembershipResult> {
+export async function checkUserMembership(
+  userId: string
+): Promise<MembershipResult> {
   try {
     const db = await getDb();
     const rows = await db

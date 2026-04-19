@@ -26,10 +26,7 @@ export function warmupRuntimeForUser(userId: string, reason = 'payment') {
         );
       }
     } catch (error) {
-      console.warn(
-        `[MyClawGo] runtime warmup exception for ${userId}:`,
-        error
-      );
+      console.warn(`[MyClawGo] runtime warmup exception for ${userId}:`, error);
     } finally {
       const current = warmingUsers.get(userId);
       if (current === now) {

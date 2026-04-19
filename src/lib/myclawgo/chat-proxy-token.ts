@@ -32,7 +32,10 @@ function signPayload(payloadB64: string) {
   );
 }
 
-export function issueChatProxyToken(userId: string, ttlSeconds = DEFAULT_TTL_SECONDS) {
+export function issueChatProxyToken(
+  userId: string,
+  ttlSeconds = DEFAULT_TTL_SECONDS
+) {
   const now = Math.floor(Date.now() / 1000);
   const payload = {
     userId,

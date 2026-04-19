@@ -1,7 +1,6 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { eq } from 'drizzle-orm';
 import { getDb } from '@/db';
 import { userAgentTelegramBot } from '@/db/schema';
 import {
@@ -9,15 +8,21 @@ import {
   ensureMainAgent,
   getMainAgentTelegramBot,
 } from '@/lib/myclawgo/agent-config';
-import { ensureSessionById } from '@/lib/myclawgo/session-store';
 import { ensureUserContainer } from '@/lib/myclawgo/docker-manager';
+import { ensureSessionById } from '@/lib/myclawgo/session-store';
+import { eq } from 'drizzle-orm';
 
 const HOST_OPENCLAW_CONFIG =
   process.env.MYCLAWGO_SEED_CONFIG_PATH ||
   '/home/openclaw/docker-openclaw-seed/openclaw.json';
 
-function deepMerge<T extends Record<string, any>>(base: T, patch: Record<string, any>): T {
-  const out: Record<string, any> = Array.isArray(base) ? [...base] : { ...base };
+function deepMerge<T extends Record<string, any>>(
+  base: T,
+  patch: Record<string, any>
+): T {
+  const out: Record<string, any> = Array.isArray(base)
+    ? [...base]
+    : { ...base };
   for (const [key, value] of Object.entries(patch)) {
     const prev = out[key];
     if (
@@ -49,7 +54,10 @@ export async function applyMainAgentTelegramConfigToRuntime(userId: string) {
   const runtimeSession = await ensureSessionById(userId, 'runtime-config-sync');
   await fs.mkdir(runtimeSession.userDataDir, { recursive: true });
 
-  const targetConfigPath = path.join(runtimeSession.userDataDir, 'openclaw.json');
+  const targetConfigPath = path.join(
+    runtimeSession.userDataDir,
+    'openclaw.json'
+  );
   const backupPath = `${targetConfigPath}.bak`;
 
   const seedConfig = await readSeedConfig();
@@ -134,9 +142,13 @@ export async function applyMainAgentTelegramConfigToRuntime(userId: string) {
     // ignore missing existing file
   }
 
-  await fs.writeFile(targetConfigPath, `${JSON.stringify(nextConfig, null, 2)}\n`, {
-    mode: 0o600,
-  });
+  await fs.writeFile(
+    targetConfigPath,
+    `${JSON.stringify(nextConfig, null, 2)}\n`,
+    {
+      mode: 0o600,
+    }
+  );
 
   const ensured = await ensureUserContainer(runtimeSession);
   if (!ensured.ok) {

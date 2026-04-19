@@ -16,10 +16,16 @@ export async function GET(
   const session = await auth.api.getSession({ headers: await headers() });
   const userId = session?.user?.id;
   if (!userId) {
-    return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json(
+      { ok: false, error: 'Unauthorized' },
+      { status: 401 }
+    );
   }
   if (userId !== sessionId) {
-    return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 });
+    return NextResponse.json(
+      { ok: false, error: 'Forbidden' },
+      { status: 403 }
+    );
   }
 
   const runtimeSession = await ensureSessionById(userId, 'ready-check');

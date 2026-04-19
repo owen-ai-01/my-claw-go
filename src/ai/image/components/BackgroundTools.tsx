@@ -195,6 +195,7 @@ export function BackgroundTools({
                     />
                   </div>
                   <button
+                    type="button"
                     onClick={handleRemoveBackgroundImage}
                     className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity shadow-sm cursor-pointer"
                   >

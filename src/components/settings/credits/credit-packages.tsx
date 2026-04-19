@@ -91,7 +91,9 @@ export function CreditPackages() {
 
               <CardContent className="space-y-4">
                 <div className="pt-2">
-                  <div className="text-base font-semibold">{creditPackage.name}</div>
+                  <div className="text-base font-semibold">
+                    {creditPackage.name}
+                  </div>
                 </div>
                 {/* Price and Credits - Left/Right Layout */}
                 <div className="flex items-center justify-between py-2">

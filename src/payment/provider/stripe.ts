@@ -14,10 +14,13 @@ import {
   PAYMENT_RECORD_RETRY_ATTEMPTS,
   PAYMENT_RECORD_RETRY_DELAY,
 } from '@/lib/constants';
+import {
+  provisionUserOpenrouterKey,
+  revokeUserOpenrouterKey,
+} from '@/lib/myclawgo/openrouter-key-provisioner';
+import { warmupRuntimeForUser } from '@/lib/myclawgo/runtime-warmup';
 import { findPlanByPlanId, findPriceInPlan } from '@/lib/price-plan';
 import { sendNotification } from '@/notification/notification';
-import { warmupRuntimeForUser } from '@/lib/myclawgo/runtime-warmup';
-import { provisionUserOpenrouterKey, revokeUserOpenrouterKey } from '@/lib/myclawgo/openrouter-key-provisioner';
 import { desc, eq } from 'drizzle-orm';
 import { Stripe } from 'stripe';
 import {
@@ -1085,8 +1088,11 @@ export class StripeProvider implements PaymentProvider {
     if (result.length > 0) {
       console.log('<< Marked payment record for subscription as canceled');
       // Revoke per-user OpenRouter key (non-blocking, best-effort)
-      const userId = stripeSubscription.metadata?.userId
-        ?? await this.findUserIdByCustomerId(stripeSubscription.customer as string).catch(() => undefined);
+      const userId =
+        stripeSubscription.metadata?.userId ??
+        (await this.findUserIdByCustomerId(
+          stripeSubscription.customer as string
+        ).catch(() => undefined));
       if (userId) {
         revokeUserOpenrouterKey(userId).catch((e) =>
           console.error('[OR-Key] revoke error after subscription.deleted:', e)

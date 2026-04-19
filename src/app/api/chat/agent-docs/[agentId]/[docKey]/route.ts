@@ -1,11 +1,11 @@
+import { execFile } from 'node:child_process';
+import path from 'node:path';
+import { promisify } from 'node:util';
 import { auth } from '@/lib/auth';
-import { getSession } from '@/lib/myclawgo/session-store';
 import { requireUserBridgeTarget } from '@/lib/myclawgo/bridge-fetch';
+import { getSession } from '@/lib/myclawgo/session-store';
 import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
-import path from 'node:path';
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
 
 const execFileAsync = promisify(execFile);
 
@@ -23,10 +23,18 @@ function isDocKey(v: string): v is DocKey {
   return v in DOC_FILE_MAP;
 }
 
-async function dockerExec(containerName: string, cmd: string, timeoutMs = 15_000) {
+async function dockerExec(
+  containerName: string,
+  cmd: string,
+  timeoutMs = 15_000
+) {
   const { stdout } = await execFileAsync(
     'sg',
-    ['docker', '-c', `docker exec --user openclaw ${containerName} bash -lc ${JSON.stringify(cmd)}`],
+    [
+      'docker',
+      '-c',
+      `docker exec --user openclaw ${containerName} bash -lc ${JSON.stringify(cmd)}`,
+    ],
     { maxBuffer: 2 * 1024 * 1024, timeout: timeoutMs }
   );
   return stdout;
@@ -35,11 +43,17 @@ async function dockerExec(containerName: string, cmd: string, timeoutMs = 15_000
 async function resolveAgentWorkspace(agentId: string): Promise<string> {
   const bridge = await requireUserBridgeTarget();
   if (!bridge.ok) throw new Error('Bridge unavailable');
-  const res = await fetch(`${bridge.target.bridge.baseUrl}/agents/${encodeURIComponent(agentId)}`, {
-    headers: { authorization: `Bearer ${bridge.target.bridge.token}` },
-    cache: 'no-store',
-  });
-  const payload = (await res.json().catch(() => ({}))) as { ok?: boolean; data?: { workspace?: string } };
+  const res = await fetch(
+    `${bridge.target.bridge.baseUrl}/agents/${encodeURIComponent(agentId)}`,
+    {
+      headers: { authorization: `Bearer ${bridge.target.bridge.token}` },
+      cache: 'no-store',
+    }
+  );
+  const payload = (await res.json().catch(() => ({}))) as {
+    ok?: boolean;
+    data?: { workspace?: string };
+  };
   if (!res.ok || payload.ok !== true || !payload.data?.workspace) {
     throw new Error('Agent workspace not found');
   }
@@ -52,14 +66,25 @@ export async function GET(
 ) {
   const session = await auth.api.getSession({ headers: await headers() });
   const userId = session?.user?.id;
-  if (!userId) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
+  if (!userId)
+    return NextResponse.json(
+      { ok: false, error: 'Unauthorized' },
+      { status: 401 }
+    );
 
   const { agentId, docKey } = await params;
-  if (!isDocKey(docKey)) return NextResponse.json({ ok: false, error: 'Unsupported docKey' }, { status: 400 });
+  if (!isDocKey(docKey))
+    return NextResponse.json(
+      { ok: false, error: 'Unsupported docKey' },
+      { status: 400 }
+    );
 
   const runtimeSession = await getSession(userId);
   if (!runtimeSession?.containerName) {
-    return NextResponse.json({ ok: false, error: 'Runtime container not found' }, { status: 404 });
+    return NextResponse.json(
+      { ok: false, error: 'Runtime container not found' },
+      { status: 404 }
+    );
   }
 
   try {
@@ -79,7 +104,10 @@ export async function GET(
     });
   } catch (error) {
     return NextResponse.json(
-      { ok: false, error: error instanceof Error ? error.message : 'Failed to read doc' },
+      {
+        ok: false,
+        error: error instanceof Error ? error.message : 'Failed to read doc',
+      },
       { status: 500 }
     );
   }
@@ -91,14 +119,25 @@ export async function PUT(
 ) {
   const session = await auth.api.getSession({ headers: await headers() });
   const userId = session?.user?.id;
-  if (!userId) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
+  if (!userId)
+    return NextResponse.json(
+      { ok: false, error: 'Unauthorized' },
+      { status: 401 }
+    );
 
   const { agentId, docKey } = await params;
-  if (!isDocKey(docKey)) return NextResponse.json({ ok: false, error: 'Unsupported docKey' }, { status: 400 });
+  if (!isDocKey(docKey))
+    return NextResponse.json(
+      { ok: false, error: 'Unsupported docKey' },
+      { status: 400 }
+    );
 
   const runtimeSession = await getSession(userId);
   if (!runtimeSession?.containerName) {
-    return NextResponse.json({ ok: false, error: 'Runtime container not found' }, { status: 404 });
+    return NextResponse.json(
+      { ok: false, error: 'Runtime container not found' },
+      { status: 404 }
+    );
   }
 
   const MAX_DOC_SIZE = 5 * 1024 * 1024; // 5MB
@@ -108,11 +147,17 @@ export async function PUT(
     const body = (await req.json().catch(() => ({}))) as { content?: string };
     const content = typeof body.content === 'string' ? body.content : '';
     if (Buffer.byteLength(content, 'utf8') > MAX_DOC_SIZE) {
-      return NextResponse.json({ ok: false, error: 'Content too large (max 5MB)' }, { status: 413 });
+      return NextResponse.json(
+        { ok: false, error: 'Content too large (max 5MB)' },
+        { status: 413 }
+      );
     }
     const workspace = await resolveAgentWorkspace(agentId);
     if (!workspace.startsWith(WORKSPACE_PREFIX)) {
-      return NextResponse.json({ ok: false, error: 'Invalid workspace path' }, { status: 400 });
+      return NextResponse.json(
+        { ok: false, error: 'Invalid workspace path' },
+        { status: 400 }
+      );
     }
     const docPath = path.posix.join(workspace, DOC_FILE_MAP[docKey]);
     const dirPath = path.posix.dirname(docPath);
@@ -120,10 +165,16 @@ export async function PUT(
     const cmd = `mkdir -p ${JSON.stringify(dirPath)}; printf '%s' ${JSON.stringify(b64)} | base64 -d > ${JSON.stringify(docPath)}`;
     await dockerExec(runtimeSession.containerName, cmd);
 
-    return NextResponse.json({ ok: true, data: { agentId, docKey, path: docPath, updated: true } });
+    return NextResponse.json({
+      ok: true,
+      data: { agentId, docKey, path: docPath, updated: true },
+    });
   } catch (error) {
     return NextResponse.json(
-      { ok: false, error: error instanceof Error ? error.message : 'Failed to write doc' },
+      {
+        ok: false,
+        error: error instanceof Error ? error.message : 'Failed to write doc',
+      },
       { status: 500 }
     );
   }

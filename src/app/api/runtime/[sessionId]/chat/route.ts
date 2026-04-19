@@ -16,8 +16,7 @@ import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 
 // Owner email - receives full error details for debugging
-const OWNER_EMAIL =
-  process.env.MYCLAWGO_OWNER_EMAIL || 'support@myclawgo.com';
+const OWNER_EMAIL = process.env.MYCLAWGO_OWNER_EMAIL || 'support@myclawgo.com';
 
 function isOwner(email?: string | null) {
   return email === OWNER_EMAIL;

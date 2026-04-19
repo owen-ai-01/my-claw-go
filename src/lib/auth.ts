@@ -82,7 +82,7 @@ export const auth = betterAuth({
         try {
           // Add delay between attempts to respect rate limits
           if (attempt > 1) {
-            const delay = Math.pow(2, attempt - 1) * 1000; // Exponential backoff: 1s, 2s, 4s
+            const delay = 2 ** (attempt - 1) * 1000; // Exponential backoff: 1s, 2s, 4s
             console.log(
               `Retrying email send in ${delay}ms (attempt ${attempt}/${maxRetries})`
             );
@@ -240,7 +240,7 @@ async function onCreateUser(user: User) {
         try {
           // Add delay between attempts to respect rate limits
           if (attempt > 1) {
-            const delay = Math.pow(2, attempt - 1) * 1000; // Exponential backoff: 1s, 2s, 4s
+            const delay = 2 ** (attempt - 1) * 1000; // Exponential backoff: 1s, 2s, 4s
             console.log(
               `Retrying newsletter subscription in ${delay}ms (attempt ${attempt}/${maxRetries})`
             );

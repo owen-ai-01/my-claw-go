@@ -1,23 +1,32 @@
 import crypto from 'node:crypto';
-import { getDb } from '@/db';
-import { userChatBillingAudit, userChatMessage, userChatTask } from '@/db/schema';
 import { consumeCredits } from '@/credits/credits';
+import { getDb } from '@/db';
+import {
+  userChatBillingAudit,
+  userChatMessage,
+  userChatTask,
+} from '@/db/schema';
 import {
   calcUsdCostFromBridgeUsage,
   creditsFromUsd,
   estimateUsage,
   resolvePricingModelKey,
 } from '@/lib/myclawgo/billing';
-import { and, asc, desc, eq } from 'drizzle-orm';
 import { resolveUserBridgeTarget } from '@/lib/myclawgo/bridge-target';
 import { routeMessage } from '@/lib/myclawgo/model-router';
+import { and, asc, desc, eq } from 'drizzle-orm';
 
 export async function listUserChatMessages(userId: string, agentId: string) {
   const db = await getDb();
   return db
     .select()
     .from(userChatMessage)
-    .where(and(eq(userChatMessage.userId, userId), eq(userChatMessage.agentId, agentId)))
+    .where(
+      and(
+        eq(userChatMessage.userId, userId),
+        eq(userChatMessage.agentId, agentId)
+      )
+    )
     .orderBy(asc(userChatMessage.createdAt));
 }
 
@@ -28,7 +37,13 @@ export async function createDirectChatTask(params: {
   timeoutMs?: number;
   userModelOverride?: string; // 'auto' or explicit model id
 }) {
-  const { userId, agentId, message, timeoutMs = 180000, userModelOverride } = params;
+  const {
+    userId,
+    agentId,
+    message,
+    timeoutMs = 180000,
+    userModelOverride,
+  } = params;
   const db = await getDb();
   const userMessageId = crypto.randomUUID();
   const assistantMessageId = crypto.randomUUID();
@@ -70,7 +85,14 @@ export async function createDirectChatTask(params: {
     updatedAt: now,
   });
 
-  void runDirectChatTask({ taskId, userId, agentId, message, timeoutMs, userModelOverride });
+  void runDirectChatTask({
+    taskId,
+    userId,
+    agentId,
+    message,
+    timeoutMs,
+    userModelOverride,
+  });
 
   return { taskId, userMessageId, assistantMessageId };
 }
@@ -80,7 +102,9 @@ export async function getLatestChatTask(userId: string, agentId: string) {
   const rows = await db
     .select()
     .from(userChatTask)
-    .where(and(eq(userChatTask.userId, userId), eq(userChatTask.agentId, agentId)))
+    .where(
+      and(eq(userChatTask.userId, userId), eq(userChatTask.agentId, agentId))
+    )
     .orderBy(desc(userChatTask.createdAt))
     .limit(1);
   return rows[0] ?? null;
@@ -100,8 +124,16 @@ export type DirectChatUsage = {
 
 function extractBillingTokenCounts(usage?: DirectChatUsage) {
   return {
-    inputTokens: Math.max(0, Number(usage?.input ?? usage?.input_tokens ?? usage?.prompt_tokens ?? 0)),
-    outputTokens: Math.max(0, Number(usage?.output ?? usage?.output_tokens ?? usage?.completion_tokens ?? 0)),
+    inputTokens: Math.max(
+      0,
+      Number(usage?.input ?? usage?.input_tokens ?? usage?.prompt_tokens ?? 0)
+    ),
+    outputTokens: Math.max(
+      0,
+      Number(
+        usage?.output ?? usage?.output_tokens ?? usage?.completion_tokens ?? 0
+      )
+    ),
     cacheReadTokens: Math.max(0, Number(usage?.cacheRead ?? 0)),
   };
 }
@@ -190,7 +222,10 @@ export async function settleDirectChatBilling(params: {
       },
       createdAt: new Date(),
     });
-    console.error('settleDirectChatBilling failed:', error instanceof Error ? error.message : error);
+    console.error(
+      'settleDirectChatBilling failed:',
+      error instanceof Error ? error.message : error
+    );
   }
 }
 
@@ -208,9 +243,15 @@ export function resolveChatModelSelection(params: {
   routerEnabled: boolean;
   routeFn?: typeof routeMessage;
 }): ChatModelSelection {
-  const { message, userModelOverride, routerEnabled, routeFn = routeMessage } = params;
+  const {
+    message,
+    userModelOverride,
+    routerEnabled,
+    routeFn = routeMessage,
+  } = params;
   const selectedModel = String(userModelOverride || '').trim();
-  const isAutoModel = !selectedModel || selectedModel === 'auto' || selectedModel === 'default';
+  const isAutoModel =
+    !selectedModel || selectedModel === 'auto' || selectedModel === 'default';
 
   if (!isAutoModel) {
     return {
@@ -260,10 +301,15 @@ async function runDirectChatTask(params: {
   timeoutMs: number;
   userModelOverride?: string; // 'auto' | specific model id | undefined
 }) {
-  const { taskId, userId, agentId, message, timeoutMs, userModelOverride } = params;
+  const { taskId, userId, agentId, message, timeoutMs, userModelOverride } =
+    params;
   const db = await getDb();
 
-  const [task] = await db.select().from(userChatTask).where(eq(userChatTask.id, taskId)).limit(1);
+  const [task] = await db
+    .select()
+    .from(userChatTask)
+    .where(eq(userChatTask.id, taskId))
+    .limit(1);
   if (!task) return;
 
   await db
@@ -326,7 +372,9 @@ async function runDirectChatTask(params: {
       signal: AbortSignal.timeout(timeoutMs),
     });
 
-    const payload = await upstreamRes.json().catch(() => ({ ok: false, error: 'Invalid bridge response' })) as {
+    const payload = (await upstreamRes
+      .json()
+      .catch(() => ({ ok: false, error: 'Invalid bridge response' }))) as {
       ok?: boolean;
       data?: {
         reply?: string;
@@ -347,12 +395,25 @@ async function runDirectChatTask(params: {
       error?: string | { message?: string };
     };
 
-    if (!upstreamRes.ok || payload.ok !== true || !payload.data?.reply?.trim()) {
-      throw new Error(typeof payload.error === 'string' ? payload.error : payload.error?.message || 'Chat task failed');
+    if (
+      !upstreamRes.ok ||
+      payload.ok !== true ||
+      !payload.data?.reply?.trim()
+    ) {
+      throw new Error(
+        typeof payload.error === 'string'
+          ? payload.error
+          : payload.error?.message || 'Chat task failed'
+      );
     }
 
-    await db.update(userChatMessage)
-      .set({ content: payload.data.reply, status: 'done', updatedAt: new Date() })
+    await db
+      .update(userChatMessage)
+      .set({
+        content: payload.data.reply,
+        status: 'done',
+        updatedAt: new Date(),
+      })
       .where(eq(userChatMessage.id, task.assistantMessageId));
 
     await settleDirectChatBilling({
@@ -367,27 +428,48 @@ async function runDirectChatTask(params: {
     });
 
     if (!isAutoModel) {
-      console.info(`[model-router] taskId=${taskId} mode=user-selected model=${payload.data.model || resolvedModel}`);
+      console.info(
+        `[model-router] taskId=${taskId} mode=user-selected model=${payload.data.model || resolvedModel}`
+      );
     } else if (routing) {
-      console.info(`[model-router] taskId=${taskId} mode=auto level=${routing.level} model=${payload.data.model || resolvedModel || 'agent-default'} reason=${routing.reason}`);
+      console.info(
+        `[model-router] taskId=${taskId} mode=auto level=${routing.level} model=${payload.data.model || resolvedModel || 'agent-default'} reason=${routing.reason}`
+      );
     } else {
-      console.info(`[model-router] taskId=${taskId} mode=auto-fallback model=${payload.data.model || 'agent-default'}`);
+      console.info(
+        `[model-router] taskId=${taskId} mode=auto-fallback model=${payload.data.model || 'agent-default'}`
+      );
     }
 
-    await db.update(userChatTask)
-      .set({ status: 'done', finishedAt: new Date(), updatedAt: new Date(), error: null })
+    await db
+      .update(userChatTask)
+      .set({
+        status: 'done',
+        finishedAt: new Date(),
+        updatedAt: new Date(),
+        error: null,
+      })
       .where(eq(userChatTask.id, taskId));
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Chat task failed';
-    await db.update(userChatMessage)
-      .set({ content: `⚠️ ${errorMessage}`, status: 'failed', updatedAt: new Date() })
+    const errorMessage =
+      error instanceof Error ? error.message : 'Chat task failed';
+    await db
+      .update(userChatMessage)
+      .set({
+        content: `⚠️ ${errorMessage}`,
+        status: 'failed',
+        updatedAt: new Date(),
+      })
       .where(eq(userChatMessage.id, task.assistantMessageId));
 
-    await db.update(userChatTask)
-      .set({ status: 'failed', error: errorMessage, finishedAt: new Date(), updatedAt: new Date() })
+    await db
+      .update(userChatTask)
+      .set({
+        status: 'failed',
+        error: errorMessage,
+        finishedAt: new Date(),
+        updatedAt: new Date(),
+      })
       .where(eq(userChatTask.id, taskId));
   }
 }
-
-
-

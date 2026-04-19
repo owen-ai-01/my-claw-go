@@ -1,15 +1,18 @@
-import { auth } from '@/lib/auth';
 import { getDb } from '@/db';
 import { userChatBillingAudit } from '@/db/schema';
+import { auth } from '@/lib/auth';
 import { and, eq, sql } from 'drizzle-orm';
 import { headers } from 'next/headers';
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 
 export async function GET(req: NextRequest) {
   const session = await auth.api.getSession({ headers: await headers() });
   const userId = session?.user?.id;
   if (!userId) {
-    return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json(
+      { ok: false, error: 'Unauthorized' },
+      { status: 401 }
+    );
   }
 
   const agentId = req.nextUrl.searchParams.get('agentId') || 'main';
@@ -42,6 +45,9 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch {
-    return NextResponse.json({ ok: true, tokens: { input: 0, output: 0, total: 0 } });
+    return NextResponse.json({
+      ok: true,
+      tokens: { input: 0, output: 0, total: 0 },
+    });
   }
 }

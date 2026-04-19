@@ -12,7 +12,10 @@ async function dockerContainerExists(containerName: string) {
       '--format',
       '{{.Names}}',
     ]);
-    return stdout.split('\n').map((line) => line.trim()).includes(containerName);
+    return stdout
+      .split('\n')
+      .map((line) => line.trim())
+      .includes(containerName);
   } catch {
     return false;
   }
@@ -28,7 +31,9 @@ export async function resolveUserGatewayProxyTarget(userId: string) {
     };
   }
 
-  const containerExists = await dockerContainerExists(runtimeSession.containerName);
+  const containerExists = await dockerContainerExists(
+    runtimeSession.containerName
+  );
   if (!containerExists) {
     return {
       ok: false as const,

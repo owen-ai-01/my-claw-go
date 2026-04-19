@@ -26,7 +26,9 @@ export async function saveUtmSourceAction(): Promise<void> {
     await db
       .update(userTable)
       .set({ utmSource })
-      .where(and(eq(userTable.id, session.user.id), isNull(userTable.utmSource)));
+      .where(
+        and(eq(userTable.id, session.user.id), isNull(userTable.utmSource))
+      );
   } catch {
     // Never throw — this must not affect page rendering
   }

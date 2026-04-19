@@ -1,5 +1,5 @@
-import { Metadata } from 'next';
 import { GroupsShell } from '@/components/dashboard/groups/groups-shell';
+import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Groups',

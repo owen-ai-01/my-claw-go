@@ -11,12 +11,12 @@
  */
 
 import crypto from 'node:crypto';
-import { and, eq } from 'drizzle-orm';
 import { getDb } from '@/db';
 import { payment, userOpenrouterKey } from '@/db/schema';
 import { PaymentTypes } from '@/payment/types';
+import { and, eq } from 'drizzle-orm';
 import { desc } from 'drizzle-orm';
-import { encryptConfigValue, decryptConfigValue } from './agent-config';
+import { decryptConfigValue, encryptConfigValue } from './agent-config';
 
 const OPENROUTER_API_BASE = 'https://openrouter.ai/api/v1';
 
@@ -44,7 +44,7 @@ async function getUserTier(userId: string): Promise<string> {
         and(
           eq(payment.userId, userId),
           eq(payment.type, PaymentTypes.SUBSCRIPTION),
-          eq(payment.paid, true),
+          eq(payment.paid, true)
         )
       )
       .orderBy(desc(payment.createdAt))
@@ -69,11 +69,15 @@ async function getUserTier(userId: string): Promise<string> {
 }
 
 /** Call OpenRouter management API with exponential backoff retry (max 3 attempts). */
-async function orFetch(path: string, options: RequestInit, attempt = 1): Promise<Response> {
+async function orFetch(
+  path: string,
+  options: RequestInit,
+  attempt = 1
+): Promise<Response> {
   const res = await fetch(`${OPENROUTER_API_BASE}${path}`, {
     ...options,
     headers: {
-      'Authorization': `Bearer ${getManagementKey()}`,
+      Authorization: `Bearer ${getManagementKey()}`,
       'Content-Type': 'application/json',
       ...(options.headers ?? {}),
     },
@@ -86,7 +90,9 @@ async function orFetch(path: string, options: RequestInit, attempt = 1): Promise
       await new Promise((r) => setTimeout(r, delay));
       return orFetch(path, options, attempt + 1);
     }
-    throw new Error(`OpenRouter API ${options.method ?? 'GET'} ${path} failed (${res.status}): ${body}`);
+    throw new Error(
+      `OpenRouter API ${options.method ?? 'GET'} ${path} failed (${res.status}): ${body}`
+    );
   }
   return res;
 }
@@ -95,10 +101,14 @@ async function orFetch(path: string, options: RequestInit, attempt = 1): Promise
  * Provision (create or update) a per-user OpenRouter key.
  * Called when a subscription activates or renews.
  */
-export async function provisionUserOpenrouterKey(userId: string): Promise<void> {
+export async function provisionUserOpenrouterKey(
+  userId: string
+): Promise<void> {
   const managementKey = process.env.OPENROUTER_MANAGEMENT_KEY;
   if (!managementKey) {
-    console.warn('[OR-Key] OPENROUTER_MANAGEMENT_KEY not set — skipping key provisioning');
+    console.warn(
+      '[OR-Key] OPENROUTER_MANAGEMENT_KEY not set — skipping key provisioning'
+    );
     return;
   }
 
@@ -124,7 +134,9 @@ export async function provisionUserOpenrouterKey(userId: string): Promise<void> 
         .update(userOpenrouterKey)
         .set({ limitUsd, updatedAt: new Date() })
         .where(eq(userOpenrouterKey.userId, userId));
-      console.log(`[OR-Key] Updated key limit for user ${userId} to $${limitUsd}/mo`);
+      console.log(
+        `[OR-Key] Updated key limit for user ${userId} to $${limitUsd}/mo`
+      );
       return;
     }
 
@@ -137,7 +149,7 @@ export async function provisionUserOpenrouterKey(userId: string): Promise<void> 
         limit_reset: 'monthly',
       }),
     });
-    const data = await res.json() as { key: string; data: { hash: string } };
+    const data = (await res.json()) as { key: string; data: { hash: string } };
 
     const keyEncrypted = encryptConfigValue(data.key);
     await db.insert(userOpenrouterKey).values({
@@ -147,10 +159,15 @@ export async function provisionUserOpenrouterKey(userId: string): Promise<void> 
       keyEncrypted,
       limitUsd,
     });
-    console.log(`[OR-Key] Provisioned new key for user ${userId}, limit $${limitUsd}/mo`);
+    console.log(
+      `[OR-Key] Provisioned new key for user ${userId}, limit $${limitUsd}/mo`
+    );
   } catch (error) {
     // Non-fatal: log and continue. Container will fall back to platform key.
-    console.error(`[OR-Key] Failed to provision key for user ${userId}:`, error);
+    console.error(
+      `[OR-Key] Failed to provision key for user ${userId}:`,
+      error
+    );
   }
 }
 
@@ -173,7 +190,9 @@ export async function revokeUserOpenrouterKey(userId: string): Promise<void> {
     if (!existing[0]) return;
 
     await orFetch(`/keys/${existing[0].keyHash}`, { method: 'DELETE' });
-    await db.delete(userOpenrouterKey).where(eq(userOpenrouterKey.userId, userId));
+    await db
+      .delete(userOpenrouterKey)
+      .where(eq(userOpenrouterKey.userId, userId));
     console.log(`[OR-Key] Revoked key for user ${userId}`);
   } catch (error) {
     console.error(`[OR-Key] Failed to revoke key for user ${userId}:`, error);
@@ -184,7 +203,9 @@ export async function revokeUserOpenrouterKey(userId: string): Promise<void> {
  * Get the decrypted per-user OpenRouter key for container injection.
  * Returns null if not provisioned — caller should fall back to platform key.
  */
-export async function getUserOpenrouterKey(userId: string): Promise<string | null> {
+export async function getUserOpenrouterKey(
+  userId: string
+): Promise<string | null> {
   try {
     const db = await getDb();
     const row = await db

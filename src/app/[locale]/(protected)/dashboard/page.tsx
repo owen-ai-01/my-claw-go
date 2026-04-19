@@ -28,9 +28,7 @@ export default async function DashboardPage() {
                 {t('Dashboard.dashboard.welcomeMessage')}
               </h1>
               <Button asChild size="lg">
-                <LocaleLink href="/chat">
-                  Go to Chat
-                </LocaleLink>
+                <LocaleLink href="/chat">Go to Chat</LocaleLink>
               </Button>
             </div>
           </div>

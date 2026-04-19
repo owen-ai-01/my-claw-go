@@ -1,11 +1,11 @@
 import crypto from 'node:crypto';
-import { and, eq } from 'drizzle-orm';
 import { getDb } from '@/db';
 import {
   userAgent,
   userAgentTelegramBot,
   userChannelBinding,
 } from '@/db/schema';
+import { and, eq } from 'drizzle-orm';
 
 export async function findTelegramBotRoute(userId: string, agentId: string) {
   const db = await getDb();

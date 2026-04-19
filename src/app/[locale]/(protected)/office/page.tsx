@@ -1,5 +1,5 @@
-import { Metadata } from 'next';
 import { OfficeShell } from '@/components/dashboard/office/office-shell';
+import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Office',

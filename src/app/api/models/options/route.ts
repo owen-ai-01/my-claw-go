@@ -1,5 +1,5 @@
-import { NextResponse } from 'next/server';
 import { getSelectableModelOptions } from '@/lib/myclawgo/model-options';
+import { NextResponse } from 'next/server';
 
 export async function GET() {
   try {
@@ -10,7 +10,10 @@ export async function GET() {
       {
         ok: false,
         error: {
-          message: error instanceof Error ? error.message : 'Failed to load model options',
+          message:
+            error instanceof Error
+              ? error.message
+              : 'Failed to load model options',
         },
       },
       { status: 500 }

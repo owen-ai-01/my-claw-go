@@ -926,6 +926,7 @@ export function PromptInput({
               />
             </div>
             <button
+              type="button"
               onClick={() => {
                 setShowCaptcha(false);
                 setPendingFile(null);

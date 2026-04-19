@@ -1,6 +1,10 @@
 'use client';
 
-import { UTM_COOKIE_MAX_AGE, UTM_COOKIE_NAME, extractUtmSource } from '@/lib/utm';
+import {
+  UTM_COOKIE_MAX_AGE,
+  UTM_COOKIE_NAME,
+  extractUtmSource,
+} from '@/lib/utm';
 import { useSearchParams } from 'next/navigation';
 import { useEffect } from 'react';
 
@@ -16,7 +20,11 @@ export function RootUtmCapture() {
 
   useEffect(() => {
     // Skip if the cookie is already set (first-touch attribution)
-    if (document.cookie.split(';').some((c) => c.trim().startsWith(`${UTM_COOKIE_NAME}=`))) {
+    if (
+      document.cookie
+        .split(';')
+        .some((c) => c.trim().startsWith(`${UTM_COOKIE_NAME}=`))
+    ) {
       return;
     }
 

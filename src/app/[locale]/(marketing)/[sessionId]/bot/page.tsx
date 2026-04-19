@@ -49,12 +49,14 @@ function phaseMeta(phase: string) {
     case 'gateway-starting':
       return {
         title: 'Starting the gateway…',
-        subtitle: 'Your workspace is almost ready. Final service checks are running.',
+        subtitle:
+          'Your workspace is almost ready. Final service checks are running.',
       };
     default:
       return {
         title: 'Preparing your workspace…',
-        subtitle: 'Please keep this page open — we will enter chat automatically once ready.',
+        subtitle:
+          'Please keep this page open — we will enter chat automatically once ready.',
       };
   }
 }
@@ -483,8 +485,12 @@ ${String(data?.output || '(no output)')}`;
               <span className="h-2 w-2 rounded-full bg-cyan-400 animate-bounce [animation-delay:300ms]" />
             </div>
           </div>
-          <p className="text-sm font-semibold text-white">Checking workspace access…</p>
-          <p className="mt-2 text-xs text-slate-500">Verifying your session and access permissions.</p>
+          <p className="text-sm font-semibold text-white">
+            Checking workspace access…
+          </p>
+          <p className="mt-2 text-xs text-slate-500">
+            Verifying your session and access permissions.
+          </p>
         </div>
       </main>
     );

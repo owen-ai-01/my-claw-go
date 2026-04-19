@@ -1,15 +1,16 @@
-import { createServer, type IncomingMessage } from 'node:http';
 import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
+import { type IncomingMessage, createServer } from 'node:http';
 import { URL } from 'node:url';
+import { promisify } from 'node:util';
 import WebSocket, { WebSocketServer } from 'ws';
 import { verifyChatProxyToken } from '../src/lib/myclawgo/chat-proxy-token';
-import { ensureSessionById } from '../src/lib/myclawgo/session-store';
 import { ensureUserContainer } from '../src/lib/myclawgo/docker-manager';
+import { ensureSessionById } from '../src/lib/myclawgo/session-store';
 
 const execFileAsync = promisify(execFile);
 const PORT = Number(process.env.MYCLAWGO_CHAT_PROXY_PORT || 3020);
-const PATHNAME = process.env.MYCLAWGO_CHAT_PROXY_PATH || '/api/chat/gateway-proxy';
+const PATHNAME =
+  process.env.MYCLAWGO_CHAT_PROXY_PATH || '/api/chat/gateway-proxy';
 
 async function ensureGatewayForContainer(containerName: string) {
   const scriptContent = [
@@ -91,7 +92,7 @@ async function waitForGatewayHealth(containerName: string, attempts = 12) {
       containerName,
       'bash',
       '-lc',
-      "openclaw gateway call health --json 2>/dev/null | head -1",
+      'openclaw gateway call health --json 2>/dev/null | head -1',
     ])
       .then(({ stdout }) => stdout.includes('{'))
       .catch(() => false);
@@ -114,37 +115,47 @@ const server = createServer((req, res) => {
 
 const wss = new WebSocketServer({ noServer: true });
 
-wss.on('connection', (clientWs: WebSocket, _req: IncomingMessage, ctx: { upstreamWs: WebSocket }) => {
-  const upstreamWs = ctx.upstreamWs;
+wss.on(
+  'connection',
+  (
+    clientWs: WebSocket,
+    _req: IncomingMessage,
+    ctx: { upstreamWs: WebSocket }
+  ) => {
+    const upstreamWs = ctx.upstreamWs;
 
-  const closeBoth = () => {
-    if (clientWs.readyState === WebSocket.OPEN) clientWs.close();
-    if (upstreamWs.readyState === WebSocket.OPEN) upstreamWs.close();
-  };
+    const closeBoth = () => {
+      if (clientWs.readyState === WebSocket.OPEN) clientWs.close();
+      if (upstreamWs.readyState === WebSocket.OPEN) upstreamWs.close();
+    };
 
-  clientWs.on('message', (data: WebSocket.RawData, isBinary: boolean) => {
-    if (upstreamWs.readyState === WebSocket.OPEN) {
-      upstreamWs.send(data, { binary: isBinary });
-    }
-  });
+    clientWs.on('message', (data: WebSocket.RawData, isBinary: boolean) => {
+      if (upstreamWs.readyState === WebSocket.OPEN) {
+        upstreamWs.send(data, { binary: isBinary });
+      }
+    });
 
-  upstreamWs.on('message', (data: WebSocket.RawData, isBinary: boolean) => {
-    if (clientWs.readyState === WebSocket.OPEN) {
-      clientWs.send(data, { binary: isBinary });
-    }
-  });
+    upstreamWs.on('message', (data: WebSocket.RawData, isBinary: boolean) => {
+      if (clientWs.readyState === WebSocket.OPEN) {
+        clientWs.send(data, { binary: isBinary });
+      }
+    });
 
-  clientWs.on('close', closeBoth);
-  upstreamWs.on('close', closeBoth);
-  clientWs.on('error', closeBoth);
-  upstreamWs.on('error', closeBoth);
-});
+    clientWs.on('close', closeBoth);
+    upstreamWs.on('close', closeBoth);
+    clientWs.on('error', closeBoth);
+    upstreamWs.on('error', closeBoth);
+  }
+);
 
 server.on('upgrade', async (req, socket, head) => {
   try {
     // eslint-disable-next-line no-console
     console.log('[chat-gateway-proxy] upgrade request', req.url || '');
-    const url = new URL(req.url || '', `http://${req.headers.host || 'localhost'}`);
+    const url = new URL(
+      req.url || '',
+      `http://${req.headers.host || 'localhost'}`
+    );
     if (url.pathname !== PATHNAME) {
       socket.destroy();
       return;
@@ -161,7 +172,10 @@ server.on('upgrade', async (req, socket, head) => {
     // eslint-disable-next-line no-console
     console.log('[chat-gateway-proxy] token ok for user', tokenPayload.userId);
 
-    const runtimeSession = await ensureSessionById(tokenPayload.userId, 'chat-proxy-upgrade');
+    const runtimeSession = await ensureSessionById(
+      tokenPayload.userId,
+      'chat-proxy-upgrade'
+    );
     if (!runtimeSession?.containerName) {
       socket.write('HTTP/1.1 404 Not Found\r\n\r\n');
       socket.destroy();
@@ -175,19 +189,27 @@ server.on('upgrade', async (req, socket, head) => {
       return;
     }
 
-    const upstreamReady = await waitForGatewayHealth(runtimeSession.containerName, 24);
+    const upstreamReady = await waitForGatewayHealth(
+      runtimeSession.containerName,
+      24
+    );
     if (!upstreamReady) {
       socket.write('HTTP/1.1 503 Service Unavailable\r\n\r\n');
       socket.destroy();
       return;
     }
 
-    const upstreamUrl = await getContainerGatewayWsUrl(runtimeSession.containerName);
+    const upstreamUrl = await getContainerGatewayWsUrl(
+      runtimeSession.containerName
+    );
     const upstreamWs = new WebSocket(upstreamUrl);
 
     upstreamWs.once('open', () => {
       // eslint-disable-next-line no-console
-      console.log('[chat-gateway-proxy] upstream connected for user', tokenPayload.userId);
+      console.log(
+        '[chat-gateway-proxy] upstream connected for user',
+        tokenPayload.userId
+      );
       wss.handleUpgrade(req, socket, head, (clientWs) => {
         wss.emit('connection', clientWs, req, { upstreamWs });
       });
@@ -209,5 +231,7 @@ server.on('upgrade', async (req, socket, head) => {
 
 server.listen(PORT, () => {
   // eslint-disable-next-line no-console
-  console.log(`[chat-gateway-proxy] listening on ws://127.0.0.1:${PORT}${PATHNAME}`);
+  console.log(
+    `[chat-gateway-proxy] listening on ws://127.0.0.1:${PORT}${PATHNAME}`
+  );
 });

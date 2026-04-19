@@ -31,7 +31,13 @@ const OPENCLAW_NPM_SPEC = process.env.MYCLAWGO_OPENCLAW_NPM_SPEC || 'latest';
 const ALLOW_LEGACY_BOOTSTRAP =
   process.env.MYCLAWGO_ALLOW_LEGACY_BOOTSTRAP === 'true';
 
-const ensureContainerLocks = new Map<string, Promise<{ ok: true; mode: 'started-existing' | 'created' } | { ok: false; error: string }>>();
+const ensureContainerLocks = new Map<
+  string,
+  Promise<
+    | { ok: true; mode: 'started-existing' | 'created' }
+    | { ok: false; error: string }
+  >
+>();
 
 type RuntimeTier = 'pro' | 'premium' | 'ultra';
 
@@ -256,7 +262,7 @@ async function ensureGatewayForContainer(containerName: string) {
     '  /usr/local/bin/openclaw gateway run --allow-unconfigured --auth none --bind loopback --port 18789 >> /home/openclaw/.openclaw/gateway.log 2>&1',
     '  sleep 2',
     'done',
-  ].join("\n");
+  ].join('\n');
   // Write script if not present
   await execFileAsync('docker', [
     'exec',
@@ -308,9 +314,10 @@ export async function ensureUserContainer(session: UserSession) {
       await execFileAsync('docker', ['start', containerName]);
       const checkCmd =
         "su - openclaw -c 'which openclaw 2>/dev/null && echo ready || echo not_ready'";
-      const { stdout: checkOut } = await dockerExec(containerName, checkCmd).catch(
-        () => ({ stdout: 'not_ready' })
-      );
+      const { stdout: checkOut } = await dockerExec(
+        containerName,
+        checkCmd
+      ).catch(() => ({ stdout: 'not_ready' }));
       if (!checkOut.includes('ready')) {
         if (!ALLOW_LEGACY_BOOTSTRAP) {
           return {
@@ -339,7 +346,11 @@ export async function ensureUserContainer(session: UserSession) {
 
     const bridgeToken = process.env.MYCLAWGO_BRIDGE_TOKEN;
     if (!bridgeToken) {
-      return { ok: false as const, error: 'MYCLAWGO_BRIDGE_TOKEN is not configured. Container cannot start without bridge authentication.' };
+      return {
+        ok: false as const,
+        error:
+          'MYCLAWGO_BRIDGE_TOKEN is not configured. Container cannot start without bridge authentication.',
+      };
     }
     envs.push({ key: 'BRIDGE_TOKEN', value: bridgeToken });
 
@@ -384,9 +395,9 @@ export async function ensureUserContainer(session: UserSession) {
         message.includes('--storage-opt is supported only for overlay over xfs')
       ) {
         console.warn(
-          `[MyClawGo] WARNING: --storage-opt not supported on this host (not overlay/xfs). ` +
-          `Container ${containerName} will be created WITHOUT disk quota. ` +
-          `This allows unbounded disk usage per container. Configure XFS + overlay driver to enforce limits.`
+          '[MyClawGo] WARNING: --storage-opt not supported on this host (not overlay/xfs). ' +
+            `Container ${containerName} will be created WITHOUT disk quota. ` +
+            'This allows unbounded disk usage per container. Configure XFS + overlay driver to enforce limits.'
         );
         const argsWithoutDisk = args.filter((_, idx) => {
           if (args[idx] === '--storage-opt') return false;
@@ -427,7 +438,6 @@ export async function ensureUserContainer(session: UserSession) {
     ensureContainerLocks.delete(containerName);
   }
 }
-
 
 function parseAgentJsonOutput(stdout: string) {
   const rawParsed = extractJsonObjectFromStdout(stdout) as {
@@ -478,7 +488,6 @@ function parseAgentJsonOutput(stdout: string) {
       : undefined,
   };
 }
-
 
 export async function checkUserContainerReady(session: UserSession) {
   const containerName = safeName(session.containerName);
@@ -531,9 +540,10 @@ export async function runOpenClawChatInContainer(
 
   let runtimeReady = false;
   for (let attempt = 0; attempt < 6; attempt++) {
-    const { stdout: checkOut } = await dockerExec(containerName, checkCmd).catch(
-      () => ({ stdout: 'not_ready' })
-    );
+    const { stdout: checkOut } = await dockerExec(
+      containerName,
+      checkCmd
+    ).catch(() => ({ stdout: 'not_ready' }));
     if (checkOut.includes('ready')) {
       runtimeReady = true;
       break;

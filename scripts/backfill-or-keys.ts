@@ -31,16 +31,14 @@ async function backfillOrKeys() {
     .selectDistinct({ userId: payment.userId })
     .from(payment)
     .where(
-      and(
-        eq(payment.type, PaymentTypes.SUBSCRIPTION),
-        eq(payment.paid, true),
-      )
+      and(eq(payment.type, PaymentTypes.SUBSCRIPTION), eq(payment.paid, true))
     );
 
   const rows = await query;
-  const targets = provisionedIds.length > 0
-    ? rows.filter((r) => !provisionedIds.includes(r.userId))
-    : rows;
+  const targets =
+    provisionedIds.length > 0
+      ? rows.filter((r) => !provisionedIds.includes(r.userId))
+      : rows;
 
   console.log(
     `Found ${rows.length} active subscriber(s), ${targets.length} without OR key — provisioning...`

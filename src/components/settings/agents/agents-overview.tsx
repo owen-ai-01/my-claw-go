@@ -1,8 +1,8 @@
 'use client';
 
+import { ModelSelect } from '@/components/ui/model-select';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
-import { ModelSelect } from '@/components/ui/model-select';
 import { AgentAvatarPicker } from './agent-avatar-picker';
 import type { AgentRecord } from './types';
 
@@ -47,7 +47,10 @@ function agentEmoji(agent: AgentRecord) {
   return agent.identity?.emoji?.trim() || '🤖';
 }
 
-function CreateAgentModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
+function CreateAgentModal({
+  onClose,
+  onCreated,
+}: { onClose: () => void; onCreated: () => void }) {
   const [agentId, setAgentId] = useState('');
   const [name, setName] = useState('');
   const [role, setRole] = useState('');
@@ -121,20 +124,27 @@ function CreateAgentModal({ onClose, onCreated }: { onClose: () => void; onCreat
               ref={idRef}
               type="text"
               value={agentId}
-              onChange={(e) => setAgentId(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ''))}
+              onChange={(e) =>
+                setAgentId(
+                  e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, '')
+                )
+              }
               placeholder="e.g. sales-bot"
               className="w-full rounded-xl border bg-muted/30 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/50"
               required
             />
             {agentId && !idValid && (
               <p className="mt-1 text-xs text-red-500">
-                ID must be 2–32 chars, lowercase letters, numbers, hyphens or underscores.
+                ID must be 2–32 chars, lowercase letters, numbers, hyphens or
+                underscores.
               </p>
             )}
           </div>
 
           <div>
-            <label className="mb-1.5 block text-sm font-medium">Name (optional)</label>
+            <label className="mb-1.5 block text-sm font-medium">
+              Name (optional)
+            </label>
             <input
               type="text"
               value={name}
@@ -145,7 +155,9 @@ function CreateAgentModal({ onClose, onCreated }: { onClose: () => void; onCreat
           </div>
 
           <div>
-            <label className="mb-1.5 block text-sm font-medium">Role (optional)</label>
+            <label className="mb-1.5 block text-sm font-medium">
+              Role (optional)
+            </label>
             <input
               type="text"
               value={role}
@@ -156,7 +168,9 @@ function CreateAgentModal({ onClose, onCreated }: { onClose: () => void; onCreat
           </div>
 
           <div>
-            <label className="mb-1.5 block text-sm font-medium">Department (optional)</label>
+            <label className="mb-1.5 block text-sm font-medium">
+              Department (optional)
+            </label>
             <input
               type="text"
               value={department}
@@ -168,11 +182,17 @@ function CreateAgentModal({ onClose, onCreated }: { onClose: () => void; onCreat
 
           <div>
             <label className="mb-1.5 block text-sm font-medium">Avatar</label>
-            <AgentAvatarPicker value={avatar} onChange={setAvatar} onEmojiChange={setEmoji} />
+            <AgentAvatarPicker
+              value={avatar}
+              onChange={setAvatar}
+              onEmojiChange={setEmoji}
+            />
           </div>
 
           <div>
-            <label className="mb-1.5 block text-sm font-medium">Description (optional)</label>
+            <label className="mb-1.5 block text-sm font-medium">
+              Description (optional)
+            </label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -183,9 +203,19 @@ function CreateAgentModal({ onClose, onCreated }: { onClose: () => void; onCreat
           </div>
 
           <div>
-            <label className="mb-1.5 block text-sm font-medium">Model (optional)</label>
-            <ModelSelect value={model} onChange={setModel} placeholder="Default model" selectClassName="bg-muted/30" inputClassName="bg-muted/30" />
-            <p className="mt-1 text-xs text-muted-foreground">Search and choose model, or leave blank to use default.</p>
+            <label className="mb-1.5 block text-sm font-medium">
+              Model (optional)
+            </label>
+            <ModelSelect
+              value={model}
+              onChange={setModel}
+              placeholder="Default model"
+              selectClassName="bg-muted/30"
+              inputClassName="bg-muted/30"
+            />
+            <p className="mt-1 text-xs text-muted-foreground">
+              Search and choose model, or leave blank to use default.
+            </p>
           </div>
 
           {error && (
@@ -216,7 +246,11 @@ function CreateAgentModal({ onClose, onCreated }: { onClose: () => void; onCreat
   );
 }
 
-function DeleteConfirmModal({ agent, onClose, onDeleted }: { agent: AgentRecord; onClose: () => void; onDeleted: () => void }) {
+function DeleteConfirmModal({
+  agent,
+  onClose,
+  onDeleted,
+}: { agent: AgentRecord; onClose: () => void; onDeleted: () => void }) {
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState('');
 
@@ -224,9 +258,12 @@ function DeleteConfirmModal({ agent, onClose, onDeleted }: { agent: AgentRecord;
     setDeleting(true);
     setError('');
     try {
-      const res = await fetch(`/api/agents/${encodeURIComponent(agent.id)}`, { method: 'DELETE' });
+      const res = await fetch(`/api/agents/${encodeURIComponent(agent.id)}`, {
+        method: 'DELETE',
+      });
       const data = (await res.json().catch(() => ({}))) as DeleteAgentResponse;
-      if (!res.ok || data.ok !== true) throw new Error(data.error || 'Failed to delete');
+      if (!res.ok || data.ok !== true)
+        throw new Error(data.error || 'Failed to delete');
       onDeleted();
       onClose();
     } catch (err) {
@@ -242,10 +279,13 @@ function DeleteConfirmModal({ agent, onClose, onDeleted }: { agent: AgentRecord;
         <h2 className="text-lg font-semibold">Delete Agent</h2>
         <p className="mt-2 text-sm text-muted-foreground">
           Are you sure you want to delete <strong>{agentLabel(agent)}</strong>?
-          This will remove all workspace data for this agent and cannot be undone.
+          This will remove all workspace data for this agent and cannot be
+          undone.
         </p>
         {error && (
-          <div className="mt-3 rounded-xl border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>
+          <div className="mt-3 rounded-xl border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">
+            {error}
+          </div>
         )}
         <div className="mt-5 flex justify-end gap-2">
           <button
@@ -314,7 +354,8 @@ export function AgentsOverview() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Agents</h1>
           <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-            Manage your AI employees, inspect their current setup, and configure channels like Telegram.
+            Manage your AI employees, inspect their current setup, and configure
+            channels like Telegram.
           </p>
         </div>
         <button
@@ -327,42 +368,65 @@ export function AgentsOverview() {
       </div>
 
       {loading ? (
-        <div className="rounded-2xl border bg-card p-6 text-sm text-muted-foreground shadow-sm">Loading agents…</div>
+        <div className="rounded-2xl border bg-card p-6 text-sm text-muted-foreground shadow-sm">
+          Loading agents…
+        </div>
       ) : error ? (
-        <div className="rounded-2xl border border-red-300 bg-red-50 p-6 text-sm text-red-700 shadow-sm">{error}</div>
+        <div className="rounded-2xl border border-red-300 bg-red-50 p-6 text-sm text-red-700 shadow-sm">
+          {error}
+        </div>
       ) : agents.length === 0 ? (
         <div className="rounded-2xl border bg-card p-10 text-center shadow-sm">
           <div className="mb-3 text-4xl">🤖</div>
           <h3 className="text-base font-semibold">No agents yet</h3>
-          <p className="mt-2 text-sm text-muted-foreground">Click <strong>+ New Agent</strong> to create your first AI employee.</p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Click <strong>+ New Agent</strong> to create your first AI employee.
+          </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           {agents.map((agent) => (
-            <div key={agent.id} className="rounded-2xl border bg-card p-6 shadow-sm">
+            <div
+              key={agent.id}
+              className="rounded-2xl border bg-card p-6 shadow-sm"
+            >
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-full bg-primary/10">
                       {agent.identity?.avatar ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={agent.identity.avatar} alt={agentLabel(agent)} className="h-full w-full object-cover" />
+                        <img
+                          src={agent.identity.avatar}
+                          alt={agentLabel(agent)}
+                          className="h-full w-full object-cover"
+                        />
                       ) : (
-                        <div className="flex h-full w-full items-center justify-center text-base">{agentEmoji(agent)}</div>
+                        <div className="flex h-full w-full items-center justify-center text-base">
+                          {agentEmoji(agent)}
+                        </div>
                       )}
                     </div>
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <h2 className="truncate text-lg font-semibold">{agentLabel(agent)}</h2>
+                        <h2 className="truncate text-lg font-semibold">
+                          {agentLabel(agent)}
+                        </h2>
                         {agent.isDefault ? (
-                          <span className="rounded-full border px-2 py-0.5 text-xs text-muted-foreground">Default</span>
+                          <span className="rounded-full border px-2 py-0.5 text-xs text-muted-foreground">
+                            Default
+                          </span>
                         ) : null}
                       </div>
-                      <p className="mt-0.5 truncate text-xs text-muted-foreground">@{agent.id}</p>
+                      <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                        @{agent.id}
+                      </p>
                     </div>
                   </div>
                 </div>
-                <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${agent.enabled === false ? 'bg-gray-200 text-gray-600' : 'bg-emerald-500/10 text-emerald-600'}`}>
+                <span
+                  className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${agent.enabled === false ? 'bg-gray-200 text-gray-600' : 'bg-emerald-500/10 text-emerald-600'}`}
+                >
                   {agent.enabled === false ? 'disabled' : 'active'}
                 </span>
               </div>
@@ -370,15 +434,21 @@ export function AgentsOverview() {
               <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div className="rounded-xl border p-3">
                   <p className="text-xs text-muted-foreground">Role</p>
-                  <p className="mt-1 truncate text-sm font-medium">{agent.role || '—'}</p>
+                  <p className="mt-1 truncate text-sm font-medium">
+                    {agent.role || '—'}
+                  </p>
                 </div>
                 <div className="rounded-xl border p-3">
                   <p className="text-xs text-muted-foreground">Department</p>
-                  <p className="mt-1 truncate text-sm font-medium">{agent.department || '—'}</p>
+                  <p className="mt-1 truncate text-sm font-medium">
+                    {agent.department || '—'}
+                  </p>
                 </div>
                 <div className="rounded-xl border p-3">
                   <p className="text-xs text-muted-foreground">Model</p>
-                  <p className="mt-1 truncate text-sm font-medium">{agent.model || 'Default'}</p>
+                  <p className="mt-1 truncate text-sm font-medium">
+                    {agent.model || 'Default'}
+                  </p>
                 </div>
                 <div className="rounded-xl border p-3">
                   <p className="text-xs text-muted-foreground">Telegram</p>
@@ -395,7 +465,9 @@ export function AgentsOverview() {
               {agent.description ? (
                 <div className="mt-3 rounded-xl border p-3">
                   <p className="text-xs text-muted-foreground">Description</p>
-                  <p className="mt-1 text-sm font-medium text-foreground/80">{agent.description}</p>
+                  <p className="mt-1 text-sm font-medium text-foreground/80">
+                    {agent.description}
+                  </p>
                 </div>
               ) : null}
 
