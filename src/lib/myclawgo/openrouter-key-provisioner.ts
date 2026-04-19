@@ -6,8 +6,7 @@
  * injected into user containers — only the per-user sub-key is.
  *
  * Requires env:
- *   OPENROUTER_MANAGEMENT_KEY  — master key with management role
- *                                (different from OPENROUTER_API_KEY used by the platform)
+ *   OPENROUTER_API_KEY  — platform API key (also has management role for key provisioning)
  */
 
 import crypto from 'node:crypto';
@@ -28,8 +27,8 @@ const TIER_LIMIT_USD: Record<string, number> = {
 };
 
 function getManagementKey(): string {
-  const key = process.env.OPENROUTER_MANAGEMENT_KEY;
-  if (!key) throw new Error('OPENROUTER_MANAGEMENT_KEY is not configured');
+  const key = process.env.OPENROUTER_API_KEY;
+  if (!key) throw new Error('OPENROUTER_API_KEY is not configured');
   return key;
 }
 
@@ -90,9 +89,9 @@ async function orFetch(path: string, options: RequestInit) {
  * Called when a subscription activates or renews.
  */
 export async function provisionUserOpenrouterKey(userId: string): Promise<void> {
-  const managementKey = process.env.OPENROUTER_MANAGEMENT_KEY;
+  const managementKey = process.env.OPENROUTER_API_KEY;
   if (!managementKey) {
-    console.warn('[OR-Key] OPENROUTER_MANAGEMENT_KEY not set — skipping key provisioning');
+    console.warn('[OR-Key] OPENROUTER_API_KEY not set — skipping key provisioning');
     return;
   }
 
@@ -153,7 +152,7 @@ export async function provisionUserOpenrouterKey(userId: string): Promise<void> 
  * Called when subscription is cancelled/deleted.
  */
 export async function revokeUserOpenrouterKey(userId: string): Promise<void> {
-  const managementKey = process.env.OPENROUTER_MANAGEMENT_KEY;
+  const managementKey = process.env.OPENROUTER_API_KEY;
   if (!managementKey) return;
 
   try {
