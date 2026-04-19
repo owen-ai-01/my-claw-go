@@ -11,10 +11,6 @@ export enum Routes {
   Features = '/#features',
   Tutorial = '/#tutorial',
 
-  // New Feature Pages
-  VideoZuVideo = '/video-zu-video',
-  KIEffekt = '/ki-effekt',
-
   Pricing = '/pricing', // change to /#pricing if you want to use the pricing section in homepage
   Blog = '/blog',
   Docs = '/docs',

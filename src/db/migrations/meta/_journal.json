@@ -78,6 +78,20 @@
       "when": 1774165200000,
       "tag": "0010_user_chat_task",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1776565256461,
+      "tag": "0011_purple_fat_cobra",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1776591347783,
+      "tag": "0012_massive_vulture",
+      "breakpoints": true
     }
   ]
 }
