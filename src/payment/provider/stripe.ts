@@ -17,6 +17,7 @@ import {
 import { findPlanByPlanId, findPriceInPlan } from '@/lib/price-plan';
 import { sendNotification } from '@/notification/notification';
 import { warmupRuntimeForUser } from '@/lib/myclawgo/runtime-warmup';
+import { provisionUserOpenrouterKey, revokeUserOpenrouterKey } from '@/lib/myclawgo/openrouter-key-provisioner';
 import { desc, eq } from 'drizzle-orm';
 import { Stripe } from 'stripe';
 import {
@@ -815,6 +816,11 @@ export class StripeProvider implements PaymentProvider {
       // Process subscription benefits
       await this.processSubscriptionPurchase(userId, priceId);
 
+      // Provision per-user OpenRouter key (non-blocking, best-effort)
+      provisionUserOpenrouterKey(userId).catch((e) =>
+        console.error('[OR-Key] provision error after invoice.paid:', e)
+      );
+
       // Non-blocking runtime warmup after successful payment
       warmupRuntimeForUser(userId, 'subscription-paid');
     } catch (error) {
@@ -1078,6 +1084,14 @@ export class StripeProvider implements PaymentProvider {
 
     if (result.length > 0) {
       console.log('<< Marked payment record for subscription as canceled');
+      // Revoke per-user OpenRouter key (non-blocking, best-effort)
+      const userId = stripeSubscription.metadata?.userId
+        ?? await this.findUserIdByCustomerId(stripeSubscription.customer as string).catch(() => undefined);
+      if (userId) {
+        revokeUserOpenrouterKey(userId).catch((e) =>
+          console.error('[OR-Key] revoke error after subscription.deleted:', e)
+        );
+      }
     } else {
       console.warn('<< No payment record found for subscription deletion');
     }

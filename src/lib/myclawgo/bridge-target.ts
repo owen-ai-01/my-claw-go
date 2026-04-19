@@ -4,9 +4,11 @@ import { getSession } from './session-store';
 
 const execFileAsync = promisify(execFile);
 const BRIDGE_PORT = Number(process.env.MYCLAWGO_BRIDGE_PORT || 18080);
-const BRIDGE_TOKEN = process.env.MYCLAWGO_BRIDGE_TOKEN;
-if (!BRIDGE_TOKEN) {
-  throw new Error('MYCLAWGO_BRIDGE_TOKEN is not set. Bridge authentication is required.');
+
+function getBridgeToken(): string {
+  const token = process.env.MYCLAWGO_BRIDGE_TOKEN;
+  if (!token) throw new Error('MYCLAWGO_BRIDGE_TOKEN is not set. Bridge authentication is required.');
+  return token;
 }
 
 async function getContainerIp(containerName: string) {
@@ -43,7 +45,7 @@ export async function resolveUserBridgeTarget(userId: string) {
       bridge: {
         host: ip,
         port: BRIDGE_PORT,
-        token: BRIDGE_TOKEN,
+        token: getBridgeToken(),
         baseUrl: `http://${ip}:${BRIDGE_PORT}`,
       },
     };

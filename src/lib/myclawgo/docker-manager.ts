@@ -8,6 +8,7 @@ import { payment } from '@/db/schema';
 import { PaymentTypes } from '@/payment/types';
 import { and, desc, eq, or } from 'drizzle-orm';
 import { getCommandTimeoutMs, isSafeCommandInput } from './command-policy';
+import { getUserOpenrouterKey } from './openrouter-key-provisioner';
 import type { UserSession } from './session-store';
 
 const execFileAsync = promisify(execFile);
@@ -328,9 +329,13 @@ export async function ensureUserContainer(session: UserSession) {
       // continue and create
     }
 
-    const envs = ['OPENROUTER_API_KEY']
-      .map((k) => ({ key: k, value: process.env[k] }))
-      .filter((e) => Boolean(e.value));
+    // Prefer per-user provisioned key (spend-limited, safe to expose).
+    // Fall back to platform key only if provisioning has not run yet.
+    const userOrKey = await getUserOpenrouterKey(session.id);
+    const openrouterKey = userOrKey ?? process.env.OPENROUTER_API_KEY;
+    const envs: { key: string; value: string }[] = openrouterKey
+      ? [{ key: 'OPENROUTER_API_KEY', value: openrouterKey }]
+      : [];
 
     const bridgeToken = process.env.MYCLAWGO_BRIDGE_TOKEN;
     if (!bridgeToken) {

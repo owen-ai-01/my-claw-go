@@ -185,6 +185,18 @@ export const userAgentTelegramBot = pgTable("user_agent_telegram_bot", {
   userAgentTelegramBotWebhookPathIdx: index("user_agent_telegram_bot_webhook_path_idx").on(table.webhookPath),
 }));
 
+export const userOpenrouterKey = pgTable("user_openrouter_key", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => user.id, { onDelete: 'cascade' }),
+  keyHash: text("key_hash").notNull(),       // OpenRouter key hash, used for update/delete
+  keyEncrypted: text("key_encrypted").notNull(), // AES-256-GCM encrypted actual key
+  limitUsd: integer("limit_usd").notNull(),  // spending limit in whole USD
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  userOpenrouterKeyUserIdx: index("user_openrouter_key_user_idx").on(table.userId),
+}));
+
 export const userChatMessage = pgTable("user_chat_message", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull().references(() => user.id, { onDelete: 'cascade' }),
