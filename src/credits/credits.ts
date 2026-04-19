@@ -132,31 +132,28 @@ export async function addCredits({
     console.error('addCredits, invalid expire days', userId, expireDays);
     throw new Error('Invalid expire days');
   }
-  // Update user credit balance
+  // Update user credit balance atomically
   const db = await getDb();
-  const current = await db
-    .select()
+  const existing = await db
+    .select({ id: userCredit.id })
     .from(userCredit)
     .where(eq(userCredit.userId, userId))
     .limit(1);
-  // const newBalance = (current[0]?.currentCredits || 0) + amount;
-  if (current.length > 0) {
-    const newBalance = (current[0]?.currentCredits || 0) + amount;
-    console.log('addCredits, update user credit', userId, newBalance);
+  if (existing.length > 0) {
+    console.log('addCredits, update user credit atomically', userId, '+', amount);
     await db
       .update(userCredit)
       .set({
-        currentCredits: newBalance,
+        currentCredits: sql`${userCredit.currentCredits} + ${amount}`,
         updatedAt: new Date(),
       })
       .where(eq(userCredit.userId, userId));
   } else {
-    const newBalance = amount;
-    console.log('addCredits, insert user credit', userId, newBalance);
+    console.log('addCredits, insert user credit', userId, amount);
     await db.insert(userCredit).values({
       id: randomUUID(),
       userId,
-      currentCredits: newBalance,
+      currentCredits: amount,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -286,16 +283,10 @@ export async function consumeCredits({
       .where(eq(creditTransaction.id, transaction.id));
     remainingToDeduct -= deductFromThis;
   }
-  // Update balance
-  const current = await db
-    .select()
-    .from(userCredit)
-    .where(eq(userCredit.userId, userId))
-    .limit(1);
-  const newBalance = (current[0]?.currentCredits || 0) - amount;
+  // Update balance atomically
   await db
     .update(userCredit)
-    .set({ currentCredits: newBalance, updatedAt: new Date() })
+    .set({ currentCredits: sql`${userCredit.currentCredits} - ${amount}`, updatedAt: new Date() })
     .where(eq(userCredit.userId, userId));
   // Write usage record
   await saveCreditTransaction({

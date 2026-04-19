@@ -24,7 +24,9 @@ async function readAll(): Promise<ActiveChatMap> {
 
 async function writeAll(data: ActiveChatMap) {
   await ensureBase();
-  await fs.writeFile(ACTIVE_CHAT_FILE, JSON.stringify(data, null, 2), 'utf8');
+  const tmpFile = `${ACTIVE_CHAT_FILE}.tmp`;
+  await fs.writeFile(tmpFile, JSON.stringify(data, null, 2), 'utf8');
+  await fs.rename(tmpFile, ACTIVE_CHAT_FILE);
 }
 
 export async function setActiveChatAgent(userId: string, agentId: string) {
