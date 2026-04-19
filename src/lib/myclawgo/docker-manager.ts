@@ -211,6 +211,35 @@ async function ensureSessionPassword(containerName: string) {
   return password;
 }
 
+/**
+ * Write the per-user OpenRouter API key into auth-profiles.json inside the container.
+ * Called every time the container starts so the key stays up-to-date.
+ */
+async function updateContainerAuthProfile(
+  containerName: string,
+  apiKey: string
+) {
+  const authProfilesPath =
+    '/home/openclaw/.openclaw/agents/main/agent/auth-profiles.json';
+  const profile = {
+    version: 1,
+    profiles: {
+      'openrouter:default': {
+        type: 'api_key',
+        provider: 'openrouter',
+        key: apiKey,
+      },
+    },
+    lastGood: { openrouter: 'openrouter:default' },
+    usageStats: {},
+  };
+  const b64 = Buffer.from(JSON.stringify(profile, null, 2)).toString('base64');
+  await dockerExec(
+    containerName,
+    `printf '%s' ${JSON.stringify(b64)} | base64 -d > ${authProfilesPath} && chown openclaw:openclaw ${authProfilesPath}`
+  );
+}
+
 async function prepareSeededRuntime(containerName: string) {
   const sessionPassword = await ensureSessionPassword(containerName);
 
@@ -310,6 +339,11 @@ export async function ensureUserContainer(session: UserSession) {
     console.log(
       `[MyClawGo] Ensuring container ${containerName} for user ${session.id}`
     );
+
+    // Fetch per-user OR key upfront — needed in both the "existing" and "new" paths.
+    const userOrKey = await getUserOpenrouterKey(session.id);
+    const openrouterKey = userOrKey ?? process.env.OPENROUTER_API_KEY;
+
     try {
       await execFileAsync('docker', ['start', containerName]);
       const checkCmd =
@@ -330,16 +364,22 @@ export async function ensureUserContainer(session: UserSession) {
         return { ok: true as const, mode: 'created' as const };
       }
       await prepareSeededRuntime(containerName);
+      if (openrouterKey) {
+        await updateContainerAuthProfile(containerName, openrouterKey).catch(
+          (e) =>
+            console.warn(
+              '[MyClawGo] Failed to update auth-profiles.json (existing container):',
+              e
+            )
+        );
+      }
       await ensureGatewayForContainer(containerName).catch(() => {});
       return { ok: true as const, mode: 'started-existing' as const };
     } catch {
       // continue and create
     }
 
-    // Prefer per-user provisioned key (spend-limited, safe to expose).
-    // Fall back to platform key only if provisioning has not run yet.
-    const userOrKey = await getUserOpenrouterKey(session.id);
-    const openrouterKey = userOrKey ?? process.env.OPENROUTER_API_KEY;
+    // openrouterKey already resolved above.
     const envs: { key: string; value: string }[] = openrouterKey
       ? [{ key: 'OPENROUTER_API_KEY', value: openrouterKey }]
       : [];
@@ -421,6 +461,15 @@ export async function ensureUserContainer(session: UserSession) {
 
     try {
       await prepareSeededRuntime(containerName);
+      if (openrouterKey) {
+        await updateContainerAuthProfile(containerName, openrouterKey).catch(
+          (e) =>
+            console.warn(
+              '[MyClawGo] Failed to update auth-profiles.json (new container):',
+              e
+            )
+        );
+      }
       await ensureGatewayForContainer(containerName).catch(() => {});
       return { ok: true as const, mode: 'created' as const };
     } catch (error: unknown) {
