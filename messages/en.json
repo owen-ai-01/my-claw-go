@@ -231,7 +231,7 @@
         },
         "item-5": {
           "question": "What server resources does my workspace get?",
-          "answer": "Each plan includes a dedicated private workspace with real server resources:\n• Pro: 0.5 vCPU / 1 GB RAM / 10 GB disk\n• Premium: 1 vCPU / 2 GB RAM / 20 GB disk\n• Ultra: 4 vCPU / 8 GB RAM / 50 GB disk\n\nYou get a real isolated cloud environment — no sharing with other users."
+          "answer": "Each plan includes a dedicated private workspace with real server resources:\n• Pro: 1 vCPU / 2 GB RAM / 20 GB disk\n• Premium: 2 vCPU / 4 GB RAM / 40 GB disk\n• Ultra: 4 vCPU / 8 GB RAM / 80 GB disk\n\nYou get a real isolated cloud environment — no sharing with other users."
         },
         "item-6": {
           "question": "Can I cancel my subscription at any time?",

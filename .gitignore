@@ -46,6 +46,7 @@ certificates
 
 # kiro
 .kiro
+.vscode/
 
 # typescript
 *.tsbuildinfo
