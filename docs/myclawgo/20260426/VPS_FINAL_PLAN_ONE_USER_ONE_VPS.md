@@ -857,7 +857,7 @@ ENABLE_PROVISION_WORKER=true
 PROVISION_WORKER_INTERVAL_MS=30000
 
 # ── VPS 生命周期 ───────────────────────────────────────────────────
-VPS_DATA_RETENTION_DAYS=7        # 关机后保留数据的天数，超过后删除 VPS
+VPS_DATA_RETENTION_DAYS=7        # 订阅到期关机后保留 N 天，超时自动删除 VPS
 ```
 
 ---

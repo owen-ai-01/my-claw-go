@@ -481,10 +481,9 @@ ENABLE_PROVISION_WORKER=true
 PROVISION_WORKER_INTERVAL_MS=30000
 
 # ────────────────────────────────────────────────────────────────────────
-# VPS 生命周期（用户取消后的宽限期）
+# VPS 生命周期：订阅到期后关机，保留 N 天数据，超时自动删除 VPS
 # ────────────────────────────────────────────────────────────────────────
-VPS_GRACE_PERIOD_DAYS=7
-VPS_DELETE_AFTER_DAYS=30
+VPS_DATA_RETENTION_DAYS=7
 ```
 
 **生成随机密钥：**
