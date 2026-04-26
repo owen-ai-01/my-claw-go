@@ -137,10 +137,30 @@ Firewall 控制每台用户 VPS 允许哪些 IP 访问哪些端口。
 
 ### 3.4 创建并记录 Firewall ID
 
-点击 **Create Firewall** → 记录显示的 **Firewall ID**（数字）
+点击 **Create Firewall**。
+
+> **注意**：Hetzner Console 只显示 Firewall 名称，不显示 ID。通过 API 查询：
+
+```bash
+curl -s -H "Authorization: Bearer <你的API_TOKEN>" \
+  https://api.hetzner.cloud/v1/firewalls | python3 -m json.tool
+```
+
+找到你的 Firewall，记录 `id` 字段：
+
+```json
+{
+  "firewalls": [
+    {
+      "id": 56789012,
+      "name": "myclawgo-user-vps-fw"
+    }
+  ]
+}
+```
 
 ```
-HETZNER_FIREWALL_ID = <Firewall ID>
+HETZNER_FIREWALL_ID = <id 字段的数字>
 ```
 
 ---
