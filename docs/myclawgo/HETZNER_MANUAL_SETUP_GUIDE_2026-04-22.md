@@ -76,7 +76,7 @@ ssh-keygen -t ed25519 -C "myclawgo-runtime" -f ~/.ssh/myclawgo_runtime
 1. `myclawgo-runtime-01` 项目 → **Security** → **SSH Keys**
 2. 点击 **Add SSH Key**
 3. 填写：
-   - **Name**：`myclawgo-runtime-deploy`
+   - **Name**：`myclawgo-runtime`
    - **Public Key**：粘贴 `~/.ssh/myclawgo_runtime.pub` 全部内容
 4. 点击 **Add SSH Key**
 
@@ -95,7 +95,7 @@ curl -s -H "Authorization: Bearer <你的API_TOKEN>" \
   "ssh_keys": [
     {
       "id": 12345678,
-      "name": "myclawgo-runtime-deploy",
+      "name": "myclawgo-runtime",
       "fingerprint": "..."
     }
   ]
