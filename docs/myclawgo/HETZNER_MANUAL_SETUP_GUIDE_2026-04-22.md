@@ -79,10 +79,33 @@ ssh-keygen -t ed25519 -C "myclawgo-runtime" -f ~/.ssh/myclawgo_runtime
    - **Name**：`myclawgo-runtime-deploy`
    - **Public Key**：粘贴 `~/.ssh/myclawgo_runtime.pub` 全部内容
 4. 点击 **Add SSH Key**
-5. 记录显示的 **SSH Key ID**（数字，如 `12345678`）
+
+> **注意**：Hetzner Console 上传完成后只显示 Name 和 Fingerprint，**不显示 SSH Key ID**。  
+> 需要通过 API 查询，运行以下命令（替换成步骤 1 的 Token）：
+
+```bash
+curl -s -H "Authorization: Bearer <你的API_TOKEN>" \
+  https://api.hetzner.cloud/v1/ssh_keys | python3 -m json.tool
+```
+
+返回结果中找到你的 key，`id` 字段就是 SSH Key ID：
+
+```json
+{
+  "ssh_keys": [
+    {
+      "id": 12345678,
+      "name": "myclawgo-runtime-deploy",
+      "fingerprint": "..."
+    }
+  ]
+}
+```
+
+记录这个数字：
 
 ```
-HETZNER_SSH_KEY_ID = <SSH Key ID>
+HETZNER_SSH_KEY_ID = <id 字段的数字>
 ```
 
 ---
