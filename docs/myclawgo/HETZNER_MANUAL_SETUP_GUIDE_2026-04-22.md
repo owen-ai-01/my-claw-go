@@ -15,7 +15,7 @@
 | 3 | 创建 Firewall（公网访问规则） | Phase 2 前 | 5 分钟 |
 | 4 | 确认 Control Plane 公网 IP | Phase 1 开始前 | 1 分钟 |
 | 5 | 制作 Snapshot（强烈推荐，节省初始化时间） | Phase 2 前 | 30–60 分钟 |
-| SSH | Control Plane SSH 私钥配置（SCP 推送 Bridge 用） | Phase 2 前 | 2 分钟 |
+| — | SSH 私钥已在 `~/.ssh/myclawgo_runtime`，无需额外操作 | — | — |
 | 6 | 填写 .env 环境变量 | Phase 2 前 | 5 分钟 |
 | 7 | 申请配额提升 | 现在就做 | 5 分钟 |
 
@@ -348,26 +348,20 @@ Snapshot 完成后删掉模板机，只保留 Snapshot（费用极低）。
 
 ---
 
-## Control Plane SSH 私钥配置（一次性操作）
+## Control Plane SSH 私钥说明
 
-Control Plane（SaaS VPS）需要存放 SSH 私钥，才能主动 SSH/SCP 进入用户 VPS。
+步骤 2 生成的密钥对（`~/.ssh/myclawgo_runtime`）**已经在 SaaS VPS 上**，Control Plane 直接使用这个路径即可，无需额外操作。
 
-在 **SaaS 主机**上执行：
+所有脚本和代码中 SSH 私钥路径统一为：
+
+```
+/home/openclaw/.ssh/myclawgo_runtime
+```
+
+验证可以 SSH 进用户 VPS（用模板机测试，替换 IP）：
 
 ```bash
-# 创建配置目录
-mkdir -p /etc/myclawgo
-chmod 700 /etc/myclawgo
-
-# 将步骤 2 生成的私钥复制到 Control Plane（如果私钥在本地电脑，scp 上传）
-# 在本地电脑执行：
-# scp ~/.ssh/myclawgo_runtime root@46.225.210.174:/etc/myclawgo/runtime-key
-
-# 设置正确权限
-chmod 600 /etc/myclawgo/runtime-key
-
-# 验证可以 SSH 进用户 VPS（替换 IP）
-ssh -i /etc/myclawgo/runtime-key -o StrictHostKeyChecking=no root@<用户VPS IP> "echo ok"
+ssh -i ~/.ssh/myclawgo_runtime -o StrictHostKeyChecking=no root@<用户VPS IP> "echo ok"
 ```
 
 ---
@@ -396,11 +390,10 @@ pnpm build
 ```bash
 #!/bin/bash
 # scripts/update-bridge.sh
-SSH_KEY="/etc/myclawgo/runtime-key"
+SSH_KEY="/home/openclaw/.ssh/myclawgo_runtime"
 BRIDGE_SRC="/home/openclaw/project/my-claw-go/bridge"
 
-# 从 DB 查所有 ready 状态的 VPS IP
-IPS=$(psql $DATABASE_URL -t -c \
+IPS=$(psql $DATABASE_URL -t -A -c \
   "SELECT \"publicIp\" FROM \"runtimeHost\" WHERE status='ready'")
 
 for IP in $IPS; do
@@ -415,6 +408,20 @@ for IP in $IPS; do
 done
 echo "All VPS updated."
 ```
+
+### 更新 OpenClaw（已有用户 VPS）
+
+OpenClaw 是 npm 包，直接在各 VPS 上远程执行 `npm install -g` 即可：
+
+```bash
+# 更新到最新版
+bash scripts/update-openclaw.sh
+
+# 或指定版本
+bash scripts/update-openclaw.sh 2026.4.24
+```
+
+脚本会自动查 DB 获取所有 `ready` 状态的 VPS，逐台更新并重启 `openclaw-gateway` 服务。新创建的用户 VPS 在制作 Snapshot 时已预装，无需额外操作。
 
 ---
 
@@ -525,7 +532,7 @@ Thank you for your support.
   - [ ] 所有其他入站流量拒绝
 - [ ] Control Plane 公网 IP 已确认
 - [ ] Snapshot 已制作（可选），有 Snapshot ID
-- [ ] Control Plane SSH 私钥已复制到 `/etc/myclawgo/runtime-key`，权限 `600`
+- [ ] SSH 私钥确认存在于 `~/.ssh/myclawgo_runtime`（步骤 2 生成时已在此）
 - [ ] `.env` 已填写所有变量（`HETZNER_PROJECTS` JSON + `CONTROL_PLANE_PUBLIC_IP` + `RUNTIME_REGISTER_TOKEN_SECRET`）
 - [ ] 已向 Hetzner Support 发送配额提升申请
 

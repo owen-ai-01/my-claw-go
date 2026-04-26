@@ -474,7 +474,7 @@ Snapshot 包含（很少变化）：
 **Snapshot 需要重做的情况**：OpenClaw 新版本、Node.js 大版本升级、systemd 文件变更。Bridge 代码更新**不需要**重做 Snapshot。
 
 **Control Plane 需要**：
-- SSH 私钥存放在 `/etc/myclawgo/runtime-key`（与上传到 Hetzner 的公钥配对）
+- SSH 私钥在 `/home/openclaw/.ssh/myclawgo_runtime`（生成时已在此，与上传到 Hetzner 的公钥配对）
 - 构建好的 Bridge 存放在 `/home/openclaw/project/my-claw-go/bridge/dist/`
 
 **systemd 服务文件（预置在 Snapshot 中）：**
@@ -567,7 +567,7 @@ export async function POST(req: Request) {
 }
 
 async function deployBridgeToVps(publicIp: string, bridgeToken: string) {
-  const SSH_KEY = '/etc/myclawgo/runtime-key';
+  const SSH_KEY = '/home/openclaw/.ssh/myclawgo_runtime';
   const BRIDGE_SRC = '/home/openclaw/project/my-claw-go/bridge';
 
   // SCP 推送构建产物
@@ -614,7 +614,7 @@ pnpm build
 ```bash
 #!/bin/bash
 # scripts/update-bridge.sh（在 SaaS VPS 上执行）
-SSH_KEY="/etc/myclawgo/runtime-key"
+SSH_KEY="/home/openclaw/.ssh/myclawgo_runtime"
 BRIDGE_SRC="/home/openclaw/project/my-claw-go/bridge"
 
 # 从 DB 查所有 ready 状态的 VPS IP
