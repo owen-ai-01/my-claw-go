@@ -494,6 +494,42 @@ openssl rand -hex 32
 
 ---
 
+## 步骤 6.5：将项目信息写入数据库
+
+Provision Worker 从 **数据库** 的 `hetznerProject` 表读取项目配置（不直接读 `.env`）。
+
+**好消息**：启动时会自动同步。只要 `ENABLE_PROVISION_WORKER=true` 且 `HETZNER_PROJECTS` 已填好，  
+`src/instrumentation.ts` 在 Next.js 启动时会自动把 `HETZNER_PROJECTS` JSON 的每条记录 upsert 到数据库。  
+**无需手动执行任何 SQL**，重启一次即可。
+
+如果你需要手动插入（调试或不重启的情况），以下是等价的 SQL：
+
+```sql
+-- 替换 <...> 里的值为步骤 1–5 获取的实际值
+INSERT INTO "hetznerProject" (
+  id, name, api_token, region, max_servers,
+  ssh_key_id, firewall_id, snapshot_id, status
+) VALUES (
+  'proj-01',
+  'myclawgo-runtime-01',
+  '<步骤 1 的 API Token>',
+  'fsn1',
+  90,
+  <步骤 2 的 SSH Key ID，整数>,
+  <步骤 3 的 Firewall ID，整数>,
+  <步骤 5 的 Snapshot ID，整数，没做就写 NULL>,
+  'active'
+)
+ON CONFLICT (id) DO UPDATE SET
+  api_token   = EXCLUDED.api_token,
+  snapshot_id = EXCLUDED.snapshot_id,
+  updated_at  = now();
+```
+
+新增第二个项目时，再 INSERT 一行（`id='proj-02'`，对应 `myclawgo-runtime-02` 的值），然后在 `.env` 的 `HETZNER_PROJECTS` 数组中追加对应项，重启后自动同步。
+
+---
+
 ## 步骤 7：申请配额提升（现在就做）
 
 **每个 Hetzner 项目默认 Server 上限约 10 台**，100 个用户就不够用了。  
@@ -551,6 +587,7 @@ Thank you for your support.
 - [ ] Snapshot 已制作（可选），有 Snapshot ID
 - [ ] SSH 私钥确认存在于 `~/.ssh/myclawgo_runtime`（步骤 2 生成时已在此）
 - [ ] `.env` 已填写所有变量（`HETZNER_PROJECTS` JSON + `CONTROL_PLANE_PUBLIC_IP` + `RUNTIME_REGISTER_TOKEN_SECRET`）
+- [ ] Next.js 已重启，`hetznerProject` 表已自动同步（日志中可见 `Synced N Hetzner project(s)`）
 - [ ] 已向 Hetzner Support 发送配额提升申请
 
 ---
