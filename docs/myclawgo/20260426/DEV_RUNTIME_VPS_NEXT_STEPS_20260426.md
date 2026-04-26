@@ -161,3 +161,103 @@ pnpm exec biome check src/instrumentation.ts src/instrumentation-node.ts src/app
 cd bridge && pnpm build
 cd .. && pnpm build
 ```
+
+## 9. 2026-04-26 测试支付排查记录
+
+测试环境已发生一次注册并支付：
+
+- 用户：`ouyanghuiping@gmail.com`
+- user id：`afQ0mqQandzv6BlkXeaJVdBdEd7KXMiE`
+- payment status：`active`
+- price id：`price_1TD3sMPePnrWPNPxmKLfOVsA`
+- payment created_at：`2026-04-26 11:52:25.026`
+
+排查结果：
+
+```text
+payment 表：已有 active subscription
+runtimeProvisionJob：0 rows
+runtimeHost：0 rows
+runtimeAllocation：0 rows
+```
+
+结论：这次支付没有创建 VPS，不是 Hetzner API 创建失败，而是当时 webhook 没有写入 `runtimeProvisionJob`。
+
+原因：
+
+- `my-claw-go-test` PM2 进程当时已运行 6 天，还是旧构建，没有加载 VPS provision 最新代码。
+- 该进程环境里没有 `NEXT_PUBLIC_APP_URL`。
+- 该进程环境里也没有 `HETZNER_PROJECTS`。
+
+已处理：
+
+- 测试环境 `.env` 已补：
+
+```env
+NEXT_PUBLIC_APP_URL=https://test.myclawgo.com
+```
+
+- 已执行：
+
+```bash
+pm2 restart my-claw-go-test --update-env
+```
+
+- 重启后日志已确认：
+
+```text
+[provision] Worker started, interval: 30000ms
+```
+
+当前状态：
+
+```text
+runtimeProvisionJob pending_jobs = 0
+runtimeHost hosts = 0
+```
+
+下一步给后续模型：
+
+1. 对后续新测试支付，直接观察 `runtimeProvisionJob` 是否出现新记录。
+2. 对这次已经支付的用户，需要手动补一条 provision job，才会创建测试 VPS。
+3. 手动补 job 会真实调用 Hetzner 创建 VPS，执行前确认只针对测试环境。
+
+可用于补队列的 SQL 模板：
+
+```sql
+INSERT INTO "runtimeProvisionJob" (
+  id, user_id, plan, trigger_type, status, attempt_count, created_at, updated_at
+) VALUES (
+  gen_random_uuid()::text,
+  'afQ0mqQandzv6BlkXeaJVdBdEd7KXMiE',
+  'pro',
+  'manual_retry',
+  'pending',
+  0,
+  now(),
+  now()
+);
+
+INSERT INTO "runtimeAllocation" (
+  id, user_id, plan, status, created_at, updated_at
+) VALUES (
+  gen_random_uuid()::text,
+  'afQ0mqQandzv6BlkXeaJVdBdEd7KXMiE',
+  'pro',
+  'pending',
+  now(),
+  now()
+)
+ON CONFLICT ("user_id") DO UPDATE SET
+  plan = EXCLUDED.plan,
+  status = 'pending',
+  updated_at = now();
+```
+
+补完后 worker 最多 30 秒内应开始处理：
+
+```sql
+SELECT status, trigger_type, attempt_count, last_error, created_at
+FROM "runtimeProvisionJob"
+ORDER BY created_at DESC;
+```

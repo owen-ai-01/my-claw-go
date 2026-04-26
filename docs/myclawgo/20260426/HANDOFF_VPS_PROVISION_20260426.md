@@ -5,6 +5,8 @@
 
 > 2026-04-26 更新：本文早期版本写的是 `hetznerProject` 表手动插入方案。当前实现已改为从 `HETZNER_PROJECTS` 环境变量读取 Hetzner 项目配置，不再需要 `hetznerProject` 表，也不要把 Hetzner API Token 写进数据库。最新开发执行说明见 `DEV_RUNTIME_VPS_NEXT_STEPS_20260426.md`，测试库 SQL 见 `dev-runtime-vps-sql.sql`。
 
+> 2026-04-26 测试排查更新：测试用户 `ouyanghuiping@gmail.com` 已支付成功，`payment.status = active`，但 `runtimeProvisionJob/runtimeHost/runtimeAllocation` 都为空。原因是支付时 `my-claw-go-test` 仍运行旧构建且 PM2 环境没有 `NEXT_PUBLIC_APP_URL`/`HETZNER_PROJECTS`。已补 `NEXT_PUBLIC_APP_URL=https://test.myclawgo.com` 并执行 `pm2 restart my-claw-go-test --update-env`，日志已出现 `[provision] Worker started, interval: 30000ms`。这次已支付用户需要手动补 `runtimeProvisionJob` 后才会创建测试 VPS；具体 SQL 见 `DEV_RUNTIME_VPS_NEXT_STEPS_20260426.md` 第 9 节。
+
 ---
 
 ## 一、本阶段完成的工作
