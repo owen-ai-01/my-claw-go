@@ -18,7 +18,7 @@ import {
   provisionUserOpenrouterKey,
   revokeUserOpenrouterKey,
 } from '@/lib/myclawgo/openrouter-key-provisioner';
-import { warmupRuntimeForUser } from '@/lib/myclawgo/runtime-warmup';
+import { queueRuntimeProvision, stopRuntimeForUser } from '@/lib/myclawgo/runtime-provision';
 import { findPlanByPlanId, findPriceInPlan } from '@/lib/price-plan';
 import { sendNotification } from '@/notification/notification';
 import { desc, eq } from 'drizzle-orm';
@@ -824,8 +824,10 @@ export class StripeProvider implements PaymentProvider {
         console.error('[OR-Key] provision error after invoice.paid:', e)
       );
 
-      // Non-blocking runtime warmup after successful payment
-      warmupRuntimeForUser(userId, 'subscription-paid');
+      // Queue VPS provision job (non-blocking)
+      queueRuntimeProvision(userId, priceId).catch((e) =>
+        console.error('[provision] queue error after invoice.paid:', e)
+      );
     } catch (error) {
       console.error('<< Update subscription payment error:', error);
       throw error;
@@ -893,11 +895,12 @@ export class StripeProvider implements PaymentProvider {
         if (isCreditPurchase) {
           // Process credit purchase
           await this.processCreditPurchase(invoice, paymentRecord, metadata);
-          warmupRuntimeForUser(paymentRecord.userId, 'credit-paid');
         } else {
           // Process lifetime plan purchase
           await this.processLifetimePlanPurchase(invoice, paymentRecord);
-          warmupRuntimeForUser(paymentRecord.userId, 'lifetime-paid');
+          queueRuntimeProvision(paymentRecord.userId, null).catch((e) =>
+            console.error('[provision] queue error after lifetime purchase:', e)
+          );
         }
       }
     } catch (error) {
@@ -1087,7 +1090,6 @@ export class StripeProvider implements PaymentProvider {
 
     if (result.length > 0) {
       console.log('<< Marked payment record for subscription as canceled');
-      // Revoke per-user OpenRouter key (non-blocking, best-effort)
       const userId =
         stripeSubscription.metadata?.userId ??
         (await this.findUserIdByCustomerId(
@@ -1096,6 +1098,10 @@ export class StripeProvider implements PaymentProvider {
       if (userId) {
         revokeUserOpenrouterKey(userId).catch((e) =>
           console.error('[OR-Key] revoke error after subscription.deleted:', e)
+        );
+        // Poweroff user VPS (non-blocking)
+        stopRuntimeForUser(userId).catch((e) =>
+          console.error('[provision] poweroff error after subscription.deleted:', e)
         );
       }
     } else {

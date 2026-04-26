@@ -1,64 +1,41 @@
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
+import { eq } from 'drizzle-orm';
+import { getDb } from '@/db';
+import { runtimeAllocation } from '@/db/schema';
 import { auth } from '@/lib/auth';
-import { getSession } from '@/lib/myclawgo/session-store';
 import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 
-const execFileAsync = promisify(execFile);
-
-async function dockerContainerExists(containerName: string) {
-  try {
-    const { stdout } = await execFileAsync('docker', [
-      'ps',
-      '-a',
-      '--format',
-      '{{.Names}}',
-    ]);
-    return stdout
-      .split('\n')
-      .map((line) => line.trim())
-      .includes(containerName);
-  } catch {
-    return false;
-  }
-}
-
-async function runtimeLooksReady(userId: string) {
-  const session = await getSession(userId);
-  if (!session) {
-    return {
-      state: 'not_created' as const,
-      reason: 'missing-session',
-    };
-  }
-
-  const containerExists = await dockerContainerExists(session.containerName);
-  if (!containerExists) {
-    return {
-      state: 'not_created' as const,
-      reason: 'missing-container',
-      containerName: session.containerName,
-    };
-  }
-
-  return {
-    state: 'ready' as const,
-    reason: 'runtime-available',
-    containerName: session.containerName,
-  };
-}
+const PROVISIONING_STATUSES = new Set(['pending', 'buying_vps', 'waiting_init']);
 
 export async function GET() {
   const session = await auth.api.getSession({ headers: await headers() });
   const userId = session?.user?.id;
   if (!userId) {
-    return NextResponse.json(
-      { ok: false, error: 'Unauthorized' },
-      { status: 401 }
-    );
+    return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
   }
 
-  const status = await runtimeLooksReady(userId);
-  return NextResponse.json({ ok: true, ...status });
+  const db = await getDb();
+  const [alloc] = await db
+    .select()
+    .from(runtimeAllocation)
+    .where(eq(runtimeAllocation.userId, userId))
+    .limit(1);
+
+  if (!alloc) {
+    return NextResponse.json({ ok: true, state: 'not_created', reason: 'no-allocation' });
+  }
+
+  if (alloc.status === 'ready') {
+    return NextResponse.json({ ok: true, state: 'ready', reason: 'runtime-available' });
+  }
+  if (alloc.status === 'stopped') {
+    return NextResponse.json({ ok: true, state: 'stopped', reason: 'subscription-expired' });
+  }
+  if (alloc.status === 'failed') {
+    return NextResponse.json({ ok: true, state: 'failed', reason: 'provision-failed' });
+  }
+  if (PROVISIONING_STATUSES.has(alloc.status)) {
+    return NextResponse.json({ ok: true, state: 'provisioning', reason: alloc.status });
+  }
+  return NextResponse.json({ ok: true, state: 'provisioning', reason: alloc.status });
 }

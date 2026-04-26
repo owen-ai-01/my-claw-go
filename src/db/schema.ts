@@ -282,3 +282,67 @@ export const userChannelBinding = pgTable("user_channel_binding", {
   userChannelBindingChatIdx: index("user_channel_binding_chat_idx").on(table.externalChatId),
   userChannelBindingBindCodeIdx: index("user_channel_binding_bind_code_idx").on(table.bindCode),
 }));
+
+// ── VPS Runtime Tables ─────────────────────────────────────────────────────
+
+export const hetznerProject = pgTable('hetznerProject', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  apiToken: text('api_token').notNull(),
+  region: text('region').notNull().default('fsn1'),
+  maxServers: integer('max_servers').notNull().default(90),
+  sshKeyId: integer('ssh_key_id').notNull().default(0),
+  firewallId: integer('firewall_id').notNull().default(0),
+  snapshotId: integer('snapshot_id'),
+  status: text('status').notNull().default('active'), // active | full | disabled
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+});
+
+export const runtimeHost = pgTable('runtimeHost', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').unique().references(() => user.id),
+  projectId: text('project_id').references(() => hetznerProject.id),
+  hetznerServerId: text('hetzner_server_id'),
+  name: text('name').notNull(),
+  plan: text('plan').notNull(), // pro | premium | ultra
+  serverType: text('server_type').notNull(), // cx23 | cx33 | cx53
+  region: text('region').notNull().default('fsn1'),
+  publicIp: text('public_ip'),
+  bridgeBaseUrl: text('bridge_base_url'),
+  bridgeToken: text('bridge_token'),
+  status: text('status').notNull().default('pending'),
+  // pending | buying_vps | waiting_init | ready | stopping | stopped | deleting | deleted | failed
+  stoppedAt: timestamp('stopped_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+});
+
+export const runtimeAllocation = pgTable('runtimeAllocation', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull().unique().references(() => user.id),
+  hostId: text('host_id').references(() => runtimeHost.id),
+  plan: text('plan').notNull(),
+  bridgeBaseUrl: text('bridge_base_url'),
+  bridgeToken: text('bridge_token'),
+  status: text('status').notNull().default('pending'),
+  // pending | ready | stopped | failed
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+});
+
+export const runtimeProvisionJob = pgTable('runtimeProvisionJob', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull().references(() => user.id),
+  plan: text('plan').notNull(),
+  triggerType: text('trigger_type').notNull(),
+  // payment_new | payment_upgrade | payment_resubscribe | manual_retry
+  status: text('status').notNull().default('pending'),
+  // pending | buying_vps | waiting_init | done | failed
+  projectId: text('project_id'),
+  hetznerServerId: text('hetzner_server_id'),
+  lastError: text('last_error'),
+  attemptCount: integer('attempt_count').default(0),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+});
