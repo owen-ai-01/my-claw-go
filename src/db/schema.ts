@@ -285,24 +285,10 @@ export const userChannelBinding = pgTable("user_channel_binding", {
 
 // ── VPS Runtime Tables ─────────────────────────────────────────────────────
 
-export const hetznerProject = pgTable('hetznerProject', {
-  id: text('id').primaryKey(),
-  name: text('name').notNull(),
-  apiToken: text('api_token').notNull(),
-  region: text('region').notNull().default('fsn1'),
-  maxServers: integer('max_servers').notNull().default(90),
-  sshKeyId: integer('ssh_key_id').notNull().default(0),
-  firewallId: integer('firewall_id').notNull().default(0),
-  snapshotId: integer('snapshot_id'),
-  status: text('status').notNull().default('active'), // active | full | disabled
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
-  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
-});
-
 export const runtimeHost = pgTable('runtimeHost', {
   id: text('id').primaryKey(),
   userId: text('user_id').unique().references(() => user.id),
-  projectId: text('project_id').references(() => hetznerProject.id),
+  projectId: text('project_id'),
   hetznerServerId: text('hetzner_server_id'),
   name: text('name').notNull(),
   plan: text('plan').notNull(), // pro | premium | ultra

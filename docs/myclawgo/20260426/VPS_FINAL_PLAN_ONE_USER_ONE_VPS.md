@@ -3,6 +3,8 @@
 > 版本：2026-04-26 v4  
 > 定位：可直接开发的技术方案，包含架构决策、DB 设计、代码改造清单、两阶段开发计划。
 
+> 2026-04-26 实现更新：Hetzner 项目配置不再使用 `hetznerProject` 数据库表，改为从 `HETZNER_PROJECTS` 环境变量读取。数据库只保留 `runtimeHost.project_id` 字符串用于记录项目归属；不要把 Hetzner API Token 写进数据库。最新开发执行说明见 `DEV_RUNTIME_VPS_NEXT_STEPS_20260426.md`。
+
 ---
 
 ## 目录

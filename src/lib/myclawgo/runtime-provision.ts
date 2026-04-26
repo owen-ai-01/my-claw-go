@@ -1,11 +1,18 @@
 import { randomUUID } from 'crypto';
-import { and, eq } from 'drizzle-orm';
 import { getDb } from '@/db';
-import { hetznerProject, runtimeAllocation, runtimeHost, runtimeProvisionJob } from '@/db/schema';
+import {
+  runtimeAllocation,
+  runtimeHost,
+  runtimeProvisionJob,
+} from '@/db/schema';
 import { hetznerClient } from '@/lib/hetzner/client';
+import { getHetznerProjectById } from '@/lib/hetzner/projects';
 import { findPlanByPriceId } from '@/lib/price-plan';
+import { and, eq } from 'drizzle-orm';
 
-function derivePlanFromPriceId(priceId: string | null): 'pro' | 'premium' | 'ultra' {
+function derivePlanFromPriceId(
+  priceId: string | null
+): 'pro' | 'premium' | 'ultra' {
   if (!priceId) return 'pro';
   const plan = findPlanByPriceId(priceId);
   if (!plan) return 'pro';
@@ -14,7 +21,10 @@ function derivePlanFromPriceId(priceId: string | null): 'pro' | 'premium' | 'ult
   return 'pro';
 }
 
-export async function queueRuntimeProvision(userId: string, priceId: string | null) {
+export async function queueRuntimeProvision(
+  userId: string,
+  priceId: string | null
+) {
   const db = await getDb();
   const plan = derivePlanFromPriceId(priceId);
 
@@ -22,29 +32,32 @@ export async function queueRuntimeProvision(userId: string, priceId: string | nu
   const [existingHost] = await db
     .select()
     .from(runtimeHost)
-    .where(and(eq(runtimeHost.userId, userId), eq(runtimeHost.status, 'stopped')))
+    .where(
+      and(eq(runtimeHost.userId, userId), eq(runtimeHost.status, 'stopped'))
+    )
     .limit(1);
 
   if (existingHost?.hetznerServerId && existingHost.projectId) {
-    const [project] = await db
-      .select()
-      .from(hetznerProject)
-      .where(eq(hetznerProject.id, existingHost.projectId))
-      .limit(1);
-
-    if (project) {
-      await hetznerClient(project.apiToken).poweron(Number(existingHost.hetznerServerId));
-      await db
-        .update(runtimeHost)
-        .set({ status: 'ready', updatedAt: new Date() })
-        .where(eq(runtimeHost.id, existingHost.id));
-      await db
-        .update(runtimeAllocation)
-        .set({ status: 'ready', updatedAt: new Date() })
-        .where(eq(runtimeAllocation.userId, userId));
-      console.log(`[provision] Powered on existing VPS for user ${userId}`);
-      return;
+    const project = getHetznerProjectById(existingHost.projectId);
+    if (!project) {
+      throw new Error(
+        `Hetzner project ${existingHost.projectId} not found in HETZNER_PROJECTS`
+      );
     }
+
+    await hetznerClient(project.apiToken).poweron(
+      Number(existingHost.hetznerServerId)
+    );
+    await db
+      .update(runtimeHost)
+      .set({ status: 'ready', updatedAt: new Date() })
+      .where(eq(runtimeHost.id, existingHost.id));
+    await db
+      .update(runtimeAllocation)
+      .set({ status: 'ready', updatedAt: new Date() })
+      .where(eq(runtimeAllocation.userId, userId));
+    console.log(`[provision] Powered on existing VPS for user ${userId}`);
+    return;
   }
 
   // New provision job
@@ -65,7 +78,9 @@ export async function queueRuntimeProvision(userId: string, priceId: string | nu
       set: { plan, status: 'pending', updatedAt: new Date() },
     });
 
-  console.log(`[provision] Queued provision job for user ${userId} (plan: ${plan})`);
+  console.log(
+    `[provision] Queued provision job for user ${userId} (plan: ${plan})`
+  );
 }
 
 export async function stopRuntimeForUser(userId: string) {
@@ -78,13 +93,13 @@ export async function stopRuntimeForUser(userId: string) {
 
   if (!host?.hetznerServerId || !host.projectId) return;
 
-  const [project] = await db
-    .select()
-    .from(hetznerProject)
-    .where(eq(hetznerProject.id, host.projectId))
-    .limit(1);
+  const project = getHetznerProjectById(host.projectId);
 
-  if (!project) return;
+  if (!project) {
+    throw new Error(
+      `Hetzner project ${host.projectId} not found in HETZNER_PROJECTS`
+    );
+  }
 
   await hetznerClient(project.apiToken).poweroff(Number(host.hetznerServerId));
   await db

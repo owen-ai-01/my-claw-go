@@ -3,6 +3,8 @@
 > 本文档用于向下一个开发会话交接当前进度。  
 > 对应 Git 分支：`main`，最新 commit：`5b990e6`
 
+> 2026-04-26 更新：本文早期版本写的是 `hetznerProject` 表手动插入方案。当前实现已改为从 `HETZNER_PROJECTS` 环境变量读取 Hetzner 项目配置，不再需要 `hetznerProject` 表，也不要把 Hetzner API Token 写进数据库。最新开发执行说明见 `DEV_RUNTIME_VPS_NEXT_STEPS_20260426.md`，测试库 SQL 见 `dev-runtime-vps-sql.sql`。
+
 ---
 
 ## 一、本阶段完成的工作

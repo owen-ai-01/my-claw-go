@@ -99,6 +99,13 @@
       "when": 1777197142256,
       "tag": "0013_flat_kate_bishop",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1777201424673,
+      "tag": "0014_amazing_swordsman",
+      "breakpoints": true
     }
   ]
 }

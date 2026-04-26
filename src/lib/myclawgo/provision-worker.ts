@@ -1,12 +1,16 @@
 import { randomUUID } from 'crypto';
 import { getDb } from '@/db';
 import {
-  hetznerProject,
   runtimeAllocation,
   runtimeHost,
   runtimeProvisionJob,
 } from '@/db/schema';
 import { hetznerClient } from '@/lib/hetzner/client';
+import {
+  type HetznerProjectConfig,
+  getHetznerProjectById,
+  getHetznerProjects,
+} from '@/lib/hetzner/projects';
 import { and, eq, lt, sql } from 'drizzle-orm';
 import { SignJWT } from 'jose';
 import { buildCloudInit } from './cloud-init';
@@ -17,11 +21,10 @@ const SERVER_TYPE_MAP: Record<string, string> = {
   ultra: 'cx53',
 };
 
-async function selectAvailableProject(db: Awaited<ReturnType<typeof getDb>>) {
-  const projects = await db
-    .select()
-    .from(hetznerProject)
-    .where(eq(hetznerProject.status, 'active'));
+async function selectAvailableProject(
+  db: Awaited<ReturnType<typeof getDb>>
+): Promise<HetznerProjectConfig | null> {
+  const projects = getHetznerProjects();
 
   for (const p of projects) {
     const [row] = await db
@@ -129,16 +132,15 @@ async function cleanupExpiredVps(db: Awaited<ReturnType<typeof getDb>>) {
   for (const host of expired) {
     if (!host.hetznerServerId || !host.projectId) continue;
     try {
-      const [project] = await db
-        .select()
-        .from(hetznerProject)
-        .where(eq(hetznerProject.id, host.projectId))
-        .limit(1);
-      if (project) {
-        await hetznerClient(project.apiToken).deleteServer(
-          Number(host.hetznerServerId)
+      const project = getHetznerProjectById(host.projectId);
+      if (!project) {
+        throw new Error(
+          `Hetzner project ${host.projectId} not found in HETZNER_PROJECTS`
         );
       }
+      await hetznerClient(project.apiToken).deleteServer(
+        Number(host.hetznerServerId)
+      );
       await db
         .update(runtimeHost)
         .set({ status: 'deleted', updatedAt: new Date() })
