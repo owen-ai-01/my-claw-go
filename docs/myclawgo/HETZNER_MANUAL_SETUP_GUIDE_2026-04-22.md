@@ -191,11 +191,22 @@ CONTROL_PLANE_PUBLIC_IP = 46.225.210.174
 
 ## 步骤 5：制作 Snapshot（强烈推荐）
 
-Snapshot = 预装好 OpenClaw + Bridge + Node.js 的磁盘快照，**不需要 Docker**。  
+Snapshot = 预装好 Node.js + OpenClaw 二进制 + systemd 服务文件的磁盘快照，**不含 Docker，不含 Bridge 代码**。  
 用 Snapshot 创建新 VPS 可以把初始化时间从 **4–6 分钟**缩短到 **60–90 秒**。
 
 > **为什么不用 Docker**：每台 VPS 专属一个用户，VPS 本身已经是隔离边界，无需容器再隔离。  
-> OpenClaw 和 Bridge 直接作为 systemd 服务运行，更简单、省去 Docker daemon ~150MB 内存开销。
+> **为什么 Bridge 不烤进 Snapshot**：Bridge 代码会频繁更新。烤进 Snapshot 后每次更新都要重做 Snapshot，且已运行的 VPS 无法自动更新。改为 cloud-init 时从 R2 下载最新版本，新用户永远拿到最新 Bridge，已运行 VPS 通过更新脚本推送。
+
+### Snapshot 只需要重做的情况
+
+| 变化 | 需要重做 Snapshot？ |
+|------|------------------|
+| Bridge 代码更新 | **不需要**（从 R2 动态下载） |
+| OpenClaw 新版本 | 需要 |
+| Node.js 大版本升级 | 需要 |
+| systemd 服务文件变更 | 需要 |
+
+---
 
 ### 5.1 临时购买一台模板机
 
@@ -240,26 +251,13 @@ chown -R openclaw:openclaw /home/openclaw
 /usr/local/bin/openclaw --version
 ```
 
-### 5.5 部署 Bridge 代码
+### 5.5 创建 systemd 服务文件（Bridge 目录留空，cloud-init 填充）
 
 ```bash
-# 创建 Bridge 目录
+# 创建 Bridge 目录（内容由 cloud-init 时从 R2 下载）
 mkdir -p /opt/myclawgo-bridge
+mkdir -p /etc/myclawgo
 
-# 上传 bridge 构建产物（在本地构建后 scp 上传）
-# 本地执行：
-#   cd bridge && pnpm build
-#   scp -i ~/.ssh/myclawgo_runtime -r dist package.json \
-#     root@<模板机IP>:/opt/myclawgo-bridge/
-#   ssh -i ~/.ssh/myclawgo_runtime root@<模板机IP> \
-#     "cd /opt/myclawgo-bridge && npm install --production"
-
-chown -R openclaw:openclaw /opt/myclawgo-bridge
-```
-
-### 5.6 创建 systemd 服务文件
-
-```bash
 # OpenClaw Gateway 服务
 cat > /etc/systemd/system/openclaw-gateway.service <<'EOF'
 [Unit]
@@ -301,14 +299,7 @@ systemctl daemon-reload
 # 注意：不要 enable 或 start，cloud-init 会做这一步
 ```
 
-### 5.7 创建配置目录
-
-```bash
-mkdir -p /etc/myclawgo
-# bridge.env 由 cloud-init 在每台新 VPS 创建时注入（含 BRIDGE_TOKEN）
-```
-
-### 5.8 清理模板机
+### 5.6 清理模板机
 
 ```bash
 apt-get clean && rm -rf /var/lib/apt/lists/*
@@ -317,7 +308,7 @@ truncate -s 0 /var/log/*.log 2>/dev/null || true
 history -c
 ```
 
-### 5.9 制作 Snapshot
+### 5.7 制作 Snapshot
 
 1. Hetzner Console → `myclawgo-runtime-01` → 找到模板机
 2. 进入服务器详情 → **Snapshots** 标签
@@ -328,7 +319,7 @@ history -c
 
 ```bash
 curl -s -H "Authorization: Bearer <你的API_TOKEN>" \
-  https://api.hetzner.cloud/v1/images?type=snapshot | python3 -m json.tool
+  "https://api.hetzner.cloud/v1/images?type=snapshot" | python3 -m json.tool
 # 找到 name 为 myclawgo-runtime-v1-20260426 的条目，记录 id
 ```
 
@@ -336,11 +327,59 @@ curl -s -H "Authorization: Bearer <你的API_TOKEN>" \
 HETZNER_SNAPSHOT_ID = <id 字段的数字>
 ```
 
-### 5.10 删除模板机（节省费用）
+### 5.8 删除模板机（节省费用）
 
 Snapshot 完成后删掉模板机，只保留 Snapshot（费用极低）。
 
 > Snapshot 费用：~€0.0119/GB/月，一个 cx23 的 snapshot 约 €0.30/月。
+
+---
+
+## Bridge 发布与更新流程
+
+Bridge 代码独立于 Snapshot，通过 R2 分发。
+
+### 发布新版本 Bridge（每次更新 bridge/ 代码后）
+
+```bash
+# 在项目根目录执行
+cd bridge
+pnpm build
+tar -czf bridge-latest.tar.gz dist/ package.json package-lock.json
+
+# 上传到 R2（使用项目已有的 R2 配置）
+aws s3 cp bridge-latest.tar.gz \
+  s3://<R2_BUCKET>/releases/bridge-latest.tar.gz \
+  --endpoint-url https://<R2_ACCOUNT_ID>.r2.cloudflarestorage.com
+```
+
+上传完成后：
+- **新创建的用户 VPS**：cloud-init 自动下载最新版本，无需任何额外操作
+- **已运行的用户 VPS**：通过下面的更新脚本推送
+
+### 已运行 VPS 的 Bridge 更新脚本
+
+在 Control Plane 执行，SSH 批量推送到所有运行中的用户 VPS：
+
+```bash
+# scripts/update-bridge.sh
+#!/bin/bash
+BRIDGE_URL="https://files.myclawgo.com/releases/bridge-latest.tar.gz"
+SSH_KEY="$HOME/.ssh/myclawgo_runtime"
+
+# 从 DB 查所有 ready 状态 VPS 的 IP（需要调整为实际查询方式）
+IPS=$(psql $DATABASE_URL -t -c "SELECT \"publicIp\" FROM \"runtimeHost\" WHERE status='ready'")
+
+for IP in $IPS; do
+  echo "Updating bridge on $IP..."
+  ssh -i $SSH_KEY -o StrictHostKeyChecking=no root@$IP \
+    "curl -fsSL $BRIDGE_URL | tar -xz -C /opt/myclawgo-bridge && \
+     cd /opt/myclawgo-bridge && npm install --production && \
+     systemctl restart myclawgo-bridge && \
+     echo 'Bridge updated on $IP'"
+done
+echo "All VPS updated."
+```
 
 ---
 

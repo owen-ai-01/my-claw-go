@@ -47,6 +47,8 @@ VPS 启动后回调 /api/internal/runtime/register
 
 **无 Docker**：每台 VPS 专属一个用户，不需要容器隔离。OpenClaw + Bridge 直接作为 systemd 服务运行在 VPS 上，更简单、更省内存（省去 Docker daemon ~150MB 开销）。
 
+**Bridge 不烤进 Snapshot**：Bridge 代码频繁更新，cloud-init 时从 R2 下载最新版本。新 VPS 永远拿到最新 Bridge；已运行 VPS 通过批量更新脚本推送，无需重做 Snapshot。
+
 ---
 
 ## 2. 机型规格确认
@@ -452,19 +454,22 @@ async function provisionOneUser(job: ProvisionJob) {
 
 ### 7.5 Snapshot 预装内容
 
-Snapshot 是加速初始化的关键，预装以下内容（cloud-init 只负责配置 + 启动）：
+Snapshot 是加速初始化的关键，**只预装运行环境，不含 Bridge 代码**（Bridge 由 cloud-init 从 R2 下载，便于独立更新）：
 
 ```
-Snapshot 包含：
-├── /usr/local/bin/openclaw            ← OpenClaw 二进制（可执行）
-├── /opt/myclawgo-bridge/              ← Bridge 代码（已 npm install + build）
-│   ├── dist/index.js
-│   └── node_modules/
+Snapshot 包含（很少变化）：
+├── /usr/local/bin/openclaw            ← OpenClaw 二进制
 ├── /usr/bin/node（Node.js 20+）
+├── /opt/myclawgo-bridge/              ← 空目录，cloud-init 时填充
+├── /etc/myclawgo/                     ← 空目录，cloud-init 时注入 bridge.env
 ├── /etc/systemd/system/openclaw-gateway.service
-├── /etc/systemd/system/myclawgo-bridge.service
-└── /etc/myclawgo/bridge.env.template  ← 配置模板（BRIDGE_TOKEN 待注入）
+└── /etc/systemd/system/myclawgo-bridge.service
+
+cloud-init 时动态填充（每次建 VPS 都拿最新）：
+└── 从 R2 下载 bridge-latest.tar.gz → 解压到 /opt/myclawgo-bridge → npm install
 ```
+
+**Snapshot 需要重做的情况**：OpenClaw 新版本、Node.js 大版本升级、systemd 文件变更。Bridge 代码更新**不需要**重做 Snapshot。
 
 **systemd 服务文件（预置在 Snapshot 中）：**
 
@@ -505,13 +510,20 @@ RestartSec=5
 WantedBy=multi-user.target
 ```
 
-### 7.6 cloud-init 脚本（使用 Snapshot，极简）
+### 7.6 cloud-init 脚本（使用 Snapshot）
 
-Snapshot 已预装所有软件，cloud-init 只做三件事：注入配置 → 启动服务 → 回调注册。
+Snapshot 已预装 Node.js + OpenClaw + systemd 文件，cloud-init 做四件事：  
+**下载最新 Bridge → 注入配置 → 启动服务 → 回调注册**
 
 ```bash
 #!/bin/bash
-# 1. 注入 Bridge Token（唯一需要动态配置的内容）
+# 1. 从 R2 下载最新 Bridge（每次建 VPS 都拿最新版本）
+curl -fsSL https://files.myclawgo.com/releases/bridge-latest.tar.gz \
+  | tar -xz -C /opt/myclawgo-bridge
+cd /opt/myclawgo-bridge && npm install --production
+chown -R openclaw:openclaw /opt/myclawgo-bridge
+
+# 2. 注入 Bridge 配置（每台 VPS 独立的 BRIDGE_TOKEN）
 mkdir -p /etc/myclawgo
 cat > /etc/myclawgo/bridge.env <<EOF
 BRIDGE_TOKEN=${BRIDGE_TOKEN}
@@ -519,23 +531,23 @@ GATEWAY_WS_URL=ws://127.0.0.1:18789
 PORT=18080
 EOF
 
-# 2. 确保用户数据目录存在
+# 3. 确保用户数据目录存在
 mkdir -p /home/openclaw/.openclaw
 chown -R openclaw:openclaw /home/openclaw/.openclaw
 
-# 3. 启动服务
+# 4. 启动服务
 systemctl enable openclaw-gateway myclawgo-bridge
 systemctl start openclaw-gateway
 sleep 3
 systemctl start myclawgo-bridge
 
-# 4. 等待 Bridge 健康（最多 60 秒）
+# 5. 等待 Bridge 健康（最多 60 秒）
 for i in $(seq 1 12); do
   curl -sf http://localhost:18080/health > /dev/null 2>&1 && break
   sleep 5
 done
 
-# 5. 回调 Control Plane 注册
+# 6. 回调 Control Plane 注册
 PUBLIC_IP=$(curl -s -4 ifconfig.me)
 curl -X POST "${REGISTRATION_CALLBACK_URL}" \
   -H "Content-Type: application/json" \
@@ -543,33 +555,45 @@ curl -X POST "${REGISTRATION_CALLBACK_URL}" \
   -d "{\"userId\": \"${USER_ID}\", \"publicIp\": \"${PUBLIC_IP}\"}"
 ```
 
-**不使用 Snapshot 时（基础镜像，cold start）**，cloud-init 还需要额外：
+### 7.7 Bridge 发布与更新流程
+
+#### 发布新版本（每次 bridge/ 代码更新后）
 
 ```bash
-# 安装 Node.js
-curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
-apt-get install -y nodejs
+cd bridge
+pnpm build
+tar -czf bridge-latest.tar.gz dist/ package.json package-lock.json
 
-# 安装 OpenClaw 二进制
-curl -fsSL https://releases.myclawgo.com/openclaw/latest/openclaw-linux-amd64 \
-  -o /usr/local/bin/openclaw
-chmod +x /usr/local/bin/openclaw
-
-# 创建 openclaw 用户
-useradd -m -s /bin/bash openclaw
-
-# 下载 Bridge 代码
-mkdir -p /opt/myclawgo-bridge
-curl -fsSL https://releases.myclawgo.com/bridge/latest/bridge.tar.gz \
-  | tar -xz -C /opt/myclawgo-bridge
-
-# 复制 systemd service 文件
-# ... （同上）
-
-# 然后继续注入配置 + 启动（同 Snapshot 流程）
+# 上传到 R2（覆盖同名文件，新 VPS 自动获取）
+aws s3 cp bridge-latest.tar.gz \
+  s3://<R2_BUCKET>/releases/bridge-latest.tar.gz \
+  --endpoint-url https://<R2_ACCOUNT_ID>.r2.cloudflarestorage.com
 ```
 
-> **强烈建议使用 Snapshot**：cold start 约 4–6 分钟，Snapshot 约 60–90 秒，用户体验差距很大。
+上传后：
+- **新创建的 VPS**：cloud-init 自动拉取，无需任何额外操作
+- **已运行的 VPS**：执行下面的批量更新脚本
+
+#### 已运行 VPS 批量更新（`scripts/update-bridge.sh`）
+
+```bash
+#!/bin/bash
+BRIDGE_URL="https://files.myclawgo.com/releases/bridge-latest.tar.gz"
+SSH_KEY="$HOME/.ssh/myclawgo_runtime"
+
+# 从 DB 查所有 ready 状态的 VPS IP
+IPS=$(psql $DATABASE_URL -t -c \
+  "SELECT \"publicIp\" FROM \"runtimeHost\" WHERE status='ready'")
+
+for IP in $IPS; do
+  echo "Updating $IP ..."
+  ssh -i $SSH_KEY -o StrictHostKeyChecking=no root@$IP \
+    "curl -fsSL $BRIDGE_URL | tar -xz -C /opt/myclawgo-bridge && \
+     cd /opt/myclawgo-bridge && npm install --production && \
+     systemctl restart myclawgo-bridge && echo done"
+done
+echo "All VPS updated."
+```
 
 ### 7.5 注册回调（`/api/internal/runtime/register`）
 
