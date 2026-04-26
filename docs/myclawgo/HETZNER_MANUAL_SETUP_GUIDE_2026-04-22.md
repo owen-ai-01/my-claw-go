@@ -241,22 +241,19 @@ node --version  # 验证，应显示 v20.x.x
 OpenClaw 是公开的 npm 包（`npm show openclaw`），直接全局安装即可。
 
 ```bash
-# 配置 npm 全局目录（避免用 root 权限安装）
-mkdir -p /home/openclaw/.npm-global
-chown -R openclaw:openclaw /home/openclaw/.npm-global
-
-# 创建 openclaw 系统用户（先建用户再安装）
+# 1. 先创建 openclaw 系统用户
 useradd -m -s /bin/bash openclaw
 mkdir -p /home/openclaw/.openclaw
+mkdir -p /home/openclaw/.npm-global
 chown -R openclaw:openclaw /home/openclaw
 
-# 以 openclaw 用户身份安装（保证文件权限一致）
+# 2. 以 openclaw 用户身份安装（npm config + 全局安装）
 su - openclaw -c "
   npm config set prefix ~/.npm-global
   npm install -g openclaw
 "
 
-# 让 openclaw 命令对 root 可见（systemd 服务用 User=openclaw，这步可选）
+# 3. 建 symlink，让 root 运行的脚本也能找到命令
 ln -s /home/openclaw/.npm-global/bin/openclaw /usr/local/bin/openclaw
 
 # 验证
