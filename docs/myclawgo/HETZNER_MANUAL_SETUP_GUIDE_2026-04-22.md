@@ -19,6 +19,8 @@
 | 6 | 填写 .env 环境变量 | Phase 2 前 | 5 分钟 |
 | 7 | 申请配额提升 | 现在就做 | 5 分钟 |
 
+> **⚠️ 架构变更说明（2026-04-26）**：Hetzner 项目配置已改为从 `HETZNER_PROJECTS` 环境变量读取，**不再需要 `hetznerProject` 数据库表**，也不需要把 API Token 写入 DB。步骤 6 是唯一需要配置的地方。
+
 **不再需要 Private Network**（改用公网 IP + 鉴权 Token 通信）。
 
 ---
@@ -449,6 +451,7 @@ openssl rand -hex 32
 ```env
 # ────────────────────────────────────────────────────────────────────────
 # Hetzner 多项目配置（JSON 数组，新增项目直接在数组里追加）
+# sshKeyId 和 firewallId 必须是整数，不能加引号
 # ────────────────────────────────────────────────────────────────────────
 HETZNER_PROJECTS='[
   {
@@ -457,11 +460,17 @@ HETZNER_PROJECTS='[
     "apiToken": "<步骤 1 获取的 Token>",
     "region": "fsn1",
     "maxServers": 90,
-    "sshKeyId": <步骤 2 的 SSH Key ID>,
-    "firewallId": <步骤 3 的 Firewall ID>,
-    "snapshotId": <步骤 5 的 Snapshot ID，没做就填 null>
+    "sshKeyId": 12345678,
+    "firewallId": 56789012,
+    "snapshotId": null
   }
 ]'
+
+# ────────────────────────────────────────────────────────────────────────
+# Control Plane 对外 URL（新 VPS 的 cloud-init 会回调这个地址，必须公网可达）
+# 不能填 localhost 或内网 IP
+# ────────────────────────────────────────────────────────────────────────
+NEXT_PUBLIC_APP_URL=https://myclawgo.com
 
 # ────────────────────────────────────────────────────────────────────────
 # Control Plane 公网 IP（用于 Firewall 规则管理）
@@ -486,42 +495,10 @@ PROVISION_WORKER_INTERVAL_MS=30000
 VPS_DATA_RETENTION_DAYS=7
 ```
 
-**生成随机密钥：**
-
-```bash
-openssl rand -hex 32
-```
-
----
-
-## 步骤 6.5：将项目信息写入数据库
-
-Provision Worker 从 **数据库** 的 `hetznerProject` 表读取项目配置（不直接读 `.env`）。  
-**需要手动执行一次 SQL**，把步骤 1–5 收集到的 ID 填入即可：
-
-```sql
--- 替换 <...> 里的值为步骤 1–5 获取的实际值
-INSERT INTO "hetznerProject" (
-  id, name, api_token, region, max_servers,
-  ssh_key_id, firewall_id, snapshot_id, status
-) VALUES (
-  'proj-01',
-  'myclawgo-runtime-01',
-  '<步骤 1 的 API Token>',
-  'fsn1',
-  90,
-  <步骤 2 的 SSH Key ID，整数>,
-  <步骤 3 的 Firewall ID，整数>,
-  <步骤 5 的 Snapshot ID，整数，没做就写 NULL>,
-  'active'
-)
-ON CONFLICT (id) DO UPDATE SET
-  api_token   = EXCLUDED.api_token,
-  snapshot_id = EXCLUDED.snapshot_id,
-  updated_at  = now();
-```
-
-新增第二个项目时，再 INSERT 一行（`id='proj-02'`，对应 `myclawgo-runtime-02` 的值）即可，无需重启。
+> **注意**：
+> - `sshKeyId` / `firewallId` / `snapshotId` 填**整数**，不加引号（`12345678` ✓，`"12345678"` ✗）
+> - `NEXT_PUBLIC_APP_URL` 必须是新 VPS 能从公网访问到的地址，cloud-init 会回调 `{URL}/api/internal/runtime/register`
+> - 新增 Hetzner 项目时直接在 `HETZNER_PROJECTS` 数组追加一项并重启服务即可，无需操作数据库
 
 ---
 
@@ -581,8 +558,11 @@ Thank you for your support.
 - [ ] Control Plane 公网 IP 已确认
 - [ ] Snapshot 已制作（可选），有 Snapshot ID
 - [ ] SSH 私钥确认存在于 `~/.ssh/myclawgo_runtime`（步骤 2 生成时已在此）
-- [ ] `.env` 已填写所有变量（`HETZNER_PROJECTS` JSON + `CONTROL_PLANE_PUBLIC_IP` + `RUNTIME_REGISTER_TOKEN_SECRET`）
-- [ ] 已手动执行步骤 6.5 的 SQL，`hetznerProject` 表有数据
+- [ ] `.env` 已填写所有变量：
+  - [ ] `HETZNER_PROJECTS` JSON（`sshKeyId`/`firewallId` 为整数，无引号）
+  - [ ] `NEXT_PUBLIC_APP_URL` 填公网可达地址（非 localhost）
+  - [ ] `RUNTIME_REGISTER_TOKEN_SECRET` 已用 `openssl rand -hex 32` 生成
+  - [ ] `ENABLE_PROVISION_WORKER=true`
 - [ ] 已向 Hetzner Support 发送配额提升申请
 
 ---
