@@ -458,8 +458,7 @@ Snapshot 只预装运行环境，**不含 Bridge 代码**。Bridge 由 Control P
 
 ```
 Snapshot 包含（很少变化）：
-├── /home/openclaw/.npm-global/bin/openclaw  ← npm install -g openclaw
-├── /usr/local/bin/openclaw            ← symlink → .npm-global/bin/openclaw
+├── /usr/local/bin/openclaw            ← root npm install -g openclaw
 ├── /usr/bin/node（Node.js 20+）
 ├── /opt/myclawgo-bridge/              ← 空目录，注册后由 Control Plane SCP 填充
 ├── /etc/myclawgo/                     ← 空目录，注册后注入 bridge.env
@@ -492,7 +491,7 @@ Restart=always
 RestartSec=5
 WorkingDirectory=/home/openclaw
 Environment=HOME=/home/openclaw
-Environment=PATH=/home/openclaw/.npm-global/bin:/usr/local/bin:/usr/bin:/bin
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
 
 [Install]
 WantedBy=multi-user.target

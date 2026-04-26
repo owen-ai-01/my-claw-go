@@ -238,27 +238,25 @@ node --version  # 验证，应显示 v20.x.x
 
 ### 5.4 安装 OpenClaw
 
-OpenClaw 是公开的 npm 包（`npm show openclaw`），直接全局安装即可。
+OpenClaw 是公开的 npm 包（`npm show openclaw`），以 root 直接全局安装，二进制放在 `/usr/local/bin`，openclaw 用户和 systemd 服务都能访问到。
 
 ```bash
-# 1. 先创建 openclaw 系统用户
+# 以 root 全局安装（最稳，无权限问题）
+npm install -g openclaw
+
+# 验证 root 可用
+openclaw --version
+
+# 创建 openclaw 系统用户
 useradd -m -s /bin/bash openclaw
 mkdir -p /home/openclaw/.openclaw
-mkdir -p /home/openclaw/.npm-global
 chown -R openclaw:openclaw /home/openclaw
 
-# 2. 以 openclaw 用户身份安装（npm config + 全局安装）
-su - openclaw -c "
-  npm config set prefix ~/.npm-global
-  npm install -g openclaw
-"
-
-# 3. 建 symlink，让 root 运行的脚本也能找到命令
-ln -s /home/openclaw/.npm-global/bin/openclaw /usr/local/bin/openclaw
-
-# 验证
-openclaw --version
+# 验证 openclaw 用户也能访问（systemd 服务以此用户运行）
+su - openclaw -c "openclaw --version"
 ```
+
+> systemd 服务用 `User=openclaw` 控制的是进程运行身份，二进制由 root 安装在 `/usr/local/bin` 没有问题。
 
 ### 5.5 创建 systemd 服务文件（Bridge 目录留空，注册回调后由 Control Plane SCP 填充）
 
@@ -280,7 +278,7 @@ Restart=always
 RestartSec=5
 WorkingDirectory=/home/openclaw
 Environment=HOME=/home/openclaw
-Environment=PATH=/home/openclaw/.npm-global/bin:/usr/local/bin:/usr/bin:/bin
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
 
 [Install]
 WantedBy=multi-user.target
