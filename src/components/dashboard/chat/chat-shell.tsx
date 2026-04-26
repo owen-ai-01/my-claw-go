@@ -21,6 +21,9 @@ import { toast } from 'sonner';
 type RuntimeStatus =
   | { ok: true; state: 'not_created'; reason: string; containerName?: string }
   | { ok: true; state: 'ready'; reason: string; containerName?: string }
+  | { ok: true; state: 'provisioning'; reason: string }
+  | { ok: true; state: 'stopped'; reason: string }
+  | { ok: true; state: 'failed'; reason: string }
   | { ok: false; error: string };
 
 type ChatMessage = {
@@ -2748,6 +2751,8 @@ export function ChatShell() {
     if (!planData || planData.currentPlan?.isFree) return;
 
     let stopped = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+
     const run = async () => {
       const res = await fetch('/api/chat/runtime-status').catch(() => null);
       const data = (await res?.json().catch(() => ({}))) as RuntimeStatus;
@@ -2757,10 +2762,15 @@ export function ChatShell() {
         return;
       }
       setStatus(data);
+      // Keep polling while provisioning so the page updates automatically when ready
+      if (data.ok && data.state === 'provisioning') {
+        timer = setTimeout(run, 10_000);
+      }
     };
     run();
     return () => {
       stopped = true;
+      if (timer) clearTimeout(timer);
     };
   }, [planData, planLoading]);
 
@@ -2840,6 +2850,58 @@ export function ChatShell() {
             >
               {creating ? 'Creating…' : 'Create Workspace'}
             </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (status.ok && status.state === 'provisioning') {
+    return (
+      <div className="flex flex-col gap-4">
+        <PageHeader credits={credits} />
+        <div className="rounded-2xl border bg-card p-10 shadow-sm">
+          <div className="mx-auto flex max-w-sm flex-col items-center text-center">
+            <div className="mb-4 text-4xl">⚙️</div>
+            <h2 className="text-xl font-semibold">Setting up your workspace</h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Your private AI workspace is being created. This usually takes 2–3 minutes.
+            </p>
+            <p className="mt-4 text-xs text-muted-foreground">The page will update automatically when ready.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (status.ok && status.state === 'failed') {
+    return (
+      <div className="flex flex-col gap-4">
+        <PageHeader credits={credits} />
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-10 shadow-sm">
+          <div className="mx-auto flex max-w-sm flex-col items-center text-center">
+            <div className="mb-4 text-4xl">❌</div>
+            <h2 className="text-xl font-semibold text-red-700">Workspace creation failed</h2>
+            <p className="mt-2 text-sm text-red-600">
+              We were unable to set up your workspace. Please contact support and we will fix it for you.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (status.ok && status.state === 'stopped') {
+    return (
+      <div className="flex flex-col gap-4">
+        <PageHeader credits={credits} />
+        <div className="rounded-2xl border bg-card p-10 shadow-sm">
+          <div className="mx-auto flex max-w-sm flex-col items-center text-center">
+            <div className="mb-4 text-4xl">💤</div>
+            <h2 className="text-xl font-semibold">Workspace paused</h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Your workspace has been paused. Renew your subscription to wake it back up.
+            </p>
           </div>
         </div>
       </div>
