@@ -1,6 +1,6 @@
 # 最终方案：一用户一 VPS（多项目 Hetzner + 公网通信）
 
-> 版本：2026-04-26 v3  
+> 版本：2026-04-26 v4  
 > 定位：可直接开发的技术方案，包含架构决策、DB 设计、代码改造清单、两阶段开发计划。
 
 ---
@@ -32,7 +32,7 @@
 Provision Worker 选择有余量的 Hetzner 项目
     ↓
 调用 Hetzner API 创建 VPS（指定机型 + fsn1 + SSH Key + Firewall）
-cloud-init 启动 OpenClaw + Bridge，数据目录在 VPS 自带 SSD 上
+cloud-init 启动 OpenClaw → 回调注册，Control Plane 收到后 SCP 推送 Bridge 并启动
     ↓
 VPS 启动后回调 /api/internal/runtime/register
     ↓
@@ -637,7 +637,7 @@ echo "All VPS updated."
 
 **整个更新过程无需 R2、无需重做 Snapshot、无需人工 SSH 逐台操作。**
 
-### 7.5 注册回调（`/api/internal/runtime/register`）
+### 7.9 注册回调完整实现（`/api/internal/runtime/register`）
 
 ```ts
 export async function POST(req: Request) {
@@ -671,7 +671,7 @@ export async function POST(req: Request) {
 }
 ```
 
-### 7.6 订阅到期处理（`src/payment/provider/stripe.ts`）
+### 7.10 订阅到期处理（`src/payment/provider/stripe.ts`）
 
 ```ts
 // Stripe webhook: customer.subscription.deleted
@@ -704,7 +704,7 @@ case 'customer.subscription.deleted': {
 }
 ```
 
-### 7.7 套餐升级（Hetzner Resize）
+### 7.11 套餐升级（Hetzner Resize）
 
 ```ts
 async function upgradeVps(userId: string, newPlan: 'premium' | 'ultra') {

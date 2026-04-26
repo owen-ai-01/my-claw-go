@@ -15,6 +15,7 @@
 | 3 | 创建 Firewall（公网访问规则） | Phase 2 前 | 5 分钟 |
 | 4 | 确认 Control Plane 公网 IP | Phase 1 开始前 | 1 分钟 |
 | 5 | 制作 Snapshot（强烈推荐，节省初始化时间） | Phase 2 前 | 30–60 分钟 |
+| SSH | Control Plane SSH 私钥配置（SCP 推送 Bridge 用） | Phase 2 前 | 2 分钟 |
 | 6 | 填写 .env 环境变量 | Phase 2 前 | 5 分钟 |
 | 7 | 申请配额提升 | 现在就做 | 5 分钟 |
 
@@ -254,7 +255,7 @@ chown -R openclaw:openclaw /home/openclaw
 ### 5.5 创建 systemd 服务文件（Bridge 目录留空，注册回调后由 Control Plane SCP 填充）
 
 ```bash
-# 创建 Bridge 目录（内容由 cloud-init 时从 R2 下载）
+# 创建 Bridge 目录（内容由注册回调后 Control Plane SCP 填充）
 mkdir -p /opt/myclawgo-bridge
 mkdir -p /etc/myclawgo
 
@@ -507,11 +508,12 @@ Thank you for your support.
 - [ ] API Token 已创建，权限为 Read & Write，已复制保存
 - [ ] SSH 公钥已上传，有 SSH Key ID
 - [ ] Firewall `myclawgo-user-vps-fw` 已创建：
-  - [ ] 端口 22 对运维 IP 开放
+  - [ ] 端口 22 Any IPv4（`0.0.0.0/0`，靠 SSH 密钥登录保障安全）
   - [ ] 端口 18080 对 Control Plane 公网 IP 开放
   - [ ] 所有其他入站流量拒绝
 - [ ] Control Plane 公网 IP 已确认
 - [ ] Snapshot 已制作（可选），有 Snapshot ID
+- [ ] Control Plane SSH 私钥已复制到 `/etc/myclawgo/runtime-key`，权限 `600`
 - [ ] `.env` 已填写所有变量（`HETZNER_PROJECTS` JSON + `CONTROL_PLANE_PUBLIC_IP` + `RUNTIME_REGISTER_TOKEN_SECRET`）
 - [ ] 已向 Hetzner Support 发送配额提升申请
 
@@ -539,4 +541,4 @@ Thank you for your support.
 | 项目数量 | 单项目 | **多项目（按需扩展）** |
 | 用户隔离 | 多用户共享主机 | **一用户一 VPS** |
 | Private Network | 必须配置 | **不需要** |
-| 数据持久化 | 容器 Volume | **Hetzner Volume（独立磁盘）** |
+| 数据持久化 | 容器 Volume | **VPS 自带 SSD，无独立 Volume** |
