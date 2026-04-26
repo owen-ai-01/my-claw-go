@@ -35,8 +35,8 @@ export function hetznerClient(token: string) {
         name: params.name,
         server_type: params.serverType,
         location: params.location,
-        firewalls: [{ firewall: { id: params.firewallId } }],
-        ssh_keys: [{ id: params.sshKeyId }],
+        firewalls: [{ firewall: params.firewallId }],
+        ssh_keys: [params.sshKeyId],
         user_data: params.userData,
         labels: params.labels ?? {},
       };
