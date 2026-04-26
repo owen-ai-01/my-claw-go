@@ -63,7 +63,63 @@ docs/myclawgo/20260426/dev-runtime-vps-sql.sql
 
 `.env` 里的 `HETZNER_PROJECTS` 只作为备查，不参与运行时自动同步。新增/修改项目时，手动执行 SQL 更新 `hetznerProject` 即可。
 
-## 4. 测试环境必需环境变量
+## 4. Hetzner API Token 安全建议
+
+当前 SQL 模板里的 `hetznerProject.api_token` 会把 Hetzner API Token 写进数据库。这个方案能用于短期开发环境验证，但有明确安全风险：
+
+- 如果数据库泄露，攻击者可以拿到 Hetzner API Token。
+- Read & Write Token 可以创建、删除、关机、改配置用户 VPS。
+- 生产环境把云厂商高权限 token 明文放 DB，风险偏高。
+
+更推荐的正式方案是：DB 不保存真实 API Token，只保存环境变量引用名。
+
+推荐 schema 形态：
+
+```sql
+api_token_ref = 'HETZNER_API_TOKEN_01'
+```
+
+真实 token 放在测试/生产环境变量里：
+
+```env
+HETZNER_API_TOKEN_01=真实 Hetzner token
+```
+
+运行时代码逻辑：
+
+```ts
+const token = process.env[project.apiTokenRef];
+```
+
+这样做的好处：
+
+- DB 泄露不会直接泄露 Hetzner 权限。
+- 测试和生产 token 可以自然分离。
+- 新增项目仍然手动 SQL，不需要 Node.js 启动自动同步。
+- 轮换 token 只需要改环境变量，不需要改 DB。
+
+推荐的最终项目插入 SQL 会变成：
+
+```sql
+INSERT INTO "hetznerProject" (
+  id, name, api_token_ref, region, max_servers,
+  ssh_key_id, firewall_id, snapshot_id, status
+) VALUES (
+  'proj-01',
+  'myclawgo-runtime-01',
+  'HETZNER_API_TOKEN_01',
+  'fsn1',
+  90,
+  <HETZNER_SSH_KEY_ID>,
+  <HETZNER_FIREWALL_ID>,
+  NULL,
+  'active'
+);
+```
+
+注意：当前代码和当前 `dev-runtime-vps-sql.sql` 还使用 `api_token` 字段。上面是下一步应做的安全改造目标，不要在没有同步改代码和 schema 前直接把当前 SQL 改成 `api_token_ref`。
+
+## 5. 测试环境必需环境变量
 
 测试环境至少需要：
 
@@ -76,7 +132,7 @@ VPS_DATA_RETENTION_DAYS=7
 
 `RUNTIME_REGISTER_TOKEN_SECRET` 必须和测试环境 API 服务使用同一份值，因为 provision worker 签发的注册 JWT 会被 `/api/internal/runtime/register` 校验。
 
-## 5. 手动测试流程
+## 6. 手动测试流程
 
 1. 在测试数据库执行 `docs/myclawgo/20260426/dev-runtime-vps-sql.sql`。
 2. 确认 `hetznerProject` 有一条 `status = active` 的项目记录。
@@ -116,7 +172,7 @@ runtimeAllocation.status = ready
 
 之后再到前端聊天界面验证消息是否能走 Bridge -> OpenClaw Gateway。
 
-## 6. 本次开发修复点
+## 7. 本次开发修复点
 
 本次提交修复了开发环境验证前会阻断完整链路的问题：
 
@@ -128,7 +184,7 @@ runtimeAllocation.status = ready
 - provision job 失败后前两次回到 `pending`，第 3 次才标记 `failed`。
 - Next instrumentation 拆分为 Node-only 入口，避免 Edge bundle 引入 `postgres/net/tls` 导致构建失败。
 
-## 7. 已验证
+## 8. 已验证
 
 本地已验证：
 

@@ -111,8 +111,16 @@ BEGIN
 END $$;
 
 -- Insert/update the dev Hetzner project manually after replacing placeholders.
--- Keep api_token in the database; the app reads hetznerProject and does not
--- auto-sync HETZNER_PROJECTS from .env at Node.js startup.
+--
+-- Security note:
+-- The current code reads hetznerProject.api_token directly, so this dev SQL
+-- stores the Hetzner API Token in the test database. This is acceptable only
+-- for short-lived development verification. For production, prefer the safer
+-- follow-up design documented in DEV_RUNTIME_VPS_NEXT_STEPS_20260426.md:
+-- store api_token_ref in DB and keep the real token in environment variables.
+--
+-- The app reads hetznerProject and does not auto-sync HETZNER_PROJECTS from
+-- .env at Node.js startup.
 INSERT INTO "hetznerProject" (
   "id",
   "name",
