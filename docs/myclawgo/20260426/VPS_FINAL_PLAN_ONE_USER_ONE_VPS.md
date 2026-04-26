@@ -459,7 +459,7 @@ Snapshot 只预装运行环境，**不含 Bridge 代码**。Bridge 由 Control P
 ```
 Snapshot 包含（很少变化）：
 ├── /usr/bin/openclaw                  ← npm install -g openclaw@2026.4.11（必须指定版本）
-├── /usr/bin/node（Node.js 20+）
+├── /usr/bin/node（Node.js 22+，openclaw 要求 v22.12+）
 ├── /opt/myclawgo-bridge/              ← 空目录，注册后由 Control Plane SCP 填充
 ├── /etc/myclawgo/                     ← 空目录，注册后注入 bridge.env
 ├── /etc/systemd/system/openclaw-gateway.service

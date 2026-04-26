@@ -230,14 +230,16 @@ Snapshot = 预装好 Node.js + OpenClaw 二进制 + systemd 服务文件的磁�
 ssh -i ~/.ssh/myclawgo_runtime root@<模板机公网 IP>
 ```
 
-### 5.3 安装 Node.js 20
+### 5.3 安装 Node.js 22
 
 ```bash
-curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
 apt-get install -y nodejs
-node --version   # 应显示 v20.x.x
+node --version   # 应显示 v22.x.x
 npm --version    # 应显示 10.x.x
 ```
+
+> OpenClaw 要求 Node.js v22.12+，不能用 v20。
 
 ### 5.4 安装 OpenClaw
 
