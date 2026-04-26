@@ -1,6 +1,6 @@
 # 最终方案：一用户一 VPS（多项目 Hetzner + 公网通信）
 
-> 版本：2026-04-26 v2  
+> 版本：2026-04-26 v3  
 > 定位：可直接开发的技术方案，包含架构决策、DB 设计、代码改造清单、两阶段开发计划。
 
 ---
@@ -44,6 +44,8 @@ VPS 启动后回调 /api/internal/runtime/register
 **无 Private Network**：所有通信走公网 IP，Control Plane 通过 BRIDGE_TOKEN 鉴权访问每台用户 VPS。
 
 **无独立 Volume**：cx23/cx33/cx53 自带 SSD 容量充足，直接用本地磁盘存用户数据。
+
+**无 Docker**：每台 VPS 专属一个用户，不需要容器隔离。OpenClaw + Bridge 直接作为 systemd 服务运行在 VPS 上，更简单、更省内存（省去 Docker daemon ~150MB 开销）。
 
 ---
 
@@ -435,41 +437,139 @@ async function provisionOneUser(job: ProvisionJob) {
 }
 ```
 
-### 7.4 cloud-init 脚本（简洁版，无 Volume 挂载）
+### 7.4 VPS 内部进程结构
+
+不使用 Docker，OpenClaw 和 Bridge 直接作为 systemd 服务运行：
+
+```
+用户 VPS（cx23/cx33/cx53）
+├── openclaw-gateway.service   ← OpenClaw 二进制，监听 127.0.0.1:18789（本机回环）
+└── myclawgo-bridge.service    ← Bridge（Node.js），监听 0.0.0.0:18080（对外）
+      └── 通过 ws://127.0.0.1:18789 连接 OpenClaw
+```
+
+**为什么不需要 Docker**：Docker 的价值是在同一台机器上隔离多个用户。每人独享一台 VPS，VPS 本身已经是隔离边界，Docker 只是额外开销。
+
+### 7.5 Snapshot 预装内容
+
+Snapshot 是加速初始化的关键，预装以下内容（cloud-init 只负责配置 + 启动）：
+
+```
+Snapshot 包含：
+├── /usr/local/bin/openclaw            ← OpenClaw 二进制（可执行）
+├── /opt/myclawgo-bridge/              ← Bridge 代码（已 npm install + build）
+│   ├── dist/index.js
+│   └── node_modules/
+├── /usr/bin/node（Node.js 20+）
+├── /etc/systemd/system/openclaw-gateway.service
+├── /etc/systemd/system/myclawgo-bridge.service
+└── /etc/myclawgo/bridge.env.template  ← 配置模板（BRIDGE_TOKEN 待注入）
+```
+
+**systemd 服务文件（预置在 Snapshot 中）：**
+
+`/etc/systemd/system/openclaw-gateway.service`：
+```ini
+[Unit]
+Description=OpenClaw Gateway
+After=network.target
+
+[Service]
+User=openclaw
+ExecStart=/usr/local/bin/openclaw gateway run --bind loopback --port 18789
+Restart=always
+RestartSec=5
+WorkingDirectory=/home/openclaw
+Environment=HOME=/home/openclaw
+
+[Install]
+WantedBy=multi-user.target
+```
+
+`/etc/systemd/system/myclawgo-bridge.service`：
+```ini
+[Unit]
+Description=MyClawGo Bridge
+After=network.target openclaw-gateway.service
+Requires=openclaw-gateway.service
+
+[Service]
+User=openclaw
+WorkingDirectory=/opt/myclawgo-bridge
+EnvironmentFile=/etc/myclawgo/bridge.env
+ExecStart=/usr/bin/node dist/index.js
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+```
+
+### 7.6 cloud-init 脚本（使用 Snapshot，极简）
+
+Snapshot 已预装所有软件，cloud-init 只做三件事：注入配置 → 启动服务 → 回调注册。
 
 ```bash
 #!/bin/bash
-# 数据目录直接使用 VPS 自带 SSD
-mkdir -p /data/openclaw
+# 1. 注入 Bridge Token（唯一需要动态配置的内容）
+mkdir -p /etc/myclawgo
+cat > /etc/myclawgo/bridge.env <<EOF
+BRIDGE_TOKEN=${BRIDGE_TOKEN}
+GATEWAY_WS_URL=ws://127.0.0.1:18789
+PORT=18080
+EOF
 
-# 安装 Docker（snapshot 已预装则跳过）
-if ! command -v docker &> /dev/null; then
-  curl -fsSL https://get.docker.com | sh
-  systemctl enable docker
-fi
+# 2. 确保用户数据目录存在
+mkdir -p /home/openclaw/.openclaw
+chown -R openclaw:openclaw /home/openclaw/.openclaw
 
-# 启动 OpenClaw + Bridge
-docker run -d \
-  --name openclaw-runtime \
-  --restart unless-stopped \
-  -p 18080:18080 \
-  -e BRIDGE_TOKEN="${BRIDGE_TOKEN}" \
-  -v /data/openclaw:/home/openclaw/.openclaw \
-  myclawgo-openclaw:latest
+# 3. 启动服务
+systemctl enable openclaw-gateway myclawgo-bridge
+systemctl start openclaw-gateway
+sleep 3
+systemctl start myclawgo-bridge
 
-# 等待 Bridge 健康（最多 60 秒）
+# 4. 等待 Bridge 健康（最多 60 秒）
 for i in $(seq 1 12); do
   curl -sf http://localhost:18080/health > /dev/null 2>&1 && break
   sleep 5
 done
 
-# 回调注册
-PUBLIC_IP=$(curl -s http://169.254.169.254/hetzner/v1/metadata/public-ipv4)
+# 5. 回调 Control Plane 注册
+PUBLIC_IP=$(curl -s -4 ifconfig.me)
 curl -X POST "${REGISTRATION_CALLBACK_URL}" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer ${REGISTRATION_TOKEN}" \
   -d "{\"userId\": \"${USER_ID}\", \"publicIp\": \"${PUBLIC_IP}\"}"
 ```
+
+**不使用 Snapshot 时（基础镜像，cold start）**，cloud-init 还需要额外：
+
+```bash
+# 安装 Node.js
+curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+apt-get install -y nodejs
+
+# 安装 OpenClaw 二进制
+curl -fsSL https://releases.myclawgo.com/openclaw/latest/openclaw-linux-amd64 \
+  -o /usr/local/bin/openclaw
+chmod +x /usr/local/bin/openclaw
+
+# 创建 openclaw 用户
+useradd -m -s /bin/bash openclaw
+
+# 下载 Bridge 代码
+mkdir -p /opt/myclawgo-bridge
+curl -fsSL https://releases.myclawgo.com/bridge/latest/bridge.tar.gz \
+  | tar -xz -C /opt/myclawgo-bridge
+
+# 复制 systemd service 文件
+# ... （同上）
+
+# 然后继续注入配置 + 启动（同 Snapshot 流程）
+```
+
+> **强烈建议使用 Snapshot**：cold start 约 4–6 分钟，Snapshot 约 60–90 秒，用户体验差距很大。
 
 ### 7.5 注册回调（`/api/internal/runtime/register`）
 

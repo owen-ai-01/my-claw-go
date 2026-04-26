@@ -191,8 +191,11 @@ CONTROL_PLANE_PUBLIC_IP = 46.225.210.174
 
 ## 步骤 5：制作 Snapshot（强烈推荐）
 
-Snapshot = 预配置好 Docker + OpenClaw 镜像的磁盘快照。  
-用 Snapshot 创建新 VPS 可以把初始化时间从 **3–8 分钟**缩短到 **60–90 秒**。
+Snapshot = 预装好 OpenClaw + Bridge + Node.js 的磁盘快照，**不需要 Docker**。  
+用 Snapshot 创建新 VPS 可以把初始化时间从 **4–6 分钟**缩短到 **60–90 秒**。
+
+> **为什么不用 Docker**：每台 VPS 专属一个用户，VPS 本身已经是隔离边界，无需容器再隔离。  
+> OpenClaw 和 Bridge 直接作为 systemd 服务运行，更简单、省去 Docker daemon ~150MB 内存开销。
 
 ### 5.1 临时购买一台模板机
 
@@ -202,62 +205,138 @@ Snapshot = 预配置好 Docker + OpenClaw 镜像的磁盘快照。
 2. 配置：
    - **Location**：`Falkenstein（fsn1）`
    - **Image**：`Ubuntu 24.04`
-   - **Type**：`cx23`（随便一个小机型，做完就删）
+   - **Type**：`cx23`（用完即删，机型不影响 Snapshot）
    - **SSH Keys**：选择步骤 2 上传的密钥
    - **Firewall**：选择步骤 3 创建的 `myclawgo-user-vps-fw`
 3. 点击创建
 
-### 5.2 SSH 登录模板机，安装 Docker
+### 5.2 SSH 登录模板机
 
 ```bash
 ssh -i ~/.ssh/myclawgo_runtime root@<模板机公网 IP>
 ```
 
-```bash
-# 安装 Docker
-curl -fsSL https://get.docker.com | sh
-systemctl enable docker
-systemctl start docker
-
-# 验证
-docker --version
-```
-
-### 5.3 预拉 OpenClaw 镜像
+### 5.3 安装 Node.js
 
 ```bash
-# 替换为实际镜像名
-docker pull myclawgo-openclaw:latest
-
-# 验证
-docker images | grep openclaw
+curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+apt-get install -y nodejs
+node --version  # 验证，应显示 v20.x.x
 ```
 
-> 如果镜像在私有 registry，先执行 `docker login`。
+### 5.4 安装 OpenClaw 二进制
 
-### 5.4 清理模板机
+```bash
+# 下载 OpenClaw 二进制（替换为实际下载地址）
+curl -fsSL <OPENCLAW_BINARY_DOWNLOAD_URL> -o /usr/local/bin/openclaw
+chmod +x /usr/local/bin/openclaw
+
+# 创建 openclaw 系统用户
+useradd -m -s /bin/bash openclaw
+mkdir -p /home/openclaw/.openclaw
+chown -R openclaw:openclaw /home/openclaw
+
+# 验证
+/usr/local/bin/openclaw --version
+```
+
+### 5.5 部署 Bridge 代码
+
+```bash
+# 创建 Bridge 目录
+mkdir -p /opt/myclawgo-bridge
+
+# 上传 bridge 构建产物（在本地构建后 scp 上传）
+# 本地执行：
+#   cd bridge && pnpm build
+#   scp -i ~/.ssh/myclawgo_runtime -r dist package.json \
+#     root@<模板机IP>:/opt/myclawgo-bridge/
+#   ssh -i ~/.ssh/myclawgo_runtime root@<模板机IP> \
+#     "cd /opt/myclawgo-bridge && npm install --production"
+
+chown -R openclaw:openclaw /opt/myclawgo-bridge
+```
+
+### 5.6 创建 systemd 服务文件
+
+```bash
+# OpenClaw Gateway 服务
+cat > /etc/systemd/system/openclaw-gateway.service <<'EOF'
+[Unit]
+Description=OpenClaw Gateway
+After=network.target
+
+[Service]
+User=openclaw
+ExecStart=/usr/local/bin/openclaw gateway run --bind loopback --port 18789
+Restart=always
+RestartSec=5
+WorkingDirectory=/home/openclaw
+Environment=HOME=/home/openclaw
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# Bridge 服务
+cat > /etc/systemd/system/myclawgo-bridge.service <<'EOF'
+[Unit]
+Description=MyClawGo Bridge
+After=network.target openclaw-gateway.service
+Requires=openclaw-gateway.service
+
+[Service]
+User=openclaw
+WorkingDirectory=/opt/myclawgo-bridge
+EnvironmentFile=/etc/myclawgo/bridge.env
+ExecStart=/usr/bin/node dist/index.js
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+systemctl daemon-reload
+# 注意：不要 enable 或 start，cloud-init 会做这一步
+```
+
+### 5.7 创建配置目录
+
+```bash
+mkdir -p /etc/myclawgo
+# bridge.env 由 cloud-init 在每台新 VPS 创建时注入（含 BRIDGE_TOKEN）
+```
+
+### 5.8 清理模板机
 
 ```bash
 apt-get clean && rm -rf /var/lib/apt/lists/*
-docker system prune -f
 journalctl --vacuum-time=1s
 truncate -s 0 /var/log/*.log 2>/dev/null || true
+history -c
 ```
 
-### 5.5 制作 Snapshot
+### 5.9 制作 Snapshot
 
 1. Hetzner Console → `myclawgo-runtime-01` → 找到模板机
 2. 进入服务器详情 → **Snapshots** 标签
 3. 点击 **Take Snapshot**
 4. 名称：`myclawgo-runtime-v1-20260426`
 5. 等待完成（约 3–5 分钟）
-6. 记录 **Snapshot ID**（数字）
+6. 通过 API 查询 Snapshot ID：
+
+```bash
+curl -s -H "Authorization: Bearer <你的API_TOKEN>" \
+  https://api.hetzner.cloud/v1/images?type=snapshot | python3 -m json.tool
+# 找到 name 为 myclawgo-runtime-v1-20260426 的条目，记录 id
+```
 
 ```
-HETZNER_SNAPSHOT_ID = <Snapshot ID>
+HETZNER_SNAPSHOT_ID = <id 字段的数字>
 ```
 
-### 5.6 删除模板机（节省费用）
+### 5.10 删除模板机（节省费用）
 
 Snapshot 完成后删掉模板机，只保留 Snapshot（费用极低）。
 
