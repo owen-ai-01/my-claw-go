@@ -458,7 +458,7 @@ Snapshot 只预装运行环境，**不含 Bridge 代码**。Bridge 由 Control P
 
 ```
 Snapshot 包含（很少变化）：
-├── /usr/local/bin/openclaw            ← root npm install -g openclaw
+├── /usr/bin/openclaw                  ← npm install -g openclaw@2026.4.11（必须指定版本）
 ├── /usr/bin/node（Node.js 20+）
 ├── /opt/myclawgo-bridge/              ← 空目录，注册后由 Control Plane SCP 填充
 ├── /etc/myclawgo/                     ← 空目录，注册后注入 bridge.env
@@ -486,7 +486,7 @@ After=network.target
 
 [Service]
 User=openclaw
-ExecStart=/usr/local/bin/openclaw gateway run --bind loopback --port 18789
+ExecStart=/usr/bin/openclaw gateway run --bind loopback --port 18789
 Restart=always
 RestartSec=5
 WorkingDirectory=/home/openclaw
