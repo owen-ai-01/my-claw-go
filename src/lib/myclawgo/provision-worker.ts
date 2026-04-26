@@ -1,9 +1,14 @@
 import { randomUUID } from 'crypto';
-import { SignJWT } from 'jose';
-import { and, eq, lt, sql } from 'drizzle-orm';
 import { getDb } from '@/db';
-import { hetznerProject, runtimeAllocation, runtimeHost, runtimeProvisionJob } from '@/db/schema';
+import {
+  hetznerProject,
+  runtimeAllocation,
+  runtimeHost,
+  runtimeProvisionJob,
+} from '@/db/schema';
 import { hetznerClient } from '@/lib/hetzner/client';
+import { and, eq, lt, sql } from 'drizzle-orm';
+import { SignJWT } from 'jose';
 import { buildCloudInit } from './cloud-init';
 
 const SERVER_TYPE_MAP: Record<string, string> = {
@@ -28,7 +33,10 @@ async function selectAvailableProject(db: Awaited<ReturnType<typeof getDb>>) {
   return null;
 }
 
-async function signRegistrationToken(payload: { userId: string; jobId: string }) {
+async function signRegistrationToken(payload: {
+  userId: string;
+  jobId: string;
+}) {
   const secret = process.env.RUNTIME_REGISTER_TOKEN_SECRET;
   if (!secret) throw new Error('RUNTIME_REGISTER_TOKEN_SECRET not set');
   const key = new TextEncoder().encode(secret);
@@ -38,7 +46,11 @@ async function signRegistrationToken(payload: { userId: string; jobId: string })
     .sign(key);
 }
 
-async function provisionOneUser(job: { id: string; userId: string; plan: string }) {
+async function provisionOneUser(job: {
+  id: string;
+  userId: string;
+  plan: string;
+}) {
   const db = await getDb();
 
   const project = await selectAvailableProject(db);
@@ -47,9 +59,14 @@ async function provisionOneUser(job: { id: string; userId: string; plan: string 
   }
 
   const bridgeToken = randomUUID();
-  const registrationToken = await signRegistrationToken({ userId: job.userId, jobId: job.id });
+  const registrationToken = await signRegistrationToken({
+    userId: job.userId,
+    jobId: job.id,
+  });
   const serverType = SERVER_TYPE_MAP[job.plan] ?? 'cx23';
-  const callbackUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/internal/runtime/register`;
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+  if (!appUrl) throw new Error('NEXT_PUBLIC_APP_URL not set');
+  const callbackUrl = `${appUrl}/api/internal/runtime/register`;
 
   await db
     .update(runtimeProvisionJob)
@@ -105,7 +122,9 @@ async function cleanupExpiredVps(db: Awaited<ReturnType<typeof getDb>>) {
   const expired = await db
     .select()
     .from(runtimeHost)
-    .where(and(eq(runtimeHost.status, 'stopped'), lt(runtimeHost.stoppedAt, cutoff)));
+    .where(
+      and(eq(runtimeHost.status, 'stopped'), lt(runtimeHost.stoppedAt, cutoff))
+    );
 
   for (const host of expired) {
     if (!host.hetznerServerId || !host.projectId) continue;
@@ -116,7 +135,9 @@ async function cleanupExpiredVps(db: Awaited<ReturnType<typeof getDb>>) {
         .where(eq(hetznerProject.id, host.projectId))
         .limit(1);
       if (project) {
-        await hetznerClient(project.apiToken).deleteServer(Number(host.hetznerServerId));
+        await hetznerClient(project.apiToken).deleteServer(
+          Number(host.hetznerServerId)
+        );
       }
       await db
         .update(runtimeHost)
@@ -128,7 +149,10 @@ async function cleanupExpiredVps(db: Awaited<ReturnType<typeof getDb>>) {
         .where(eq(runtimeAllocation.userId, host.userId!));
       console.log(`[provision] Deleted expired VPS for user ${host.userId}`);
     } catch (err) {
-      console.error(`[provision] Failed to delete expired VPS ${host.id}:`, err);
+      console.error(
+        `[provision] Failed to delete expired VPS ${host.id}:`,
+        err
+      );
     }
   }
 }
@@ -140,22 +164,32 @@ export async function runProvisionWorker() {
     const jobs = await db
       .select()
       .from(runtimeProvisionJob)
-      .where(and(eq(runtimeProvisionJob.status, 'pending'), lt(runtimeProvisionJob.attemptCount, 3)))
+      .where(
+        and(
+          eq(runtimeProvisionJob.status, 'pending'),
+          lt(runtimeProvisionJob.attemptCount, 3)
+        )
+      )
       .for('update', { skipLocked: true })
       .limit(3);
 
     for (const job of jobs) {
+      const nextAttempt = (job.attemptCount ?? 0) + 1;
       await db
         .update(runtimeProvisionJob)
-        .set({ attemptCount: sql`${runtimeProvisionJob.attemptCount} + 1`, updatedAt: new Date() })
+        .set({ attemptCount: nextAttempt, updatedAt: new Date() })
         .where(eq(runtimeProvisionJob.id, job.id));
 
-      provisionOneUser(job).catch(async (err) => {
+      await provisionOneUser(job).catch(async (err) => {
         console.error(`[provision] Failed for user ${job.userId}:`, err);
         const db2 = await getDb();
         await db2
           .update(runtimeProvisionJob)
-          .set({ status: 'failed', lastError: String(err.message), updatedAt: new Date() })
+          .set({
+            status: nextAttempt >= 3 ? 'failed' : 'pending',
+            lastError: String(err.message ?? err),
+            updatedAt: new Date(),
+          })
           .where(eq(runtimeProvisionJob.id, job.id));
       });
     }

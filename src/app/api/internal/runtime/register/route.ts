@@ -1,41 +1,64 @@
+import { randomUUID } from 'crypto';
 import { exec } from 'node:child_process';
 import { promisify } from 'node:util';
-import { randomUUID } from 'crypto';
-import { jwtVerify } from 'jose';
-import { and, eq } from 'drizzle-orm';
 import { getDb } from '@/db';
-import { runtimeAllocation, runtimeHost, runtimeProvisionJob } from '@/db/schema';
+import {
+  runtimeAllocation,
+  runtimeHost,
+  runtimeProvisionJob,
+} from '@/db/schema';
+import { and, eq } from 'drizzle-orm';
+import { jwtVerify } from 'jose';
 import { NextResponse } from 'next/server';
 
 const execAsync = promisify(exec);
 const SSH_KEY = '/home/openclaw/.ssh/myclawgo_runtime';
 const BRIDGE_SRC = '/home/openclaw/project/my-claw-go/bridge';
 
+function shellQuote(value: string) {
+  return `'${value.replace(/'/g, "'\\''")}'`;
+}
+
 async function deployBridgeToVps(publicIp: string, bridgeToken: string) {
+  const sshBase = [
+    'ssh',
+    '-i',
+    shellQuote(SSH_KEY),
+    '-o',
+    'StrictHostKeyChecking=no',
+    '-o',
+    'ConnectTimeout=15',
+    `root@${shellQuote(publicIp)}`,
+  ].join(' ');
+
   await execAsync(
-    `scp -i ${SSH_KEY} -o StrictHostKeyChecking=no -o ConnectTimeout=15 \
-      -r ${BRIDGE_SRC}/dist ${BRIDGE_SRC}/package.json ${BRIDGE_SRC}/package-lock.json \
-      root@${publicIp}:/opt/myclawgo-bridge/`,
-    { timeout: 120_000 },
+    `test -d ${shellQuote(`${BRIDGE_SRC}/dist`)} && \
+     scp -i ${shellQuote(SSH_KEY)} -o StrictHostKeyChecking=no -o ConnectTimeout=15 \
+      -r ${shellQuote(`${BRIDGE_SRC}/dist`)} ${shellQuote(`${BRIDGE_SRC}/package.json`)} \
+      root@${shellQuote(publicIp)}:/opt/myclawgo-bridge/`,
+    { timeout: 120_000 }
   );
 
   await execAsync(
-    `ssh -i ${SSH_KEY} -o StrictHostKeyChecking=no -o ConnectTimeout=15 root@${publicIp} \
-      "cd /opt/myclawgo-bridge && npm install --production && \
+    `${sshBase} \
+      "cd /opt/myclawgo-bridge && npm install --omit=dev && \
        chown -R openclaw:openclaw /opt/myclawgo-bridge && \
-       printf 'BRIDGE_TOKEN=${bridgeToken}\\nGATEWAY_WS_URL=ws://127.0.0.1:18789\\nPORT=18080\\n' > /etc/myclawgo/bridge.env && \
+       printf '%s\\n' ${shellQuote(`BRIDGE_TOKEN=${bridgeToken}`)} 'GATEWAY_WS_URL=ws://127.0.0.1:18789' 'BRIDGE_PORT=18080' > /etc/myclawgo/bridge.env && \
        systemctl enable myclawgo-bridge && systemctl start myclawgo-bridge"`,
-    { timeout: 120_000 },
+    { timeout: 120_000 }
   );
 
   for (let i = 0; i < 12; i++) {
     await new Promise((r) => setTimeout(r, 5000));
     try {
       const res = await fetch(`http://${publicIp}:18080/health`, {
+        headers: { Authorization: `Bearer ${bridgeToken}` },
         signal: AbortSignal.timeout(5000),
       });
       if (res.ok) return;
-    } catch { /* not ready yet */ }
+    } catch {
+      /* not ready yet */
+    }
   }
   throw new Error(`Bridge health check timeout on ${publicIp}`);
 }
@@ -50,7 +73,9 @@ export async function POST(req: Request) {
   let userId: string;
   let jobId: string;
   try {
-    const secret = new TextEncoder().encode(process.env.RUNTIME_REGISTER_TOKEN_SECRET!);
+    const secret = new TextEncoder().encode(
+      process.env.RUNTIME_REGISTER_TOKEN_SECRET!
+    );
     const { payload } = await jwtVerify(token, secret);
     userId = payload.userId as string;
     jobId = payload.jobId as string;
@@ -68,11 +93,19 @@ export async function POST(req: Request) {
   const [host] = await db
     .select()
     .from(runtimeHost)
-    .where(and(eq(runtimeHost.userId, userId), eq(runtimeHost.status, 'waiting_init')))
+    .where(
+      and(
+        eq(runtimeHost.userId, userId),
+        eq(runtimeHost.status, 'waiting_init')
+      )
+    )
     .limit(1);
 
   if (!host) {
-    return NextResponse.json({ error: 'No host in waiting_init state' }, { status: 404 });
+    return NextResponse.json(
+      { error: 'No host in waiting_init state' },
+      { status: 404 }
+    );
   }
 
   const bridgeBaseUrl = `http://${publicIp}:18080`;
@@ -89,7 +122,14 @@ export async function POST(req: Request) {
       .update(runtimeProvisionJob)
       .set({ status: 'failed', lastError: String(err), updatedAt: new Date() })
       .where(eq(runtimeProvisionJob.id, jobId));
-    return NextResponse.json({ error: 'Bridge deploy failed' }, { status: 500 });
+    await db
+      .update(runtimeAllocation)
+      .set({ status: 'failed', updatedAt: new Date() })
+      .where(eq(runtimeAllocation.userId, userId));
+    return NextResponse.json(
+      { error: 'Bridge deploy failed' },
+      { status: 500 }
+    );
   }
 
   await db
