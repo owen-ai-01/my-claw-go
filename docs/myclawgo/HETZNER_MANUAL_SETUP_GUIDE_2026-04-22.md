@@ -149,17 +149,20 @@ HETZNER_FIREWALL_ID = <Firewall ID>
 
 **Control Plane 的公网 IP 必须是固定的**（Hetzner 默认分配的公网 IP 在机器存活期间不变）。
 
-在 SaaS 主机上运行：
+在 SaaS 主机上运行（加 `-4` 强制返回 IPv4，避免返回 IPv6）：
 
 ```bash
-curl -s ifconfig.me
-# 输出你的公网 IP，如：88.99.100.101
+curl -s -4 ifconfig.me
+# 输出公网 IPv4，如：46.225.210.174
 ```
 
-记录这个 IP，步骤 3 的 Firewall 规则里填的就是这个值：
+> **注意**：直接 `curl ifconfig.me` 可能返回 IPv6 地址（`2a01:...`），Firewall 规则里要填 IPv4，务必加 `-4` 参数。  
+> 也可以直接在 Hetzner Console 服务器详情页看到公网 IPv4（更直接）。
+
+记录这个 IP，步骤 3 的 Firewall 规则里 18080 端口的来源就填这个值：
 
 ```
-CONTROL_PLANE_PUBLIC_IP = 88.99.100.101
+CONTROL_PLANE_PUBLIC_IP = 46.225.210.174
 ```
 
 > **如果 Control Plane 未来换机器**：只需通过 Hetzner API 更新 Firewall 规则一次，自动应用到所有用户 VPS（无需逐台操作）。
