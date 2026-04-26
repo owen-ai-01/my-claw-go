@@ -20,10 +20,11 @@ sleep 3
 
 # Notify Control Plane (triggers bridge deployment)
 PUBLIC_IP=$(curl -s -4 --retry 5 --retry-delay 2 ifconfig.me)
+REGISTER_BODY="{\\"publicIp\\": \\"$PUBLIC_IP\\"}"
 curl -X POST "${registrationCallbackUrl}" \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer ${registrationToken}" \\
-  -d "{\"userId\": \"${userId}\", \"publicIp\": \"$PUBLIC_IP\"}" \\
+  -d "$REGISTER_BODY" \\
   --retry 5 --retry-delay 5 || true
 `;
 }
