@@ -40,11 +40,17 @@ async function deployBridgeToVps(publicIp: string, bridgeToken: string) {
   );
 
   await execAsync(
-    `${sshBase} \
-      "cd /opt/myclawgo-bridge && npm install --omit=dev && \
-       chown -R openclaw:openclaw /opt/myclawgo-bridge && \
-       printf '%s\\n' ${shellQuote(`BRIDGE_TOKEN=${bridgeToken}`)} 'GATEWAY_WS_URL=ws://127.0.0.1:18789' 'BRIDGE_PORT=18080' > /etc/myclawgo/bridge.env && \
-       systemctl enable myclawgo-bridge && systemctl start myclawgo-bridge"`,
+    `${sshBase} "
+      cd /opt/myclawgo-bridge && npm install --omit=dev && \
+      chown -R openclaw:openclaw /opt/myclawgo-bridge && \
+      printf '%s\\n' ${shellQuote(`BRIDGE_TOKEN=${bridgeToken}`)} 'GATEWAY_WS_URL=ws://127.0.0.1:18789' 'BRIDGE_PORT=18080' > /etc/myclawgo/bridge.env && \
+      sed -i 's|ExecStart=.*openclaw gateway run.*|ExecStart=/usr/bin/openclaw gateway run --allow-unconfigured --auth none --bind loopback --port 18789|' /etc/systemd/system/openclaw-gateway.service && \
+      sed -i 's|ExecStart=/usr/bin/node dist/index.js|ExecStart=/usr/bin/node dist/server.js|' /etc/systemd/system/myclawgo-bridge.service && \
+      systemctl daemon-reload && \
+      systemctl restart openclaw-gateway && \
+      sleep 2 && \
+      systemctl enable myclawgo-bridge && systemctl restart myclawgo-bridge
+    "`,
     { timeout: 120_000 }
   );
 

@@ -1,6 +1,6 @@
 import fs from 'node:fs/promises';
 import { createPrivateKey, createPublicKey, randomUUID, sign } from 'node:crypto';
-import { createRequire } from 'node:module';
+import WebSocket from 'ws';
 import { appendChatTranscript } from './chat-store.js';
 import { appendActivity } from './activity.js';
 import { BridgeError } from '../lib/errors.js';
@@ -16,10 +16,7 @@ const GATEWAY_ROLE = 'operator';
 const GATEWAY_SCOPES = ['operator.admin'];
 const GATEWAY_PROTOCOL = 3;
 
-const require = createRequire(import.meta.url);
-// Reuse the ws package bundled with openclaw runtime inside the container.
-// At runtime this file exists; at build time TypeScript treats it as any.
-const WS = require('/usr/local/lib/node_modules/openclaw/node_modules/ws/index.js');
+const WS = WebSocket;
 
 type RuntimeConfig = {
   gateway?: {
