@@ -10,6 +10,7 @@ import {
 import { and, eq } from 'drizzle-orm';
 import { jwtVerify } from 'jose';
 import { NextResponse } from 'next/server';
+import { getUserOpenrouterKey } from '@/lib/myclawgo/openrouter-key-provisioner';
 
 const execAsync = promisify(exec);
 const SSH_KEY = '/home/openclaw/.ssh/myclawgo_runtime';
@@ -19,7 +20,30 @@ function shellQuote(value: string) {
   return `'${value.replace(/'/g, "'\\''")}'`;
 }
 
-async function deployBridgeToVps(publicIp: string, bridgeToken: string) {
+function buildAuthProfileJson(apiKey: string): string {
+  return JSON.stringify(
+    {
+      version: 1,
+      profiles: {
+        'openrouter:default': {
+          type: 'api_key',
+          provider: 'openrouter',
+          key: apiKey,
+        },
+      },
+      lastGood: { openrouter: 'openrouter:default' },
+      usageStats: {},
+    },
+    null,
+    2
+  );
+}
+
+async function deployBridgeToVps(
+  publicIp: string,
+  bridgeToken: string,
+  openrouterKey: string,
+) {
   const sshBase = [
     'ssh',
     '-i',
@@ -53,6 +77,21 @@ async function deployBridgeToVps(publicIp: string, bridgeToken: string) {
     "`,
     { timeout: 120_000 }
   );
+
+  if (openrouterKey) {
+    const authProfileB64 = Buffer.from(
+      buildAuthProfileJson(openrouterKey)
+    ).toString('base64');
+    await execAsync(
+      `${sshBase} "
+        mkdir -p /home/openclaw/.openclaw/agents/main/agent && \
+        printf '%s' ${shellQuote(authProfileB64)} | base64 -d > /home/openclaw/.openclaw/agents/main/agent/auth-profiles.json && \
+        chown -R openclaw:openclaw /home/openclaw/.openclaw/agents/main/agent && \
+        systemctl restart openclaw-gateway
+      "`,
+      { timeout: 60_000 }
+    );
+  }
 
   for (let i = 0; i < 12; i++) {
     await new Promise((r) => setTimeout(r, 5000));
@@ -116,8 +155,18 @@ export async function POST(req: Request) {
 
   const bridgeBaseUrl = `http://${publicIp}:18080`;
 
+  const openrouterKey =
+    (await getUserOpenrouterKey(userId)) ??
+    process.env.OPENROUTER_API_KEY ??
+    '';
+  if (!openrouterKey) {
+    console.warn(
+      `[register] No OpenRouter key for user ${userId} — gateway will start without AI auth`
+    );
+  }
+
   try {
-    await deployBridgeToVps(publicIp, host.bridgeToken!);
+    await deployBridgeToVps(publicIp, host.bridgeToken!, openrouterKey);
   } catch (err) {
     console.error(`[register] Bridge deploy failed for user ${userId}:`, err);
     await db
