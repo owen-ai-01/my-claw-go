@@ -79,6 +79,28 @@ export async function GET(
       { status: 400 }
     );
 
+  // VPS mode: forward to bridge
+  const bridge = await requireUserBridgeTarget();
+  if (bridge.ok) {
+    try {
+      const res = await fetch(
+        `${bridge.target.bridge.baseUrl}/agents/${encodeURIComponent(agentId)}/docs/${docKey}`,
+        {
+          headers: { authorization: `Bearer ${bridge.target.bridge.token}` },
+          cache: 'no-store',
+        }
+      );
+      const payload = await res.json();
+      return NextResponse.json(payload, { status: res.status });
+    } catch (error) {
+      return NextResponse.json(
+        { ok: false, error: error instanceof Error ? error.message : 'Failed to read doc' },
+        { status: 500 }
+      );
+    }
+  }
+
+  // Docker mode fallback
   const runtimeSession = await getSession(userId);
   if (!runtimeSession?.containerName) {
     return NextResponse.json(
@@ -132,6 +154,43 @@ export async function PUT(
       { status: 400 }
     );
 
+  const body = (await req.json().catch(() => ({}))) as { content?: string };
+  const content = typeof body.content === 'string' ? body.content : '';
+
+  const MAX_DOC_SIZE = 5 * 1024 * 1024;
+  if (Buffer.byteLength(content, 'utf8') > MAX_DOC_SIZE) {
+    return NextResponse.json(
+      { ok: false, error: 'Content too large (max 5MB)' },
+      { status: 413 }
+    );
+  }
+
+  // VPS mode: forward to bridge
+  const bridge = await requireUserBridgeTarget();
+  if (bridge.ok) {
+    try {
+      const res = await fetch(
+        `${bridge.target.bridge.baseUrl}/agents/${encodeURIComponent(agentId)}/docs/${docKey}`,
+        {
+          method: 'PUT',
+          headers: {
+            authorization: `Bearer ${bridge.target.bridge.token}`,
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify({ content }),
+        }
+      );
+      const payload = await res.json();
+      return NextResponse.json(payload, { status: res.status });
+    } catch (error) {
+      return NextResponse.json(
+        { ok: false, error: error instanceof Error ? error.message : 'Failed to write doc' },
+        { status: 500 }
+      );
+    }
+  }
+
+  // Docker mode fallback
   const runtimeSession = await getSession(userId);
   if (!runtimeSession?.containerName) {
     return NextResponse.json(
@@ -140,18 +199,9 @@ export async function PUT(
     );
   }
 
-  const MAX_DOC_SIZE = 5 * 1024 * 1024; // 5MB
   const WORKSPACE_PREFIX = '/home/openclaw/';
 
   try {
-    const body = (await req.json().catch(() => ({}))) as { content?: string };
-    const content = typeof body.content === 'string' ? body.content : '';
-    if (Buffer.byteLength(content, 'utf8') > MAX_DOC_SIZE) {
-      return NextResponse.json(
-        { ok: false, error: 'Content too large (max 5MB)' },
-        { status: 413 }
-      );
-    }
     const workspace = await resolveAgentWorkspace(agentId);
     if (!workspace.startsWith(WORKSPACE_PREFIX)) {
       return NextResponse.json(
