@@ -34,10 +34,19 @@ export async function POST(req: Request) {
   const db = await getDb();
   const now = new Date();
 
+  const MAX_CONTENT = 5 * 1024 * 1024; // 5 MB
+
   if (body.type === 'agent_doc') {
     const { agentId, docKey, content } = body as { agentId: string; docKey: string; content: string };
+    const VALID_DOC_KEYS = ['agents', 'identity', 'user', 'soul', 'tools'];
     if (!agentId || !docKey || typeof content !== 'string') {
       return NextResponse.json({ ok: false, error: 'Missing fields' }, { status: 400 });
+    }
+    if (!VALID_DOC_KEYS.includes(docKey)) {
+      return NextResponse.json({ ok: false, error: 'Invalid docKey' }, { status: 400 });
+    }
+    if (Buffer.byteLength(content, 'utf8') > MAX_CONTENT) {
+      return NextResponse.json({ ok: false, error: 'Content too large' }, { status: 413 });
     }
     await db
       .insert(userAgentDoc)
@@ -104,6 +113,12 @@ export async function POST(req: Request) {
     };
     if (!m.role || !m.agentId || typeof m.content !== 'string') {
       return NextResponse.json({ ok: false, error: 'Missing message fields' }, { status: 400 });
+    }
+    if (m.role !== 'user' && m.role !== 'assistant') {
+      return NextResponse.json({ ok: false, error: 'Invalid role' }, { status: 400 });
+    }
+    if (Buffer.byteLength(m.content, 'utf8') > MAX_CONTENT) {
+      return NextResponse.json({ ok: false, error: 'Content too large' }, { status: 413 });
     }
     await db.insert(userChatMessage).values({
       id: m.messageId || randomUUID(),

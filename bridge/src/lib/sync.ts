@@ -42,10 +42,18 @@ export type ChatMessageEvent = {
 
 export type SyncEvent = AgentDocEvent | GroupUpsertEvent | GroupDeleteEvent | ChatMessageEvent;
 
+let _warnedOnce = false;
+
 export function syncToPg(event: SyncEvent): void {
   const appUrl = process.env.MYCLAWGO_APP_URL;
   const token = process.env.BRIDGE_TOKEN;
-  if (!appUrl || !token) return;
+  if (!appUrl || !token) {
+    if (!_warnedOnce) {
+      console.warn('[sync] MYCLAWGO_APP_URL or BRIDGE_TOKEN not set — PG sync disabled');
+      _warnedOnce = true;
+    }
+    return;
+  }
 
   const body: SyncEvent =
     event.type === 'chat_message'
