@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { BridgeError } from '../lib/errors.js';
 import { OPENCLAW_CONFIG_PATH, OPENCLAW_HOME } from '../lib/paths.js';
+import { syncToPg } from '../lib/sync.js';
 import { getBridgeState } from './state.js';
 
 type AgentIdentity = {
@@ -323,6 +324,7 @@ export async function updateAgentDoc(agentId: string, docKey: AgentDocKey, conte
   const docPath = resolveAgentDocPath(agent.workspace, docKey);
   await fs.mkdir(path.dirname(docPath), { recursive: true });
   await fs.writeFile(docPath, content, 'utf8');
+  syncToPg({ type: 'agent_doc', agentId, docKey, content });
   return {
     agentId,
     docKey,

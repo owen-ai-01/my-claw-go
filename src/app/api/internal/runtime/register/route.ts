@@ -6,6 +6,8 @@ import {
   runtimeAllocation,
   runtimeHost,
   runtimeProvisionJob,
+  userAgentDoc,
+  userGroup,
 } from '@/db/schema';
 import { and, eq } from 'drizzle-orm';
 import { jwtVerify } from 'jose';
@@ -43,6 +45,8 @@ async function deployBridgeToVps(
   publicIp: string,
   bridgeToken: string,
   openrouterKey: string,
+  appUrl: string,
+  userId: string,
 ) {
   const sshBase = [
     'ssh',
@@ -67,7 +71,7 @@ async function deployBridgeToVps(
     `${sshBase} "
       cd /opt/myclawgo-bridge && npm install --omit=dev && \
       chown -R openclaw:openclaw /opt/myclawgo-bridge && \
-      printf '%s\\n' ${shellQuote(`BRIDGE_TOKEN=${bridgeToken}`)} 'GATEWAY_WS_URL=ws://127.0.0.1:18789' 'BRIDGE_PORT=18080' > /etc/myclawgo/bridge.env && \
+      printf '%s\\n' ${shellQuote(`BRIDGE_TOKEN=${bridgeToken}`)} 'GATEWAY_WS_URL=ws://127.0.0.1:18789' 'BRIDGE_PORT=18080' ${shellQuote(`MYCLAWGO_APP_URL=${appUrl}`)} > /etc/myclawgo/bridge.env && \
       sed -i 's|ExecStart=.*openclaw gateway run.*|ExecStart=/usr/bin/openclaw gateway run --allow-unconfigured --auth none --bind loopback --port 18789|' /etc/systemd/system/openclaw-gateway.service && \
       sed -i 's|ExecStart=/usr/bin/node dist/index.js|ExecStart=/usr/bin/node dist/server.js|' /etc/systemd/system/myclawgo-bridge.service && \
       systemctl daemon-reload && \
@@ -114,6 +118,12 @@ async function deployBridgeToVps(
         }).catch((e) =>
           console.warn('[register] create main agent failed (non-fatal):', e)
         );
+
+        // Restore backed-up agent docs and groups from PG.
+        await restoreFromPg(publicIp, bridgeToken, userId).catch((e) =>
+          console.warn('[register] restore from PG failed (non-fatal):', e)
+        );
+
         return;
       }
     } catch {
@@ -121,6 +131,62 @@ async function deployBridgeToVps(
     }
   }
   throw new Error(`Bridge health check timeout on ${publicIp}`);
+}
+
+async function restoreFromPg(publicIp: string, bridgeToken: string, userId: string) {
+  const db = await getDb();
+  const bridgeBase = `http://${publicIp}:18080`;
+  const authHeaders = {
+    Authorization: `Bearer ${bridgeToken}`,
+    'Content-Type': 'application/json',
+  };
+
+  // Restore agent docs
+  const docs = await db
+    .select()
+    .from(userAgentDoc)
+    .where(eq(userAgentDoc.userId, userId));
+
+  for (const doc of docs) {
+    await fetch(
+      `${bridgeBase}/agents/${encodeURIComponent(doc.agentId)}/docs/${doc.docKey}`,
+      {
+        method: 'PUT',
+        headers: authHeaders,
+        body: JSON.stringify({ content: doc.content }),
+        signal: AbortSignal.timeout(10_000),
+      }
+    ).catch((e) =>
+      console.warn(`[register] restore doc ${doc.agentId}/${doc.docKey} failed:`, e)
+    );
+  }
+
+  // Restore groups (agents need to exist first; bridge will reject missing leaders)
+  const groups = await db
+    .select()
+    .from(userGroup)
+    .where(eq(userGroup.userId, userId));
+
+  for (const g of groups) {
+    await fetch(`${bridgeBase}/groups`, {
+      method: 'POST',
+      headers: authHeaders,
+      body: JSON.stringify({
+        id: g.groupId,
+        name: g.name,
+        description: g.description,
+        leaderId: g.leaderId,
+        members: g.members,
+        relay: g.relay,
+        channels: g.channels,
+      }),
+      signal: AbortSignal.timeout(10_000),
+    }).catch((e) =>
+      console.warn(`[register] restore group ${g.groupId} failed:`, e)
+    );
+  }
+
+  console.log(`[register] restored ${docs.length} docs and ${groups.length} groups for user ${userId}`);
 }
 
 export async function POST(req: Request) {
@@ -180,8 +246,10 @@ export async function POST(req: Request) {
     );
   }
 
+  const appUrl = process.env.NEXT_PUBLIC_BASE_URL ?? '';
+
   try {
-    await deployBridgeToVps(publicIp, host.bridgeToken!, openrouterKey);
+    await deployBridgeToVps(publicIp, host.bridgeToken!, openrouterKey, appUrl, userId);
   } catch (err) {
     console.error(`[register] Bridge deploy failed for user ${userId}:`, err);
     await db

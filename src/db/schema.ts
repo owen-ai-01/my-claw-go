@@ -205,12 +205,18 @@ export const userChatMessage = pgTable("user_chat_message", {
   content: text("content").notNull(),
   status: text("status").notNull().default('done'), // pending | running | done | failed
   taskId: text("task_id"),
+  groupId: text("group_id"),
+  channel: text("channel").notNull().default("direct"),
+  chatScope: text("chat_scope").notNull().default("default"),
+  routedAgentId: text("routed_agent_id"),
+  metaJson: jsonb("meta_json"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => ({
   userChatMessageUserIdx: index("user_chat_message_user_idx").on(table.userId),
   userChatMessageUserAgentIdx: index("user_chat_message_user_agent_idx").on(table.userId, table.agentId),
   userChatMessageCreatedAtIdx: index("user_chat_message_created_at_idx").on(table.createdAt),
+  userChatMessageGroupIdx: index("user_chat_message_group_idx").on(table.userId, table.groupId),
 }));
 
 export const userChatTask = pgTable("user_chat_task", {
@@ -332,3 +338,36 @@ export const runtimeProvisionJob = pgTable('runtimeProvisionJob', {
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });
+
+// ── Bridge Sync Tables ──────────────────────────────────────────────────────
+// Backed-up from VPS filesystem via bridge→app sync calls.
+
+export const userAgentDoc = pgTable('user_agent_doc', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  agentId: text('agent_id').notNull(),
+  docKey: text('doc_key').notNull(), // agents | identity | user | soul | tools
+  content: text('content').notNull().default(''),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  userAgentDocUniqueIdx: uniqueIndex('user_agent_doc_unique_idx').on(table.userId, table.agentId, table.docKey),
+  userAgentDocUserIdx: index('user_agent_doc_user_idx').on(table.userId),
+  userAgentDocUserAgentIdx: index('user_agent_doc_user_agent_idx').on(table.userId, table.agentId),
+}));
+
+export const userGroup = pgTable('user_group', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  groupId: text('group_id').notNull(),
+  name: text('name').notNull(),
+  description: text('description'),
+  leaderId: text('leader_id').notNull(),
+  members: jsonb('members').$type<string[]>().notNull(),
+  relay: jsonb('relay'),
+  channels: jsonb('channels'),
+  groupCreatedAt: timestamp('group_created_at', { withTimezone: true }),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  userGroupUniqueIdx: uniqueIndex('user_group_unique_idx').on(table.userId, table.groupId),
+  userGroupUserIdx: index('user_group_user_idx').on(table.userId),
+}));

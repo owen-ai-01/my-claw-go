@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { BridgeError } from '../lib/errors.js';
 import { OPENCLAW_CONFIG_PATH, OPENCLAW_HOME } from '../lib/paths.js';
+import { syncToPg } from '../lib/sync.js';
 
 type Group = {
   id: string;
@@ -171,7 +172,7 @@ export async function createGroup(params: {
 
   store.groups.push(newGroup);
   await writeGroupStore(store);
-
+  syncToPg({ type: 'group_upsert', group: newGroup });
   return newGroup;
 }
 
@@ -242,7 +243,7 @@ export async function updateGroup(groupId: string, patch: {
   group.updatedAt = new Date().toISOString();
   store.groups[index] = group;
   await writeGroupStore(store);
-
+  syncToPg({ type: 'group_upsert', group });
   return group;
 }
 
@@ -256,6 +257,6 @@ export async function deleteGroup(groupId: string) {
 
   store.groups.splice(index, 1);
   await writeGroupStore(store);
-
+  syncToPg({ type: 'group_delete', groupId });
   return { deleted: true, groupId };
 }
