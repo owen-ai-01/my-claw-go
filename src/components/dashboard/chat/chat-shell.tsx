@@ -146,8 +146,13 @@ function renderMessageContent(
     id: string;
     name?: string;
     identity?: { name?: string; emoji?: string };
-  }[] = []
+  }[] = [],
+  variant: 'user' | 'assistant' = 'assistant'
 ) {
+  const badgeClass =
+    variant === 'user'
+      ? 'inline-flex items-center gap-1 rounded-full bg-white/25 px-1.5 py-0.5 text-[11px] font-semibold text-white'
+      : 'inline-flex items-center gap-1 rounded-full bg-primary/15 px-1.5 py-0.5 text-[11px] font-semibold text-primary';
   const parts = content.split(/(@[a-zA-Z0-9_-]+)/g);
   return parts.map((part, i) => {
     if (part.startsWith('@')) {
@@ -157,7 +162,7 @@ function renderMessageContent(
         <span
           key={i}
           title={member ? agentLabel(member) : id}
-          className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-1.5 py-0.5 text-[11px] font-semibold text-primary"
+          className={badgeClass}
         >
           {member ? agentEmoji(member) : null}@{id}
         </span>
@@ -2549,7 +2554,8 @@ function ChatLayout() {
                         {selectedGroup
                           ? renderMessageContent(
                               displayContent,
-                              selectedGroupMembers
+                              selectedGroupMembers,
+                              msg.role
                             )
                           : msg.content}
                       </div>
