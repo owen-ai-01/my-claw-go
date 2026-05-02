@@ -2496,13 +2496,16 @@ function ChatLayout() {
                 const speakerAgent =
                   agents.find((agent) => agent.id === speakerId) ||
                   selectedAgent;
-                const displayContent = selectedGroup
-                  ? normalizeMentionsForDisplay(
-                      msg.content,
-                      selectedGroup.members,
-                      speakerId
-                    )
-                  : msg.content;
+                // normalizeMentionsForDisplay is for agent relay messages only.
+                // User messages must not be normalized — the user's @mention is intentional.
+                const displayContent =
+                  selectedGroup && msg.role === 'assistant'
+                    ? normalizeMentionsForDisplay(
+                        msg.content,
+                        selectedGroup.members,
+                        speakerId
+                      )
+                    : msg.content;
                 const timeText = formatMessageTime(msg.createdAt);
 
                 return (
