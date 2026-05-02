@@ -16,6 +16,7 @@ import { Routes } from '@/routes';
 import { Minimize2, RefreshCcw } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
 type RuntimeStatus =
@@ -89,6 +90,140 @@ type AgentDocResponse = {
     content: string;
   };
 };
+
+// ── Provisioning Progress ────────────────────────────────────────────────────
+
+type ProvisionStep = {
+  label: string;
+  sublabel: string;
+};
+
+const PROVISION_STEPS: ProvisionStep[] = [
+  { label: 'Payment confirmed', sublabel: 'Your subscription is active' },
+  { label: 'Creating private server', sublabel: 'Provisioning a dedicated VPS on Hetzner Cloud' },
+  { label: 'Configuring AI workspace', sublabel: 'Installing bridge, gateway and AI credentials' },
+  { label: 'Almost ready', sublabel: 'Running final health checks' },
+];
+
+// reason → which step is currently active (0-based)
+function reasonToStepIndex(reason?: string): number {
+  if (reason === 'waiting_init') return 2;
+  if (reason === 'buying_vps') return 1;
+  return 0; // pending or unknown
+}
+
+// Base and max animated progress (%) for each active step
+const STEP_PROGRESS: [number, number][] = [
+  [8, 22],
+  [28, 52],
+  [58, 82],
+  [88, 95],
+];
+
+function ProvisioningProgress({ reason }: { reason?: string }) {
+  const stepIndex = reasonToStepIndex(reason);
+  const [base, cap] = STEP_PROGRESS[stepIndex] ?? [8, 22];
+  const [progress, setProgress] = useState(base);
+
+  useEffect(() => {
+    setProgress(base);
+    const startTime = Date.now();
+    const duration = 150_000; // 2.5 min to reach cap
+    const id = setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      const t = Math.min(elapsed / duration, 1);
+      const eased = 1 - (1 - t) * (1 - t); // ease-out
+      setProgress(base + (cap - base) * eased);
+    }, 600);
+    return () => clearInterval(id);
+  }, [base, cap]);
+
+  return (
+    <div className="rounded-2xl border bg-card p-10 shadow-sm">
+      <div className="mx-auto flex max-w-md flex-col">
+        {/* Header */}
+        <div className="mb-8 flex flex-col items-center text-center">
+          <div className="mb-3 text-4xl">🚀</div>
+          <h2 className="text-xl font-semibold">Setting up your workspace</h2>
+          <p className="mt-1.5 text-sm text-muted-foreground">
+            Usually takes 2–3 minutes. This page refreshes automatically.
+          </p>
+        </div>
+
+        {/* Progress bar */}
+        <div className="mb-6 h-2 overflow-hidden rounded-full bg-muted">
+          <div
+            className="h-full rounded-full bg-primary transition-all duration-700"
+            style={{ width: `${progress.toFixed(1)}%` }}
+          />
+        </div>
+        <p className="mb-6 text-right text-xs tabular-nums text-muted-foreground">
+          {Math.round(progress)}%
+        </p>
+
+        {/* Steps */}
+        <div className="space-y-4">
+          {PROVISION_STEPS.map((step, i) => {
+            const isDone = i < stepIndex;
+            const isActive = i === stepIndex;
+            const isPending = i > stepIndex;
+            return (
+              <div key={i} className="flex items-start gap-3">
+                {/* Icon */}
+                <div
+                  className={cn(
+                    'mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold',
+                    isDone && 'bg-green-500 text-white',
+                    isActive && 'bg-primary text-primary-foreground',
+                    isPending && 'bg-muted text-muted-foreground',
+                  )}
+                >
+                  {isDone ? (
+                    '✓'
+                  ) : isActive ? (
+                    <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
+                  ) : (
+                    <span className="h-2 w-2 rounded-full bg-muted-foreground/40" />
+                  )}
+                </div>
+
+                {/* Text */}
+                <div className={cn('flex-1', isPending && 'opacity-40')}>
+                  <p
+                    className={cn(
+                      'text-sm font-medium leading-tight',
+                      isDone && 'text-muted-foreground',
+                      isActive && 'text-foreground',
+                    )}
+                  >
+                    {step.label}
+                  </p>
+                  {(isDone || isActive) && (
+                    <p className="mt-0.5 text-xs text-muted-foreground">{step.sublabel}</p>
+                  )}
+                </div>
+
+                {/* Status badge */}
+                {isActive && (
+                  <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
+                    In progress
+                  </span>
+                )}
+                {isDone && (
+                  <span className="shrink-0 rounded-full bg-green-100 px-2 py-0.5 text-[11px] font-medium text-green-700">
+                    Done
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────���───
 
 function agentLabel(agent: Partial<AgentItem>) {
   return (
@@ -2869,16 +3004,7 @@ export function ChatShell() {
     return (
       <div className="flex flex-col gap-4">
         <PageHeader credits={credits} />
-        <div className="rounded-2xl border bg-card p-10 shadow-sm">
-          <div className="mx-auto flex max-w-sm flex-col items-center text-center">
-            <div className="mb-4 text-4xl">⚙️</div>
-            <h2 className="text-xl font-semibold">Setting up your workspace</h2>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Your private AI workspace is being created. This usually takes 2–3 minutes.
-            </p>
-            <p className="mt-4 text-xs text-muted-foreground">The page will update automatically when ready.</p>
-          </div>
-        </div>
+        <ProvisioningProgress reason={status.reason} />
       </div>
     );
   }
