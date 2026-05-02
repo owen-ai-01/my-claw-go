@@ -78,20 +78,17 @@ async function deployBridgeToVps(
     { timeout: 120_000 }
   );
 
-  if (openrouterKey) {
-    const authProfileB64 = Buffer.from(
-      buildAuthProfileJson(openrouterKey)
-    ).toString('base64');
-    await execAsync(
-      `${sshBase} "
-        mkdir -p /home/openclaw/.openclaw/agents/main/agent && \
-        printf '%s' ${shellQuote(authProfileB64)} | base64 -d > /home/openclaw/.openclaw/agents/main/agent/auth-profiles.json && \
-        chown -R openclaw:openclaw /home/openclaw/.openclaw/agents/main/agent && \
-        systemctl restart openclaw-gateway
-      "`,
-      { timeout: 60_000 }
-    );
-  }
+  // Fix agents directory ownership (gateway creates it as root during first-boot)
+  // and write OpenRouter auth key so gateway can call AI providers.
+  const authSteps = openrouterKey
+    ? `chown -R openclaw:openclaw /home/openclaw/.openclaw/agents && \
+       mkdir -p /home/openclaw/.openclaw/agents/main/agent && \
+       printf '%s' ${shellQuote(Buffer.from(buildAuthProfileJson(openrouterKey)).toString('base64'))} | base64 -d > /home/openclaw/.openclaw/agents/main/agent/auth-profiles.json && \
+       chown -R openclaw:openclaw /home/openclaw/.openclaw/agents/main/agent && \
+       systemctl restart openclaw-gateway`
+    : `chown -R openclaw:openclaw /home/openclaw/.openclaw/agents`;
+
+  await execAsync(`${sshBase} "${authSteps}"`, { timeout: 60_000 });
 
   for (let i = 0; i < 12; i++) {
     await new Promise((r) => setTimeout(r, 5000));
@@ -100,7 +97,25 @@ async function deployBridgeToVps(
         headers: { Authorization: `Bearer ${bridgeToken}` },
         signal: AbortSignal.timeout(5000),
       });
-      if (res.ok) return;
+      if (res.ok) {
+        // Create the default main agent so the UI loads immediately.
+        await fetch(`http://${publicIp}:18080/agents`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${bridgeToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            agentId: 'main',
+            name: 'Main Agent',
+            model: 'openrouter/openai/gpt-4o-mini',
+          }),
+          signal: AbortSignal.timeout(10_000),
+        }).catch((e) =>
+          console.warn('[register] create main agent failed (non-fatal):', e)
+        );
+        return;
+      }
     } catch {
       /* not ready yet */
     }
