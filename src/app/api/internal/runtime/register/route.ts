@@ -85,12 +85,13 @@ async function deployBridgeToVps(
   // Fix agents directory ownership (gateway creates it as root during first-boot)
   // and write OpenRouter auth key so gateway can call AI providers.
   const authSteps = openrouterKey
-    ? `chown -R openclaw:openclaw /home/openclaw/.openclaw/agents && \
+    ? `mkdir -p /home/openclaw/.openclaw/agents && \
+       chown -R openclaw:openclaw /home/openclaw/.openclaw/agents && \
        mkdir -p /home/openclaw/.openclaw/agents/main/agent && \
        printf '%s' ${shellQuote(Buffer.from(buildAuthProfileJson(openrouterKey)).toString('base64'))} | base64 -d > /home/openclaw/.openclaw/agents/main/agent/auth-profiles.json && \
        chown -R openclaw:openclaw /home/openclaw/.openclaw/agents/main/agent && \
        systemctl restart openclaw-gateway`
-    : `chown -R openclaw:openclaw /home/openclaw/.openclaw/agents`;
+    : `mkdir -p /home/openclaw/.openclaw/agents && chown -R openclaw:openclaw /home/openclaw/.openclaw/agents`;
 
   await execAsync(`${sshBase} "${authSteps}"`, { timeout: 60_000 });
 
