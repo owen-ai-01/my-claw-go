@@ -2838,8 +2838,17 @@ function ChatLayout() {
                         : 'hover:bg-muted'
                     }`}
                   >
-                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-xs flex-shrink-0">
-                      {agentEmoji(member)}
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-xs flex-shrink-0 overflow-hidden">
+                      {member.identity?.avatar ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={member.identity.avatar}
+                          alt={agentLabel(member)}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        agentEmoji(member)
+                      )}
                     </span>
                     <span className="font-medium truncate">
                       {agentLabel(member)}
