@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto';
 import { getDb } from '@/db';
 import {
+  payment,
   runtimeAllocation,
   runtimeHost,
   runtimeProvisionJob,
@@ -11,7 +12,8 @@ import {
   getHetznerProjectById,
   getHetznerProjects,
 } from '@/lib/hetzner/projects';
-import { and, eq, lt, sql } from 'drizzle-orm';
+import { stopRuntimeForUser } from './runtime-provision';
+import { and, eq, inArray, lt, sql } from 'drizzle-orm';
 import { SignJWT } from 'jose';
 import { buildCloudInit } from './cloud-init';
 
@@ -155,7 +157,7 @@ async function cleanupExpiredVps(db: Awaited<ReturnType<typeof getDb>>) {
         .where(eq(runtimeHost.id, host.id));
       await db
         .update(runtimeAllocation)
-        .set({ status: 'failed', updatedAt: new Date() })
+        .set({ status: 'stopped', updatedAt: new Date() })
         .where(eq(runtimeAllocation.userId, host.userId!));
       console.log(`[provision] Deleted expired VPS for user ${host.userId}`);
     } catch (err) {
@@ -164,6 +166,51 @@ async function cleanupExpiredVps(db: Awaited<ReturnType<typeof getDb>>) {
         err
       );
     }
+  }
+}
+
+// Fallback: stop VPS for users whose subscription has expired but the
+// Stripe webhook was missed or delayed.
+async function stopExpiredSubscriptionVps(
+  db: Awaited<ReturnType<typeof getDb>>
+) {
+  // Find users with a running VPS who have no active paid plan.
+  const activeAllocs = await db
+    .select({ userId: runtimeAllocation.userId })
+    .from(runtimeAllocation)
+    .where(eq(runtimeAllocation.status, 'ready'));
+
+  if (activeAllocs.length === 0) return;
+
+  const activeUserIds = activeAllocs.map((r) => r.userId);
+
+  // Users with a valid active plan (subscription still in period, or lifetime).
+  const validPayments = await db
+    .select({ userId: payment.userId })
+    .from(payment)
+    .where(
+      and(
+        eq(payment.paid, true),
+        inArray(payment.userId, activeUserIds),
+        sql`(
+          (${payment.scene} = 'lifetime' AND ${payment.status} = 'active')
+          OR (${payment.scene} = 'subscription'
+              AND ${payment.status} IN ('active', 'trialing')
+              AND (${payment.periodEnd} IS NULL OR ${payment.periodEnd} > NOW()))
+        )`
+      )
+    );
+
+  const coveredUserIds = new Set(validPayments.map((r) => r.userId));
+  const expiredUserIds = activeUserIds.filter((id) => !coveredUserIds.has(id));
+
+  for (const userId of expiredUserIds) {
+    console.log(
+      `[provision] Subscription expired for user ${userId}, stopping VPS`
+    );
+    await stopRuntimeForUser(userId).catch((err) =>
+      console.error(`[provision] Failed to stop VPS for expired user ${userId}:`, err)
+    );
   }
 }
 
@@ -204,6 +251,7 @@ export async function runProvisionWorker() {
       });
     }
 
+    await stopExpiredSubscriptionVps(db);
     await cleanupExpiredVps(db);
   } catch (err) {
     console.error('[provision] Worker error:', err);
