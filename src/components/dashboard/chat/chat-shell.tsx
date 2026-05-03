@@ -1315,7 +1315,20 @@ function CreateGroupModal({
                           : 'border-border hover:bg-muted/60'
                       }`}
                     >
-                      <span className="text-base">{agentEmoji(agent)}</span>
+                      <div className="h-7 w-7 flex-shrink-0 overflow-hidden rounded-full bg-primary/10">
+                        {agent.identity?.avatar ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={agent.identity.avatar}
+                            alt={agentLabel(agent)}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center text-xs">
+                            {agentEmoji(agent)}
+                          </div>
+                        )}
+                      </div>
                       <span className="truncate">{agentLabel(agent)}</span>
                       {checked && (
                         <span className="ml-auto text-primary">✓</span>
@@ -1596,7 +1609,20 @@ function EditGroupModal({
                           : 'border-border hover:bg-muted/60'
                       }`}
                     >
-                      <span className="text-base">{agentEmoji(agent)}</span>
+                      <div className="h-7 w-7 flex-shrink-0 overflow-hidden rounded-full bg-primary/10">
+                        {agent.identity?.avatar ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={agent.identity.avatar}
+                            alt={agentLabel(agent)}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center text-xs">
+                            {agentEmoji(agent)}
+                          </div>
+                        )}
+                      </div>
                       <span className="truncate">{agentLabel(agent)}</span>
                       {checked && (
                         <span className="ml-auto text-primary">✓</span>
