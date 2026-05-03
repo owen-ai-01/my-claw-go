@@ -139,12 +139,8 @@ async function writeAgentMetadataStore(store: AgentMetadataStore) {
 }
 
 async function readConfig() {
-  try {
-    const raw = await fs.readFile(OPENCLAW_CONFIG_PATH, 'utf8');
-    return JSON.parse(raw) as OpenClawConfig;
-  } catch {
-    return {} as OpenClawConfig;
-  }
+  const raw = await fs.readFile(OPENCLAW_CONFIG_PATH, 'utf8');
+  return JSON.parse(raw) as OpenClawConfig;
 }
 
 function sanitizeOpenClawAgentList(config: OpenClawConfig) {
