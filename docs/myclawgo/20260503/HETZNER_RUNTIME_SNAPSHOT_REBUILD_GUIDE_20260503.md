@@ -1,66 +1,70 @@
-# Hetzner Runtime Snapshot Rebuild Guide
+# Hetzner Runtime Snapshot 重做指南
 
-Date: 2026-05-03
+日期：2026-05-03
 
-Purpose: rebuild the MyClawGo user VPS snapshot so newly provisioned VPS instances boot with the current OpenClaw gateway and bridge systemd configuration.
+目的：重新制作 MyClawGo 用户 VPS 的 Hetzner Snapshot，让后续新创建的用户 VPS 使用当前正确的 OpenClaw Gateway 和 Bridge systemd 配置启动。
 
-This snapshot contains the OS, Node.js, OpenClaw CLI, `openclaw` system user, and systemd unit files. It does not contain user data, OpenRouter keys, bridge tokens, or the current bridge build. The control plane still deploys the latest bridge code during runtime registration.
+这个 Snapshot 只包含系统基础环境、Node.js、OpenClaw CLI、`openclaw` 系统用户和 systemd 服务文件。不包含用户数据、OpenRouter Key、Bridge Token、当前 Bridge 构建产物。Bridge 代码仍然由 Control Plane 在 VPS 注册回调时推送最新版本。
 
-## Why Rebuild
+## 为什么需要重做
 
-The current snapshot boots successfully, but its systemd files are older than the current runtime contract:
+当前旧 Snapshot 能启动，但 systemd 配置已经不是最新标准：
 
-- `openclaw-gateway.service` should start with `--allow-unconfigured --auth none`.
-- `myclawgo-bridge.service` should use `dist/server.js`, not `dist/index.js`.
-- New VPS boot logs should not show initial gateway failures before the control plane corrects the unit files.
+- `openclaw-gateway.service` 需要带 `--allow-unconfigured --auth none` 启动。
+- `myclawgo-bridge.service` 需要使用 `dist/server.js`，不是旧的 `dist/index.js`。
+- 新 VPS 首次启动日志里不应该先出现 gateway 因配置缺失失败，再由 Control Plane 修正的过程。
 
-The application now has fallback fixes in cloud-init/register, but rebuilding the snapshot makes the first boot cleaner and removes avoidable retries.
+当前代码里已经在 `cloud-init` 和 register 流程里加了兜底修复，即使旧 Snapshot 也能跑通。但重做 Snapshot 可以让首次启动更干净，减少无效重启和日志噪音。
 
-## Target Snapshot Contents
+## Snapshot 应包含什么
 
 - Ubuntu 24.04
 - Node.js 22.x
-- `openclaw` installed globally
-- Linux user: `openclaw`
-- Directory: `/home/openclaw/.openclaw`
-- Directory: `/opt/myclawgo-bridge`
-- Directory: `/etc/myclawgo`
-- systemd unit: `openclaw-gateway.service`
-- systemd unit: `myclawgo-bridge.service`
+- 全局安装的 `openclaw`
+- Linux 用户：`openclaw`
+- 目录：`/home/openclaw/.openclaw`
+- 目录：`/opt/myclawgo-bridge`
+- 目录：`/etc/myclawgo`
+- systemd 服务：`openclaw-gateway.service`
+- systemd 服务：`myclawgo-bridge.service`
 
-No secrets should be baked into the snapshot.
+## Snapshot 不应包含什么
 
-Do not put these into the snapshot:
+不要把任何密钥或用户数据写进 Snapshot：
 
-- Hetzner API token
-- OpenRouter API key
-- Bridge token
+- Hetzner API Token
+- OpenRouter API Key
+- Bridge Token
 - `bridge.env`
-- user `auth-profiles.json`
-- user `openclaw.json`
-- project `.env`
+- 用户的 `auth-profiles.json`
+- 用户的 `openclaw.json`
+- 项目的 `.env`
 
-## 1. Create Template VPS
+## 1. 创建模板 VPS
 
-In Hetzner Console, inside project `myclawgo-runtime-01`:
+在 Hetzner Console 的 `myclawgo-runtime-01` 项目中：
 
-1. Add Server.
-2. Location: `fsn1`.
-3. Image: `Ubuntu 24.04`.
-4. Type: `cx23`.
-5. SSH Key: `myclawgo-runtime`.
-6. Firewall: `myclawgo-user-vps-fw`.
-7. Name: `myclawgo-runtime-template-20260503`.
+1. 点击 Add Server。
+2. Location 选择 `fsn1`。
+3. Image 选择 `Ubuntu 24.04`。
+4. Type 选择 `cx23`。
+5. SSH Key 选择 `myclawgo-runtime`。
+6. Firewall 选择 `myclawgo-user-vps-fw`。
+7. Name 填：
 
-Wait until the server is running, then SSH from the control plane:
+```text
+myclawgo-runtime-template-20260503
+```
+
+等待模板机进入 running 状态后，从 Control Plane SSH 登录：
 
 ```bash
 ssh -i /home/openclaw/.ssh/myclawgo_runtime -o StrictHostKeyChecking=no root@<TEMPLATE_IP>
 ```
 
-## 2. Install Base Packages
+## 2. 安装基础包
 
-Run on the template VPS:
+在模板 VPS 上执行：
 
 ```bash
 set -e
@@ -69,9 +73,9 @@ apt-get update
 apt-get install -y curl ca-certificates gnupg sudo procps less vim nano bash
 ```
 
-## 3. Install Node.js 22
+## 3. 安装 Node.js 22
 
-Run on the template VPS:
+在模板 VPS 上执行：
 
 ```bash
 set -e
@@ -83,22 +87,22 @@ node --version
 npm --version
 ```
 
-Expected:
+预期结果：
 
-- `node --version` is `v22.x.x`.
-- `npm --version` is available.
+- `node --version` 输出 `v22.x.x`。
+- `npm --version` 有正常输出。
 
-## 4. Install OpenClaw
+## 4. 安装 OpenClaw
 
-Use the OpenClaw version currently validated for the VPS runtime.
+使用当前已经验证过的 VPS Runtime OpenClaw 版本。
 
-Current tested version from the existing runtime snapshot:
+当前旧 Snapshot 上验证过的版本：
 
 ```bash
 OPENCLAW_VERSION=2026.4.11
 ```
 
-Run on the template VPS:
+在模板 VPS 上执行：
 
 ```bash
 set -e
@@ -107,13 +111,13 @@ npm install -g "openclaw@${OPENCLAW_VERSION}"
 openclaw --version
 ```
 
-Expected output should include the selected OpenClaw version.
+预期结果：输出内容中包含安装的 OpenClaw 版本。
 
-Do not run `openclaw setup` on the template VPS.
+注意：不要在模板 VPS 上执行 `openclaw setup`。
 
-## 5. Create OpenClaw User And Directories
+## 5. 创建 openclaw 用户和目录
 
-Run on the template VPS:
+在模板 VPS 上执行：
 
 ```bash
 set -e
@@ -127,9 +131,9 @@ chown -R openclaw:openclaw /home/openclaw /opt/myclawgo-bridge
 su - openclaw -c "openclaw --version"
 ```
 
-## 6. Create Systemd Units
+## 6. 创建 systemd 服务文件
 
-Run on the template VPS:
+在模板 VPS 上执行：
 
 ```bash
 set -e
@@ -175,24 +179,24 @@ systemctl status openclaw-gateway.service --no-pager || true
 systemctl status myclawgo-bridge.service --no-pager || true
 ```
 
-Important:
+注意：
 
-- Do not enable these services on the template VPS.
-- Do not start these services on the template VPS.
-- `bridge.env` should not exist in the snapshot. It is generated during registration.
+- 不要在模板 VPS 上 enable 这些服务。
+- 不要在模板 VPS 上 start 这些服务。
+- `bridge.env` 不应该存在于 Snapshot 中，它会在用户 VPS 注册时由 Control Plane 生成。
 
-Confirm disabled state:
+确认服务没有被 enable：
 
 ```bash
 systemctl is-enabled openclaw-gateway.service || true
 systemctl is-enabled myclawgo-bridge.service || true
 ```
 
-Expected output can be `disabled` or `static`/non-enabled. It should not be `enabled`.
+预期输出可以是 `disabled`，或者非 enabled 状态；不应该是 `enabled`。
 
-## 7. Optional Sanity Check
+## 7. 可选验证
 
-Only run this if you want to verify the gateway binary and unit command. Stop it afterwards before snapshot cleanup.
+这一步只用于确认 OpenClaw 二进制和 gateway service 命令可用。验证后必须停止服务并 disable，避免把运行状态带进 Snapshot。
 
 ```bash
 systemctl start openclaw-gateway.service
@@ -203,11 +207,11 @@ systemctl stop openclaw-gateway.service
 systemctl disable openclaw-gateway.service || true
 ```
 
-Do not start `myclawgo-bridge.service` on the template VPS because `/etc/myclawgo/bridge.env` is intentionally absent.
+不要启动 `myclawgo-bridge.service`，因为 `/etc/myclawgo/bridge.env` 在模板机上刻意不存在。
 
-## 8. Clean Template Before Snapshot
+## 8. Snapshot 前清理模板机
 
-Run on the template VPS:
+在模板 VPS 上执行：
 
 ```bash
 set -e
@@ -234,30 +238,30 @@ rm -rf /tmp/* /var/tmp/*
 history -c || true
 ```
 
-Exit SSH:
+退出 SSH：
 
 ```bash
 exit
 ```
 
-## 9. Create Snapshot
+## 9. 创建 Snapshot
 
-In Hetzner Console:
+在 Hetzner Console 中：
 
-1. Open `myclawgo-runtime-template-20260503`.
-2. Go to Snapshots.
-3. Take Snapshot.
-4. Name:
+1. 打开 `myclawgo-runtime-template-20260503`。
+2. 进入 Snapshots。
+3. 点击 Take Snapshot。
+4. Snapshot 名称填写：
 
 ```text
 myclawgo-runtime-v2-20260503
 ```
 
-Wait until the snapshot completes.
+等待 Snapshot 创建完成。
 
-## 10. Find Snapshot ID
+## 10. 查询 Snapshot ID
 
-On the control plane, use the Hetzner project API token for `myclawgo-runtime-01`.
+在 Control Plane 上使用 `myclawgo-runtime-01` 项目的 Hetzner API Token 查询：
 
 ```bash
 curl -s \
@@ -266,23 +270,23 @@ curl -s \
   | python3 -m json.tool
 ```
 
-Find the image whose name is:
+找到名称为下面这个值的 image：
 
 ```text
 myclawgo-runtime-v2-20260503
 ```
 
-Record its numeric `id`.
+记录它的数字 `id`，后面要填到 `HETZNER_PROJECTS[].snapshotId`。
 
-## 11. Update Test Environment Config
+## 11. 更新测试环境配置
 
-In the test environment `.env`, update only the `snapshotId` for `proj-01` inside `HETZNER_PROJECTS`:
+在测试环境 `.env` 中，只更新 `HETZNER_PROJECTS` 里 `proj-01` 的 `snapshotId`：
 
 ```json
 "snapshotId": <NEW_SNAPSHOT_ID>
 ```
 
-Example:
+示例：
 
 ```env
 HETZNER_PROJECTS='[
@@ -299,22 +303,22 @@ HETZNER_PROJECTS='[
 ]'
 ```
 
-Then restart the test app:
+然后重启测试环境服务：
 
 ```bash
 cd /home/openclaw/project/my-claw-go
 pm2 restart my-claw-go-test --update-env
 ```
 
-## 12. Delete Template VPS
+## 12. 删除模板 VPS
 
-After confirming the snapshot exists, delete `myclawgo-runtime-template-20260503` to avoid unnecessary server charges.
+确认 Snapshot 已经创建完成后，删除 `myclawgo-runtime-template-20260503`，避免继续产生服务器费用。
 
-Do not delete the snapshot.
+注意：不要删除刚刚创建的 Snapshot。
 
-## 13. Verify With One Test Provision
+## 13. 用一次测试开通流程验证
 
-Create one new test paid user flow, then check:
+重新走一次测试用户注册和支付流程，然后查询最新 runtimeHost：
 
 ```bash
 set -a
@@ -329,20 +333,20 @@ LIMIT 3;
 '
 ```
 
-SSH into the new VPS and confirm the systemd units:
+SSH 到新建的用户 VPS，确认 systemd unit：
 
 ```bash
 ssh -i /home/openclaw/.ssh/myclawgo_runtime -o StrictHostKeyChecking=no root@<NEW_USER_VPS_IP> \
   "systemctl cat openclaw-gateway myclawgo-bridge --no-pager"
 ```
 
-Expected:
+预期结果：
 
-- `openclaw-gateway.service` uses `--allow-unconfigured --auth none --bind loopback --port 18789`.
-- `myclawgo-bridge.service` uses `ExecStart=/usr/bin/node dist/server.js`.
-- No early gateway failure caused by missing `--allow-unconfigured`.
+- `openclaw-gateway.service` 使用 `--allow-unconfigured --auth none --bind loopback --port 18789`。
+- `myclawgo-bridge.service` 使用 `ExecStart=/usr/bin/node dist/server.js`。
+- 新 VPS 日志里不再出现因为缺少 `--allow-unconfigured` 导致的早期 gateway 启动失败。
 
-Check readiness:
+检查 ready 状态：
 
 ```bash
 curl -s \
@@ -350,7 +354,7 @@ curl -s \
   "http://<NEW_USER_VPS_IP>:18080/ready"
 ```
 
-Expected response:
+预期响应包含：
 
 ```json
 {
@@ -358,12 +362,12 @@ Expected response:
 }
 ```
 
-The exact response includes bridge and OpenClaw readiness details.
+实际响应里还会包含 bridge 和 OpenClaw 的 readiness 明细。
 
-## Notes
+## 后续维护说明
 
-- Bridge code changes do not require rebuilding this snapshot.
-- OpenClaw version changes do require rebuilding this snapshot.
-- Node.js major version changes do require rebuilding this snapshot.
-- systemd unit changes should be baked into a new snapshot once stable.
-- Keep the cloud-init/register fallback fixes in code even after rebuilding; they protect old snapshots and reduce operational risk.
+- Bridge 代码更新不需要重做 Snapshot。
+- OpenClaw 版本升级需要重做 Snapshot。
+- Node.js 大版本升级需要重做 Snapshot。
+- systemd 服务文件变更稳定后，建议重做 Snapshot。
+- 即使重做了 Snapshot，也建议保留代码里的 `cloud-init` 和 register 兜底逻辑，用来兼容旧 Snapshot 和降低运维风险。
