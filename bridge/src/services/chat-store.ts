@@ -1,8 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { randomUUID } from 'node:crypto';
 import { OPENCLAW_HOME } from '../lib/paths.js';
-import { syncToPg } from '../lib/sync.js';
 
 export type ChatStoreKey = {
   channel?: string;
@@ -41,23 +39,6 @@ export async function appendChatTranscript(
     .filter(Boolean)
     .join('\n');
   await fs.appendFile(filePath, `${block}\n`, 'utf8');
-
-  const channel = input.channel || 'direct';
-  const chatScope = input.chatScope || 'default';
-  const routedAgentId =
-    typeof input.meta?.routedAgentId === 'string' ? input.meta.routedAgentId : undefined;
-  syncToPg({
-    type: 'chat_message',
-    messageId: randomUUID(),
-    role: input.role,
-    agentId: input.agentId,
-    content: input.text.trim(),
-    groupId: channel === 'group' ? chatScope : undefined,
-    channel,
-    chatScope,
-    routedAgentId,
-    meta: input.meta,
-  });
 
   return filePath;
 }
