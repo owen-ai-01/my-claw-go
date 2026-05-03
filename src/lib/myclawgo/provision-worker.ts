@@ -169,6 +169,51 @@ async function cleanupExpiredVps(db: Awaited<ReturnType<typeof getDb>>) {
   }
 }
 
+// Retry main-agent creation for VPS instances that are fully up (bridge
+// deployed, bridgeBaseUrl stored) but whose allocation is still waiting_init
+// because the initial agent-creation attempt failed.
+async function retryAgentInit(db: Awaited<ReturnType<typeof getDb>>) {
+  const pending = await db
+    .select()
+    .from(runtimeAllocation)
+    .where(
+      and(
+        eq(runtimeAllocation.status, 'waiting_init'),
+        sql`${runtimeAllocation.bridgeBaseUrl} IS NOT NULL`
+      )
+    );
+
+  for (const alloc of pending) {
+    if (!alloc.bridgeBaseUrl || !alloc.bridgeToken) continue;
+    try {
+      const res = await fetch(`${alloc.bridgeBaseUrl}/agents`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${alloc.bridgeToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          agentId: 'main',
+          name: 'Main Agent',
+          model: 'openrouter/openai/gpt-4o-mini',
+        }),
+        signal: AbortSignal.timeout(10_000),
+      });
+      if (res.ok || res.status === 409) {
+        await db
+          .update(runtimeAllocation)
+          .set({ status: 'ready', updatedAt: new Date() })
+          .where(eq(runtimeAllocation.id, alloc.id));
+        console.log(`[provision] Agent init retry succeeded for user ${alloc.userId}`);
+      } else {
+        console.warn(`[provision] Agent init retry got ${res.status} for user ${alloc.userId}`);
+      }
+    } catch (err) {
+      console.error(`[provision] Agent init retry failed for user ${alloc.userId}:`, err);
+    }
+  }
+}
+
 // Fallback: stop VPS for users whose subscription has expired but the
 // Stripe webhook was missed or delayed.
 async function stopExpiredSubscriptionVps(
@@ -251,6 +296,7 @@ export async function runProvisionWorker() {
       });
     }
 
+    await retryAgentInit(db);
     await stopExpiredSubscriptionVps(db);
     await cleanupExpiredVps(db);
   } catch (err) {

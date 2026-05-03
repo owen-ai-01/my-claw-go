@@ -108,6 +108,7 @@ async function deployBridgeToVps(
       if (res.ok) {
         // Create the default main agent with retries — the gateway may not
         // have written openclaw.json yet even though /health already passes.
+        let agentReady = false;
         for (let attempt = 1; attempt <= 4; attempt++) {
           if (attempt > 1) await new Promise((r) => setTimeout(r, 3000));
           const createAgentRes = await fetch(`http://${publicIp}:18080/agents`, {
@@ -127,9 +128,22 @@ async function deployBridgeToVps(
             return null;
           });
           if (!createAgentRes) continue;
-          if (createAgentRes.ok || createAgentRes.status === 409) break; // success or already exists
+          if (createAgentRes.ok || createAgentRes.status === 409) {
+            agentReady = true;
+            break;
+          }
           const body = await createAgentRes.text().catch(() => '');
           console.error(`[register] create main agent attempt ${attempt} failed (${createAgentRes.status}):`, body);
+        }
+
+        if (!agentReady) {
+          // VPS and bridge are up, but main agent couldn't be initialized.
+          // Throw a typed error so the caller can keep the VPS as ready but
+          // allocation as waiting_init — the provision worker will retry.
+          throw Object.assign(
+            new Error(`Main agent init failed on ${publicIp} after all retries`),
+            { code: 'AGENT_INIT_FAILED' }
+          );
         }
 
         // Restore backed-up agent docs and groups from PG.
@@ -261,9 +275,52 @@ export async function POST(req: Request) {
 
   const appUrl = process.env.NEXT_PUBLIC_BASE_URL ?? '';
 
+  const isAgentInitFailed =
+    (err: unknown): err is Error =>
+      err instanceof Error && (err as any).code === 'AGENT_INIT_FAILED';
+
   try {
     await deployBridgeToVps(publicIp, host.bridgeToken!, openrouterKey, appUrl, userId);
   } catch (err) {
+    if (isAgentInitFailed(err)) {
+      // Bridge is up, VPS is healthy — only the agent init failed.
+      // Mark VPS as ready and save bridge connection info, but keep
+      // allocation in waiting_init so the chat page stays in the
+      // provisioning view. The provision worker will retry agent creation.
+      console.warn(`[register] Agent init failed for user ${userId}, will retry via worker`);
+      await db
+        .update(runtimeHost)
+        .set({ publicIp, bridgeBaseUrl, status: 'ready', updatedAt: new Date() })
+        .where(eq(runtimeHost.id, host.id));
+      await db
+        .insert(runtimeAllocation)
+        .values({
+          id: randomUUID(),
+          userId,
+          hostId: host.id,
+          plan: host.plan,
+          bridgeBaseUrl,
+          bridgeToken: host.bridgeToken,
+          status: 'waiting_init',
+        })
+        .onConflictDoUpdate({
+          target: runtimeAllocation.userId,
+          set: {
+            hostId: host.id,
+            plan: host.plan,
+            bridgeBaseUrl,
+            bridgeToken: host.bridgeToken,
+            status: 'waiting_init',
+            updatedAt: new Date(),
+          },
+        });
+      await db
+        .update(runtimeProvisionJob)
+        .set({ status: 'done', updatedAt: new Date() })
+        .where(eq(runtimeProvisionJob.id, jobId));
+      return NextResponse.json({ ok: true });
+    }
+
     console.error(`[register] Bridge deploy failed for user ${userId}:`, err);
     await db
       .update(runtimeHost)
