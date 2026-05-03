@@ -84,14 +84,17 @@ async function deployBridgeToVps(
 
   // Fix agents directory ownership (gateway creates it as root during first-boot)
   // and write OpenRouter auth key so gateway can call AI providers.
+  // The gateway creates agents/main as root on first start.
+  // We chown after restart+sleep so the bridge (openclaw user) can write there.
   const authSteps = openrouterKey
-    ? `mkdir -p /home/openclaw/.openclaw/agents && \
-       chown -R openclaw:openclaw /home/openclaw/.openclaw/agents && \
-       mkdir -p /home/openclaw/.openclaw/agents/main/agent && \
+    ? `mkdir -p /home/openclaw/.openclaw/agents/main/agent && \
        printf '%s' ${shellQuote(Buffer.from(buildAuthProfileJson(openrouterKey)).toString('base64'))} | base64 -d > /home/openclaw/.openclaw/agents/main/agent/auth-profiles.json && \
-       chown -R openclaw:openclaw /home/openclaw/.openclaw/agents/main/agent && \
-       systemctl restart openclaw-gateway`
-    : `mkdir -p /home/openclaw/.openclaw/agents && chown -R openclaw:openclaw /home/openclaw/.openclaw/agents`;
+       systemctl restart openclaw-gateway && \
+       sleep 4 && \
+       chown -R openclaw:openclaw /home/openclaw/.openclaw`
+    : `systemctl restart openclaw-gateway && \
+       sleep 4 && \
+       chown -R openclaw:openclaw /home/openclaw/.openclaw`;
 
   await execAsync(`${sshBase} "${authSteps}"`, { timeout: 60_000 });
 
@@ -104,7 +107,7 @@ async function deployBridgeToVps(
       });
       if (res.ok) {
         // Create the default main agent so the UI loads immediately.
-        await fetch(`http://${publicIp}:18080/agents`, {
+        const createAgentRes = await fetch(`http://${publicIp}:18080/agents`, {
           method: 'POST',
           headers: {
             Authorization: `Bearer ${bridgeToken}`,
@@ -116,9 +119,14 @@ async function deployBridgeToVps(
             model: 'openrouter/openai/gpt-4o-mini',
           }),
           signal: AbortSignal.timeout(10_000),
-        }).catch((e) =>
-          console.warn('[register] create main agent failed (non-fatal):', e)
-        );
+        }).catch((e) => {
+          console.warn('[register] create main agent network error:', e);
+          return null;
+        });
+        if (createAgentRes && !createAgentRes.ok && createAgentRes.status !== 409) {
+          const body = await createAgentRes.text().catch(() => '');
+          console.error(`[register] create main agent failed (${createAgentRes.status}):`, body);
+        }
 
         // Restore backed-up agent docs and groups from PG.
         await restoreFromPg(publicIp, bridgeToken, userId).catch((e) =>
