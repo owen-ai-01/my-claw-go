@@ -1096,14 +1096,14 @@ export class StripeProvider implements PaymentProvider {
           stripeSubscription.customer as string
         ).catch(() => undefined));
       if (userId) {
-        revokeUserOpenrouterKey(userId).catch((e) =>
-          console.error('[OR-Key] revoke error after subscription.deleted:', e)
-        );
-        // Only poweroff VPS when the subscription actually expired at period end.
-        // Immediate cancellations still have current_period_end in the future —
-        // the user paid for that time and their VPS should stay running.
+        // Only revoke keys and stop VPS when the subscription actually expired
+        // at period end. Immediate cancellations still have current_period_end
+        // in the future — the user paid for that time and should keep full access.
         const periodEndMs = stripeSubscription.current_period_end * 1000;
         if (periodEndMs <= Date.now() + 300_000) {
+          revokeUserOpenrouterKey(userId).catch((e) =>
+            console.error('[OR-Key] revoke error after subscription expired:', e)
+          );
           stopRuntimeForUser(userId).catch((e) =>
             console.error('[provision] poweroff error after subscription expired:', e)
           );

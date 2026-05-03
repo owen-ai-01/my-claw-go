@@ -195,7 +195,7 @@ async function stopExpiredSubscriptionVps(
         sql`(
           (${payment.scene} = 'lifetime' AND ${payment.status} = 'active')
           OR (${payment.scene} = 'subscription'
-              AND ${payment.status} IN ('active', 'trialing')
+              AND ${payment.status} IN ('active', 'trialing', 'canceled')
               AND (${payment.periodEnd} IS NULL OR ${payment.periodEnd} > NOW()))
         )`
       )
