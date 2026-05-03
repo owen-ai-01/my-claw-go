@@ -29,6 +29,7 @@ type AgentItem = {
   identity?: {
     name?: string;
     emoji?: string;
+    avatar?: string;
   };
 };
 
@@ -212,7 +213,20 @@ function CreateGroupDrawer({
                         )
                       }
                     />
-                    <span className="text-lg">{agentEmoji(agent)}</span>
+                    <div className="h-8 w-8 flex-shrink-0 overflow-hidden rounded-full bg-primary/10">
+                      {agent.identity?.avatar ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={agent.identity.avatar}
+                          alt={agentLabel(agent)}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center text-sm">
+                          {agentEmoji(agent)}
+                        </div>
+                      )}
+                    </div>
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium">
                         {agentLabel(agent)}
@@ -480,7 +494,20 @@ function GroupConfigDrawer({
                       checked={selectedMembers.includes(agent.id)}
                       onChange={() => toggleMember(agent.id)}
                     />
-                    <span className="text-lg">{agentEmoji(agent)}</span>
+                    <div className="h-8 w-8 flex-shrink-0 overflow-hidden rounded-full bg-primary/10">
+                      {agent.identity?.avatar ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={agent.identity.avatar}
+                          alt={agentLabel(agent)}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center text-sm">
+                          {agentEmoji(agent)}
+                        </div>
+                      )}
+                    </div>
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium">
                         {agentLabel(agent)}
