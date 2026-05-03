@@ -426,11 +426,27 @@ async function sendChatViaGateway(params: {
     }, 10000);
     const chatHistoryMs = Date.now() - chatHistoryStartedAt;
 
-    const messages = Array.isArray(history?.messages) ? history.messages : [];
-    const assistant = [...messages].reverse().find((message) => message?.role === 'assistant');
-    const reply = extractTextFromHistoryMessage(assistant);
+    let messages = Array.isArray(history?.messages) ? history.messages : [];
+    let assistant = [...messages].reverse().find((message) => message?.role === 'assistant');
+    let reply = extractTextFromHistoryMessage(assistant);
+
+    // Gateway can complete a run with status "ok" but no reply on first cold-start
+    // after a hot-reload or config change. Retry once after a short delay.
     if (!reply.trim()) {
-      throw new BridgeError('OPENCLAW_GATEWAY_ERROR', 'Gateway returned no assistant reply', 502);
+      await new Promise((r) => setTimeout(r, 800));
+      const retryHistory = await gateway.sendReq<ChatHistoryPayload>('chat.history', {
+        sessionKey,
+        limit: 30,
+      }, 10000);
+      const retryMessages = Array.isArray(retryHistory?.messages) ? retryHistory.messages : [];
+      const retryAssistant = [...retryMessages].reverse().find((m) => m?.role === 'assistant');
+      const retryReply = extractTextFromHistoryMessage(retryAssistant);
+      if (!retryReply.trim()) {
+        throw new BridgeError('OPENCLAW_GATEWAY_ERROR', 'Gateway returned no assistant reply', 502);
+      }
+      messages = retryMessages;
+      assistant = retryAssistant;
+      reply = retryReply;
     }
 
     // Capture fine-grained tool/file/cmd activity from recent transcript entries
