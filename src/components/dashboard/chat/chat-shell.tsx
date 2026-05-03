@@ -2584,8 +2584,17 @@ function ChatLayout() {
                             className="inline-flex items-center gap-2 rounded-full border bg-background px-2.5 py-1 text-xs hover:bg-muted"
                             title={`${agentLabel(member)} · ${presenceLabel(presence)}`}
                           >
-                            <span className="relative inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-sm">
-                              {agentEmoji(member)}
+                            <span className="relative inline-flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 overflow-hidden text-sm">
+                              {member.identity?.avatar ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                  src={member.identity.avatar}
+                                  alt={agentLabel(member)}
+                                  className="h-full w-full object-cover"
+                                />
+                              ) : (
+                                agentEmoji(member)
+                              )}
                               <span
                                 className={`absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border border-background ${presenceTone(presence)}`}
                               />
