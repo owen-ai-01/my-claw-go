@@ -106,26 +106,30 @@ async function deployBridgeToVps(
         signal: AbortSignal.timeout(5000),
       });
       if (res.ok) {
-        // Create the default main agent so the UI loads immediately.
-        const createAgentRes = await fetch(`http://${publicIp}:18080/agents`, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${bridgeToken}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            agentId: 'main',
-            name: 'Main Agent',
-            model: 'openrouter/openai/gpt-4o-mini',
-          }),
-          signal: AbortSignal.timeout(10_000),
-        }).catch((e) => {
-          console.warn('[register] create main agent network error:', e);
-          return null;
-        });
-        if (createAgentRes && !createAgentRes.ok && createAgentRes.status !== 409) {
+        // Create the default main agent with retries — the gateway may not
+        // have written openclaw.json yet even though /health already passes.
+        for (let attempt = 1; attempt <= 4; attempt++) {
+          if (attempt > 1) await new Promise((r) => setTimeout(r, 3000));
+          const createAgentRes = await fetch(`http://${publicIp}:18080/agents`, {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${bridgeToken}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              agentId: 'main',
+              name: 'Main Agent',
+              model: 'openrouter/openai/gpt-4o-mini',
+            }),
+            signal: AbortSignal.timeout(10_000),
+          }).catch((e) => {
+            console.warn(`[register] create main agent attempt ${attempt} network error:`, e);
+            return null;
+          });
+          if (!createAgentRes) continue;
+          if (createAgentRes.ok || createAgentRes.status === 409) break; // success or already exists
           const body = await createAgentRes.text().catch(() => '');
-          console.error(`[register] create main agent failed (${createAgentRes.status}):`, body);
+          console.error(`[register] create main agent attempt ${attempt} failed (${createAgentRes.status}):`, body);
         }
 
         // Restore backed-up agent docs and groups from PG.
