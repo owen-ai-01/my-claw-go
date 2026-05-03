@@ -75,6 +75,10 @@ async function provisionOneUser(job: {
     .update(runtimeProvisionJob)
     .set({ status: 'buying_vps', updatedAt: new Date() })
     .where(eq(runtimeProvisionJob.id, job.id));
+  await db
+    .update(runtimeAllocation)
+    .set({ status: 'buying_vps', updatedAt: new Date() })
+    .where(eq(runtimeAllocation.userId, job.userId));
 
   const client = hetznerClient(project.apiToken);
   const server = await client.createServer({
@@ -116,6 +120,10 @@ async function provisionOneUser(job: {
       updatedAt: new Date(),
     })
     .where(eq(runtimeProvisionJob.id, job.id));
+  await db
+    .update(runtimeAllocation)
+    .set({ status: 'waiting_init', updatedAt: new Date() })
+    .where(eq(runtimeAllocation.userId, job.userId));
 }
 
 async function cleanupExpiredVps(db: Awaited<ReturnType<typeof getDb>>) {

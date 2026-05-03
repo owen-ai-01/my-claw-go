@@ -318,7 +318,7 @@ export const runtimeAllocation = pgTable('runtimeAllocation', {
   bridgeBaseUrl: text('bridge_base_url'),
   bridgeToken: text('bridge_token'),
   status: text('status').notNull().default('pending'),
-  // pending | ready | stopped | failed
+  // pending | buying_vps | waiting_init | ready | stopped | failed
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });
