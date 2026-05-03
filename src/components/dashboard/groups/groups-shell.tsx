@@ -700,6 +700,16 @@ export function GroupsShell() {
     loadData();
   }, []);
 
+  useEffect(() => {
+    if (!createOpen && !manageOpen) return;
+    fetch('/api/agents', { cache: 'no-store' })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.ok && data.data?.agents) setAgents(data.data.agents);
+      })
+      .catch(() => {});
+  }, [createOpen, manageOpen]);
+
   async function loadData() {
     setLoading(true);
     try {
