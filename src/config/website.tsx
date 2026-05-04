@@ -65,7 +65,7 @@ export const websiteConfig: WebsiteConfig = {
     },
   },
   blog: {
-    enable: false,
+    enable: true,
     paginationSize: 6,
     relatedPostsSize: 3,
   },
