@@ -127,6 +127,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       posts.forEach((post) => {
         sitemapList.push({
           url: getUrl(`/blog/${post.slugs.join('/')}`, locale),
+          lastModified: new Date(post.data.date).toISOString(),
+          changeFrequency: 'monthly',
+          priority: 0.7,
           alternates: {
             languages: generateHreflangUrls(`/blog/${post.slugs.join('/')}`),
           },

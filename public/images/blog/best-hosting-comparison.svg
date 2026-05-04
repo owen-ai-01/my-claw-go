@@ -1,0 +1,129 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 560" width="1200" height="560">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#09090b"/>
+      <stop offset="100%" stop-color="#0d0d14"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#8b5cf6"/>
+    </linearGradient>
+    <linearGradient id="header-row" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#1e3a5f" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#2d1b69" stop-opacity="0.6"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="560" fill="url(#bg)"/>
+
+  <!-- Title -->
+  <text x="600" y="55" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="26" font-weight="700" fill="#ffffff">OpenClaw Hosting — Feature Comparison</text>
+  <rect x="500" y="68" width="200" height="2" rx="1" fill="url(#accent)" opacity="0.7"/>
+
+  <!-- Table container -->
+  <rect x="40" y="88" width="1120" height="440" rx="16" fill="#111113" stroke="#27272a" stroke-width="1"/>
+
+  <!-- Table header background -->
+  <rect x="40" y="88" width="1120" height="52" rx="0" fill="url(#header-row)"/>
+  <rect x="40" y="88" width="1120" height="16" rx="8" fill="url(#header-row)"/>
+  <rect x="40" y="96" width="1120" height="44" fill="url(#header-row)"/>
+
+  <!-- Column headers -->
+  <text x="180" y="120" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="13" font-weight="700" fill="#a78bfa" letter-spacing="1">FEATURE</text>
+
+  <!-- Provider header cells -->
+  <rect x="350" y="94" width="145" height="38" rx="8" fill="#1d3557" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="422" y="117" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="13" font-weight="700" fill="#60a5fa">MyClawGo</text>
+
+  <text x="570" y="117" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="13" font-weight="600" fill="#a1a1aa">MyClaw</text>
+  <text x="720" y="117" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="13" font-weight="600" fill="#a1a1aa">xCloud</text>
+  <text x="870" y="117" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="13" font-weight="600" fill="#a1a1aa">OC Launch</text>
+  <text x="1030" y="117" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="13" font-weight="600" fill="#a1a1aa">Self-Hosted</text>
+
+  <!-- Vertical separator -->
+  <line x1="330" y1="140" x2="330" y2="528" stroke="#27272a" stroke-width="1"/>
+  <line x1="500" y1="140" x2="500" y2="528" stroke="#1f1f23" stroke-width="1"/>
+  <line x1="650" y1="140" x2="650" y2="528" stroke="#1f1f23" stroke-width="1"/>
+  <line x1="800" y1="140" x2="800" y2="528" stroke="#1f1f23" stroke-width="1"/>
+  <line x1="950" y1="140" x2="950" y2="528" stroke="#1f1f23" stroke-width="1"/>
+
+  <!-- MyClawGo column highlight -->
+  <rect x="350" y="140" width="150" height="388" fill="#1a2744" opacity="0.3"/>
+
+  <!-- Row data -->
+  <!-- Row 1 -->
+  <rect x="40" y="140" width="1120" height="56" fill="#0f0f11"/>
+  <text x="75" y="173" font-family="system-ui,-apple-system,sans-serif" font-size="14" font-weight="600" fill="#e4e4e7">Entry Price</text>
+  <text x="422" y="173" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="14" font-weight="700" fill="#60a5fa">$29.90/mo</text>
+  <text x="570" y="173" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="13" fill="#a1a1aa">$16/mo</text>
+  <text x="720" y="173" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="13" fill="#a1a1aa">$24/mo</text>
+  <text x="870" y="173" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="13" fill="#a1a1aa">$3 first mo</text>
+  <text x="1030" y="173" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="13" fill="#a1a1aa">~$10/mo</text>
+
+  <!-- Row 2 -->
+  <rect x="40" y="196" width="1120" height="56" fill="#111113"/>
+  <text x="75" y="229" font-family="system-ui,-apple-system,sans-serif" font-size="14" font-weight="600" fill="#e4e4e7">Dedicated Instance</text>
+  <text x="422" y="229" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="20" fill="#22c55e">✓</text>
+  <text x="570" y="229" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="20" fill="#22c55e">✓</text>
+  <text x="720" y="229" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="20" fill="#22c55e">✓</text>
+  <text x="870" y="229" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="20" fill="#ef4444">✗</text>
+  <text x="1030" y="229" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="20" fill="#22c55e">✓</text>
+
+  <!-- Row 3 -->
+  <rect x="40" y="252" width="1120" height="56" fill="#0f0f11"/>
+  <text x="75" y="285" font-family="system-ui,-apple-system,sans-serif" font-size="14" font-weight="600" fill="#e4e4e7">Multi-Agent Support</text>
+  <text x="422" y="285" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="13" font-weight="700" fill="#22c55e">Unlimited</text>
+  <text x="570" y="285" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="13" fill="#fbbf24">Up to 5</text>
+  <text x="720" y="285" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="13" fill="#fbbf24">Limited</text>
+  <text x="870" y="285" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="20" fill="#ef4444">✗</text>
+  <text x="1030" y="285" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="13" fill="#22c55e">Unlimited</text>
+
+  <!-- Row 4 -->
+  <rect x="40" y="308" width="1120" height="56" fill="#111113"/>
+  <text x="75" y="341" font-family="system-ui,-apple-system,sans-serif" font-size="14" font-weight="600" fill="#e4e4e7">Group Relay</text>
+  <text x="422" y="341" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="20" fill="#22c55e">✓</text>
+  <text x="570" y="341" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="20" fill="#ef4444">✗</text>
+  <text x="720" y="341" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="20" fill="#ef4444">✗</text>
+  <text x="870" y="341" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="20" fill="#ef4444">✗</text>
+  <text x="1030" y="341" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="13" fill="#fbbf24">Manual</text>
+
+  <!-- Row 5 -->
+  <rect x="40" y="364" width="1120" height="56" fill="#0f0f11"/>
+  <text x="75" y="397" font-family="system-ui,-apple-system,sans-serif" font-size="14" font-weight="600" fill="#e4e4e7">Setup Required</text>
+  <text x="422" y="397" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="13" font-weight="600" fill="#22c55e">None</text>
+  <text x="570" y="397" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="13" fill="#22c55e">None</text>
+  <text x="720" y="397" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="13" fill="#fbbf24">Minimal</text>
+  <text x="870" y="397" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="13" fill="#fbbf24">Minimal</text>
+  <text x="1030" y="397" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="13" fill="#ef4444">2–8 hours</text>
+
+  <!-- Row 6 -->
+  <rect x="40" y="420" width="1120" height="56" fill="#111113"/>
+  <text x="75" y="453" font-family="system-ui,-apple-system,sans-serif" font-size="14" font-weight="600" fill="#e4e4e7">Own OpenRouter Key</text>
+  <text x="422" y="453" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="20" fill="#22c55e">✓</text>
+  <text x="570" y="453" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="20" fill="#ef4444">✗</text>
+  <text x="720" y="453" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="20" fill="#22c55e">✓</text>
+  <text x="870" y="453" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="20" fill="#ef4444">✗</text>
+  <text x="1030" y="453" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="13" fill="#22c55e">You set it up</text>
+
+  <!-- Row 7 - last row, rounded bottom -->
+  <rect x="40" y="476" width="1120" height="52" rx="0" fill="#0f0f11"/>
+  <rect x="40" y="492" width="1120" height="36" fill="#0f0f11"/>
+  <!-- round bottom corners -->
+  <rect x="40" y="508" width="1120" height="20" rx="0" fill="#0f0f11"/>
+  <text x="75" y="507" font-family="system-ui,-apple-system,sans-serif" font-size="14" font-weight="600" fill="#e4e4e7">Non-Technical Friendly</text>
+  <text x="422" y="507" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="20" fill="#22c55e">✓</text>
+  <text x="570" y="507" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="20" fill="#22c55e">✓</text>
+  <text x="720" y="507" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="13" fill="#fbbf24">Partial</text>
+  <text x="870" y="507" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="20" fill="#22c55e">✓</text>
+  <text x="1030" y="507" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="20" fill="#ef4444">✗</text>
+
+  <!-- Bottom row border -->
+  <rect x="40" y="527" width="1120" height="1" fill="#27272a"/>
+
+  <!-- MyClawGo "Best" tag -->
+  <rect x="356" y="142" width="138" height="22" rx="4" fill="url(#accent)" opacity="0.15"/>
+  <text x="422" y="157" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="11" font-weight="600" fill="#60a5fa" letter-spacing="1">RECOMMENDED</text>
+
+  <!-- Source note -->
+  <text x="600" y="550" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="12" fill="#3f3f46">Data as of May 2026 · myclawgo.com</text>
+</svg>

@@ -23,6 +23,8 @@ const nextConfig: NextConfig = {
     // https://nextjs.org/docs/app/api-reference/components/image#unoptimized
     // vercel has limits on image optimization, 1000 images per month
     unoptimized: process.env.DISABLE_IMAGE_OPTIMIZATION === 'true',
+    dangerouslyAllowSVG: true,
+    contentDispositionType: 'attachment',
     remotePatterns: [
       {
         protocol: 'https',
