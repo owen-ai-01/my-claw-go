@@ -17,7 +17,7 @@ import {
   categorySource,
 } from '@/lib/source';
 import { InlineTOC } from 'fumadocs-ui/components/inline-toc';
-import { CalendarIcon, FileTextIcon } from 'lucide-react';
+import { CalendarIcon, FileTextIcon, InfoIcon } from 'lucide-react';
 import type { Metadata } from 'next';
 import type { Locale } from 'next-intl';
 import { getTranslations } from 'next-intl/server';
@@ -163,6 +163,23 @@ export default async function BlogPostPage(props: BlogPostPageProps) {
             >
               <MDX components={getMDXComponents()} />
             </PremiumGuard>
+          </div>
+
+          {/* Disclaimer note */}
+          <div className="mt-10 flex gap-3 rounded-xl border border-blue-500/20 bg-blue-500/5 px-5 py-4 text-sm text-muted-foreground">
+            <InfoIcon className="mt-0.5 size-4 shrink-0 text-blue-400" />
+            <p>
+              The information in this article is provided for general reference
+              purposes. If anything is inaccurate or outdated, we apologize —
+              please{' '}
+              <LocaleLink
+                href="/contact"
+                className="font-medium text-blue-400 underline-offset-4 hover:underline"
+              >
+                contact us
+              </LocaleLink>{' '}
+              and we will update it promptly.
+            </p>
           </div>
 
           <div className="flex items-center justify-start my-16">

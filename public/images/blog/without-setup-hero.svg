@@ -1,0 +1,142 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#09090b"/>
+      <stop offset="100%" stop-color="#0d0d14"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#8b5cf6"/>
+    </linearGradient>
+    <linearGradient id="left-panel" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2d0a0a"/>
+      <stop offset="100%" stop-color="#1a0505"/>
+    </linearGradient>
+    <linearGradient id="right-panel" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0a1929"/>
+      <stop offset="100%" stop-color="#051020"/>
+    </linearGradient>
+    <pattern id="dots" x="0" y="0" width="24" height="24" patternUnits="userSpaceOnUse">
+      <circle cx="1" cy="1" r="0.8" fill="#27272a" opacity="0.4"/>
+    </pattern>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect width="1200" height="630" fill="url(#dots)" opacity="0.5"/>
+
+  <!-- Center divider glow -->
+  <rect x="582" y="60" width="36" height="510" rx="18" fill="url(#accent)" opacity="0.08"/>
+  <rect x="597" y="60" width="6" height="510" rx="3" fill="url(#accent)" opacity="0.4"/>
+
+  <!-- LEFT panel: The hard way -->
+  <rect x="40" y="55" width="528" height="510" rx="20" fill="url(#left-panel)" stroke="#3f1010" stroke-width="1.5" opacity="0.9"/>
+
+  <!-- Left panel header -->
+  <rect x="40" y="55" width="528" height="54" rx="12" fill="#3f1010" opacity="0.6"/>
+  <rect x="40" y="79" width="528" height="30" fill="#3f1010" opacity="0.6"/>
+  <circle cx="78" cy="82" r="8" fill="#ef4444" opacity="0.7"/>
+  <circle cx="102" cy="82" r="8" fill="#fbbf24" opacity="0.7"/>
+  <circle cx="126" cy="82" r="8" fill="#22c55e" opacity="0.7"/>
+  <text x="284" y="88" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="13" fill="#71717a">terminal — bash</text>
+
+  <!-- Terminal content -->
+  <text x="68" y="128" font-family="'Courier New',monospace" font-size="12" fill="#ef4444">$ ssh root@203.0.113.42</text>
+  <text x="68" y="150" font-family="'Courier New',monospace" font-size="12" fill="#71717a"># Step 1: Install Node.js</text>
+  <text x="68" y="170" font-family="'Courier New',monospace" font-size="12" fill="#a1a1aa">$ curl -fsSL https://deb.nodesource.com/setup_20.x | sudo bash</text>
+  <text x="68" y="190" font-family="'Courier New',monospace" font-size="12" fill="#a1a1aa">$ sudo apt-get install nodejs -y</text>
+  <text x="68" y="215" font-family="'Courier New',monospace" font-size="12" fill="#71717a"># Step 2: Install OpenClaw</text>
+  <text x="68" y="235" font-family="'Courier New',monospace" font-size="12" fill="#a1a1aa">$ npm install -g @openclawai/cli</text>
+  <text x="68" y="255" font-family="'Courier New',monospace" font-size="12" fill="#ef4444">Error: EACCES permission denied</text>
+  <text x="68" y="280" font-family="'Courier New',monospace" font-size="12" fill="#71717a"># Fix permissions...</text>
+  <text x="68" y="300" font-family="'Courier New',monospace" font-size="12" fill="#a1a1aa">$ sudo chown -R $USER $(npm prefix -g)</text>
+  <text x="68" y="325" font-family="'Courier New',monospace" font-size="12" fill="#71717a"># Step 3: Configure systemd</text>
+  <text x="68" y="345" font-family="'Courier New',monospace" font-size="12" fill="#a1a1aa">$ sudo nano /etc/systemd/system/openclaw.service</text>
+  <text x="68" y="365" font-family="'Courier New',monospace" font-size="12" fill="#71717a"># Step 4: Configure API keys</text>
+  <text x="68" y="385" font-family="'Courier New',monospace" font-size="12" fill="#a1a1aa">$ openclaw config --api-key sk-...</text>
+  <text x="68" y="410" font-family="'Courier New',monospace" font-size="12" fill="#71717a"># Step 5: Start service</text>
+  <text x="68" y="430" font-family="'Courier New',monospace" font-size="12" fill="#a1a1aa">$ sudo systemctl enable openclaw</text>
+  <text x="68" y="450" font-family="'Courier New',monospace" font-size="12" fill="#a1a1aa">$ sudo systemctl start openclaw</text>
+  <text x="68" y="475" font-family="'Courier New',monospace" font-size="12" fill="#ef4444">Failed to start openclaw.service</text>
+  <text x="68" y="495" font-family="'Courier New',monospace" font-size="12" fill="#71717a">see 'journalctl -xe' for details</text>
+
+  <!-- Cursor blink -->
+  <rect x="68" y="515" width="8" height="16" rx="1" fill="#ef4444" opacity="0.7"/>
+
+  <!-- Left panel label -->
+  <rect x="80" y="538" width="160" height="22" rx="11" fill="#3f1010" stroke="#ef4444" stroke-width="1"/>
+  <text x="160" y="553" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="12" font-weight="600" fill="#ef4444">⚠ Self-Hosting · 4–6 hours</text>
+
+  <!-- ARROW in center -->
+  <text x="600" y="325" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="36" fill="#3b82f6">→</text>
+
+  <!-- RIGHT panel: The easy way -->
+  <rect x="632" y="55" width="528" height="510" rx="20" fill="url(#right-panel)" stroke="#1d3557" stroke-width="1.5"/>
+
+  <!-- Right panel header -->
+  <rect x="632" y="55" width="528" height="54" rx="12" fill="#1d3557" opacity="0.8"/>
+  <rect x="632" y="79" width="528" height="30" fill="#1d3557" opacity="0.8"/>
+  <circle cx="670" cy="82" r="8" fill="#ef4444" opacity="0.7"/>
+  <circle cx="694" cy="82" r="8" fill="#fbbf24" opacity="0.7"/>
+  <circle cx="718" cy="82" r="8" fill="#22c55e" opacity="0.7"/>
+  <text x="876" y="88" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="13" fill="#71717a">myclawgo.com</text>
+
+  <!-- Browser content: MyClawGo dashboard mockup -->
+  <!-- Address bar -->
+  <rect x="648" y="108" width="496" height="30" rx="6" fill="#0d1117" stroke="#27272a" stroke-width="1"/>
+  <circle cx="668" cy="123" r="5" fill="#22c55e" opacity="0.6"/>
+  <text x="690" y="127" font-family="system-ui,-apple-system,sans-serif" font-size="12" fill="#3b82f6">myclawgo.com/chat</text>
+
+  <!-- Chat interface mockup -->
+  <rect x="648" y="150" width="496" height="390" rx="0" fill="#0a0f1a"/>
+
+  <!-- Sidebar -->
+  <rect x="648" y="150" width="120" height="390" fill="#0d1117" stroke="#1f2937" stroke-width="1"/>
+  <text x="708" y="178" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="11" fill="#71717a">AGENTS</text>
+  <rect x="658" y="188" width="100" height="30" rx="6" fill="#1d3557" stroke="#3b82f6" stroke-width="1"/>
+  <circle cx="672" cy="203" r="8" fill="#3b82f6" opacity="0.5"/>
+  <text x="700" y="207" font-family="system-ui,-apple-system,sans-serif" font-size="11" fill="#93c5fd">Main Agent</text>
+  <rect x="658" y="228" width="100" height="26" rx="6" fill="transparent"/>
+  <circle cx="672" cy="241" r="8" fill="#8b5cf6" opacity="0.4"/>
+  <text x="700" y="245" font-family="system-ui,-apple-system,sans-serif" font-size="11" fill="#a1a1aa">Research</text>
+  <rect x="658" y="260" width="100" height="26" rx="6" fill="transparent"/>
+  <circle cx="672" cy="273" r="8" fill="#22c55e" opacity="0.4"/>
+  <text x="700" y="277" font-family="system-ui,-apple-system,sans-serif" font-size="11" fill="#a1a1aa">Code Review</text>
+
+  <!-- Chat area -->
+  <!-- User message -->
+  <rect x="820" y="165" width="300" height="50" rx="12" fill="#1d3557"/>
+  <text x="970" y="186" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="12" fill="#bfdbfe">Help me analyze this</text>
+  <text x="970" y="205" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="12" fill="#bfdbfe">dataset for trends</text>
+
+  <!-- Agent response -->
+  <rect x="778" y="230" width="340" height="100" rx="12" fill="#111827" stroke="#27272a" stroke-width="1"/>
+  <circle cx="798" cy="252" r="10" fill="url(#accent)" opacity="0.8"/>
+  <text x="820" y="256" font-family="system-ui,-apple-system,sans-serif" font-size="11" fill="#71717a">Main Agent</text>
+  <text x="795" y="278" font-family="system-ui,-apple-system,sans-serif" font-size="12" fill="#e4e4e7">I'll analyze your dataset. Let me</text>
+  <text x="795" y="296" font-family="system-ui,-apple-system,sans-serif" font-size="12" fill="#e4e4e7">start with a statistical overview</text>
+  <text x="795" y="314" font-family="system-ui,-apple-system,sans-serif" font-size="12" fill="#e4e4e7">and identify key patterns...</text>
+
+  <!-- Second message -->
+  <rect x="820" y="345" width="300" height="36" rx="12" fill="#1d3557"/>
+  <text x="970" y="368" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="12" fill="#bfdbfe">Now write a summary report</text>
+
+  <!-- Typing indicator -->
+  <rect x="778" y="396" width="100" height="30" rx="15" fill="#111827" stroke="#27272a" stroke-width="1"/>
+  <circle cx="808" cy="411" r="4" fill="#3b82f6" opacity="0.9"/>
+  <circle cx="823" cy="411" r="4" fill="#3b82f6" opacity="0.6"/>
+  <circle cx="838" cy="411" r="4" fill="#3b82f6" opacity="0.3"/>
+
+  <!-- Input bar -->
+  <rect x="778" y="458" width="340" height="44" rx="10" fill="#1f2937" stroke="#374151" stroke-width="1"/>
+  <text x="800" y="484" font-family="system-ui,-apple-system,sans-serif" font-size="12" fill="#4b5563">Message your agent...</text>
+
+  <!-- Right panel label -->
+  <rect x="720" y="538" width="200" height="22" rx="11" fill="#0a1929" stroke="#3b82f6" stroke-width="1"/>
+  <text x="820" y="553" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="12" font-weight="600" fill="#3b82f6">✓ MyClawGo · Ready in 5 min</text>
+
+  <!-- Headline overlay at top -->
+  <rect x="0" y="0" width="1200" height="52" fill="url(#bg)" opacity="0.95"/>
+  <text x="600" y="34" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="26" font-weight="800" fill="#ffffff">OpenClaw Without a VPS or Any Setup</text>
+  <text x="152" y="34" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="14" fill="#ef4444" font-weight="600">The Hard Way</text>
+  <text x="1048" y="34" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="14" fill="#3b82f6" font-weight="600">The Easy Way</text>
+</svg>

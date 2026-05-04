@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 420" width="1200" height="420">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#09090b"/>
+      <stop offset="100%" stop-color="#0d0d14"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#8b5cf6"/>
+    </linearGradient>
+    <linearGradient id="step-active" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e3a5f"/>
+      <stop offset="100%" stop-color="#1a1a2e"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="420" fill="url(#bg)"/>
+
+  <!-- Title -->
+  <text x="600" y="50" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="22" font-weight="700" fill="#ffffff">Getting Started with MyClawGo — 4 Steps</text>
+  <rect x="500" y="62" width="200" height="2" rx="1" fill="url(#accent)" opacity="0.7"/>
+
+  <!-- Step connector lines -->
+  <line x1="240" y1="195" x2="350" y2="195" stroke="#27272a" stroke-width="2" stroke-dasharray="6,4"/>
+  <line x1="540" y1="195" x2="650" y2="195" stroke="#27272a" stroke-width="2" stroke-dasharray="6,4"/>
+  <line x1="840" y1="195" x2="950" y2="195" stroke="#27272a" stroke-width="2" stroke-dasharray="6,4"/>
+
+  <!-- Arrow heads -->
+  <polygon points="350,189 360,195 350,201" fill="#27272a"/>
+  <polygon points="650,189 660,195 650,201" fill="#27272a"/>
+  <polygon points="950,189 960,195 950,201" fill="#27272a"/>
+
+  <!-- Step 1 -->
+  <rect x="50" y="95" width="190" height="200" rx="16" fill="url(#step-active)" stroke="#3b82f6" stroke-width="1.5"/>
+  <rect x="50" y="95" width="190" height="5" rx="3" fill="url(#accent)"/>
+  <circle cx="145" cy="145" r="28" fill="url(#accent)" opacity="0.2" stroke="url(#accent)" stroke-width="1.5"/>
+  <text x="145" y="153" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="30">📧</text>
+  <text x="145" y="196" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="13" font-weight="700" fill="#ffffff">Create Account</text>
+  <text x="145" y="215" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="11" fill="#71717a">myclawgo.com</text>
+  <text x="145" y="240" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="11" fill="#a1a1aa">Email only.</text>
+  <text x="145" y="257" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="11" fill="#a1a1aa">No credit card yet.</text>
+  <rect x="75" y="272" width="140" height="22" rx="11" fill="url(#accent)" opacity="0.15" stroke="#3b82f6" stroke-width="1"/>
+  <text x="145" y="287" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="11" font-weight="600" fill="#60a5fa">Step 01</text>
+
+  <!-- Step 2 -->
+  <rect x="350" y="95" width="190" height="200" rx="16" fill="url(#step-active)" stroke="#8b5cf6" stroke-width="1.5"/>
+  <rect x="350" y="95" width="190" height="5" rx="3" fill="url(#accent)"/>
+  <circle cx="445" cy="145" r="28" fill="url(#accent)" opacity="0.2" stroke="#8b5cf6" stroke-width="1.5"/>
+  <text x="445" y="153" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="30">💳</text>
+  <text x="445" y="196" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="13" font-weight="700" fill="#ffffff">Choose a Plan</text>
+  <text x="445" y="215" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="11" fill="#71717a">Pro / Premium / Ultra</text>
+  <text x="445" y="240" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="11" fill="#a1a1aa">Pro ($29.90/mo) is</text>
+  <text x="445" y="257" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="11" fill="#a1a1aa">enough for most users.</text>
+  <rect x="375" y="272" width="140" height="22" rx="11" fill="#8b5cf6" opacity="0.15" stroke="#8b5cf6" stroke-width="1"/>
+  <text x="445" y="287" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="11" font-weight="600" fill="#a78bfa">Step 02</text>
+
+  <!-- Step 3 -->
+  <rect x="650" y="95" width="190" height="200" rx="16" fill="url(#step-active)" stroke="#3b82f6" stroke-width="1.5"/>
+  <rect x="650" y="95" width="190" height="5" rx="3" fill="url(#accent)"/>
+  <circle cx="745" cy="145" r="28" fill="url(#accent)" opacity="0.2" stroke="url(#accent)" stroke-width="1.5"/>
+  <text x="745" y="153" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="30">⚙️</text>
+  <text x="745" y="196" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="13" font-weight="700" fill="#ffffff">Auto Provisioning</text>
+  <text x="745" y="215" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="11" fill="#71717a">~2–5 minutes</text>
+  <text x="745" y="240" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="11" fill="#a1a1aa">Private server set up.</text>
+  <text x="745" y="257" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="11" fill="#a1a1aa">Nothing you need to do.</text>
+  <rect x="675" y="272" width="140" height="22" rx="11" fill="url(#accent)" opacity="0.15" stroke="#3b82f6" stroke-width="1"/>
+  <text x="745" y="287" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="11" font-weight="600" fill="#60a5fa">Step 03</text>
+
+  <!-- Step 4 -->
+  <rect x="950" y="95" width="190" height="200" rx="16" fill="url(#step-active)" stroke="#22c55e" stroke-width="1.5"/>
+  <rect x="950" y="95" width="190" height="5" rx="3" fill="#22c55e"/>
+  <circle cx="1045" cy="145" r="28" fill="#22c55e" opacity="0.1" stroke="#22c55e" stroke-width="1.5"/>
+  <text x="1045" y="153" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="30">💬</text>
+  <text x="1045" y="196" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="13" font-weight="700" fill="#ffffff">Start Chatting</text>
+  <text x="1045" y="215" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="11" fill="#22c55e">✓ Workspace ready</text>
+  <text x="1045" y="240" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="11" fill="#a1a1aa">Your agent is created</text>
+  <text x="1045" y="257" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="11" fill="#a1a1aa">and ready to use.</text>
+  <rect x="975" y="272" width="140" height="22" rx="11" fill="#22c55e" opacity="0.15" stroke="#22c55e" stroke-width="1"/>
+  <text x="1045" y="287" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="11" font-weight="600" fill="#4ade80">Step 04</text>
+
+  <!-- Total time badge -->
+  <rect x="440" y="340" width="320" height="52" rx="26" fill="#111113" stroke="#27272a" stroke-width="1.5"/>
+  <text x="600" y="360" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="13" fill="#71717a">Total time from signup to first message</text>
+  <text x="600" y="382" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="18" font-weight="700" fill="#22c55e">Under 10 minutes</text>
+  <text x="600" y="402" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="11" fill="#3f3f46">No terminal required · myclawgo.com</text>
+</svg>
