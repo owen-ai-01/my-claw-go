@@ -8,6 +8,7 @@ import {
   ChartNoAxesCombinedIcon,
   CircleDollarSignIcon,
   CircleHelpIcon,
+  CloudIcon,
   ComponentIcon,
   CookieIcon,
   FileTextIcon,
@@ -93,6 +94,13 @@ export function useNavbarLinks(): NestedMenuItem[] {
           description: t('pages.items.about.description'),
           icon: <BuildingIcon className="size-4 shrink-0" />,
           href: Routes.About,
+          external: false,
+        },
+        {
+          title: t('pages.items.openclawHosting.title'),
+          description: t('pages.items.openclawHosting.description'),
+          icon: <CloudIcon className="size-4 shrink-0" />,
+          href: Routes.OpenClawHosting,
           external: false,
         },
         {

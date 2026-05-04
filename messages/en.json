@@ -530,6 +530,10 @@
             "title": "About Us",
             "description": "Learn more"
           },
+          "openclawHosting": {
+            "title": "OpenClaw Hosting",
+            "description": "Managed cloud, no VPS"
+          },
           "contact": {
             "title": "Contact",
             "description": "Get in touch"

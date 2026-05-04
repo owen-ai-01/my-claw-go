@@ -21,6 +21,7 @@ const staticRoutes: Array<{
 }> = [
   { path: '/', changeFrequency: 'weekly', priority: 1.0 },
   { path: '/pricing', changeFrequency: 'monthly', priority: 0.9 },
+  { path: '/openclaw-hosting', changeFrequency: 'monthly', priority: 0.9 },
   { path: '/about', changeFrequency: 'monthly', priority: 0.7 },
   { path: '/contact', changeFrequency: 'yearly', priority: 0.5 },
   { path: '/privacy', changeFrequency: 'yearly', priority: 0.3 },
@@ -30,7 +31,7 @@ const staticRoutes: Array<{
     : []),
 ];
 
-const SITE_LAST_MODIFIED = new Date('2026-03-04').toISOString();
+const SITE_LAST_MODIFIED = new Date('2026-05-04').toISOString();
 
 /**
  * Generate a sitemap for the website with hreflang support

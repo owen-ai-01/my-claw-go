@@ -15,6 +15,7 @@ export enum Routes {
   Blog = '/blog',
   Docs = '/docs',
   About = '/about',
+  OpenClawHosting = '/openclaw-hosting',
   Contact = '/contact',
   Waitlist = '/waitlist',
   Changelog = '/changelog',
