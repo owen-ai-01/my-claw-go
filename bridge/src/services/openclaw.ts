@@ -1,9 +1,14 @@
+import {
+  createPrivateKey,
+  createPublicKey,
+  randomUUID,
+  sign,
+} from 'node:crypto';
 import fs from 'node:fs/promises';
-import { createPrivateKey, createPublicKey, randomUUID, sign } from 'node:crypto';
 import WebSocket from 'ws';
-import { appendChatTranscript } from './chat-store.js';
-import { appendActivity } from './activity.js';
 import { BridgeError } from '../lib/errors.js';
+import { appendActivity } from './activity.js';
+import { appendChatTranscript } from './chat-store.js';
 
 const OPENCLAW_HOME = '/home/openclaw/.openclaw';
 const OPENCLAW_CONFIG_PATH = `${OPENCLAW_HOME}/openclaw.json`;
@@ -17,6 +22,14 @@ const GATEWAY_SCOPES = ['operator.admin'];
 const GATEWAY_PROTOCOL = 3;
 
 const WS = WebSocket;
+
+function normalizeOpenRouterModel(model: string | undefined) {
+  const trimmed = String(model || '').trim();
+  if (!trimmed || trimmed === 'auto' || trimmed === 'default') return undefined;
+  if (trimmed.startsWith('openrouter/')) return trimmed;
+  if (trimmed.includes('/')) return `openrouter/${trimmed}`;
+  return `openrouter/openai/${trimmed}`;
+}
 
 type RuntimeConfig = {
   gateway?: {
@@ -76,7 +89,11 @@ type GatewayTiming = {
 };
 
 function b64url(buf: Buffer) {
-  return Buffer.from(buf).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+  return Buffer.from(buf)
+    .toString('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/g, '');
 }
 
 function publicKeyRawBase64UrlFromPem(publicKeyPem: string) {
@@ -118,48 +135,82 @@ function signDevicePayload(privateKeyPem: string, payload: string) {
 }
 
 function extractReply(parsed: any) {
-  if (typeof parsed?.reply === 'string' && parsed.reply.trim()) return parsed.reply;
+  if (typeof parsed?.reply === 'string' && parsed.reply.trim())
+    return parsed.reply;
   const payloads = parsed?.payloads ?? parsed?.result?.payloads;
   if (Array.isArray(payloads)) {
-    return payloads.map((item: any) => item?.text || '').filter(Boolean).join('\n\n').trim();
+    return payloads
+      .map((item: any) => item?.text || '')
+      .filter(Boolean)
+      .join('\n\n')
+      .trim();
   }
   if (typeof parsed?.raw === 'string') return parsed.raw;
   return '';
 }
 
-function extractTextFromHistoryMessage(message: ChatHistoryMessage | undefined) {
+function extractTextFromHistoryMessage(
+  message: ChatHistoryMessage | undefined
+) {
   if (!message) return '';
   if (typeof message.content === 'string') return message.content;
   if (Array.isArray(message.content)) {
-    return message.content.map((part) => part?.text || '').join('\n').trim();
+    return message.content
+      .map((part) => part?.text || '')
+      .join('\n')
+      .trim();
   }
   if (typeof message.text === 'string') return message.text;
   return '';
 }
 
 function detectFilePath(text: string) {
-  const m = text.match(/(?:\/[^\s\"']+\.[a-z0-9]+|[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_./-]+\.[a-z0-9]+)/i);
+  const m = text.match(
+    /(?:\/[^\s\"']+\.[a-z0-9]+|[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_./-]+\.[a-z0-9]+)/i
+  );
   return m?.[0] || null;
 }
 
-function toolActionFromMessage(message: any): { kind: 'tool' | 'file' | 'cmd'; action: string; detail?: string } | null {
+function toolActionFromMessage(
+  message: any
+): { kind: 'tool' | 'file' | 'cmd'; action: string; detail?: string } | null {
   const role = String(message?.role || '').toLowerCase();
   if (role !== 'tool' && role !== 'toolresult') return null;
 
-  const toolName = String(message?.name || message?.toolName || message?.tool || '').trim();
+  const toolName = String(
+    message?.name || message?.toolName || message?.tool || ''
+  ).trim();
   const text = extractTextFromHistoryMessage(message as ChatHistoryMessage);
   const lower = `${toolName} ${text}`.toLowerCase();
 
   if (toolName) {
     if (toolName === 'read' || lower.includes(' read ')) {
       const file = detectFilePath(text);
-      return { kind: 'file', action: file ? `Read ${file}` : 'Read file', detail: file || undefined };
+      return {
+        kind: 'file',
+        action: file ? `Read ${file}` : 'Read file',
+        detail: file || undefined,
+      };
     }
-    if (toolName === 'write' || toolName === 'edit' || lower.includes(' write ') || lower.includes(' edit ')) {
+    if (
+      toolName === 'write' ||
+      toolName === 'edit' ||
+      lower.includes(' write ') ||
+      lower.includes(' edit ')
+    ) {
       const file = detectFilePath(text);
-      return { kind: 'file', action: file ? `Write ${file}` : 'Write/Edit file', detail: file || undefined };
+      return {
+        kind: 'file',
+        action: file ? `Write ${file}` : 'Write/Edit file',
+        detail: file || undefined,
+      };
     }
-    if (toolName === 'exec' || toolName === 'process' || lower.includes(' exec ') || lower.includes(' command ')) {
+    if (
+      toolName === 'exec' ||
+      toolName === 'process' ||
+      lower.includes(' exec ') ||
+      lower.includes(' command ')
+    ) {
       return { kind: 'cmd', action: 'Run command' };
     }
     return { kind: 'tool', action: `Tool ${toolName}` };
@@ -167,11 +218,19 @@ function toolActionFromMessage(message: any): { kind: 'tool' | 'file' | 'cmd'; a
 
   if (lower.includes(' read ')) {
     const file = detectFilePath(text);
-    return { kind: 'file', action: file ? `Read ${file}` : 'Read file', detail: file || undefined };
+    return {
+      kind: 'file',
+      action: file ? `Read ${file}` : 'Read file',
+      detail: file || undefined,
+    };
   }
   if (lower.includes(' write ') || lower.includes(' edit ')) {
     const file = detectFilePath(text);
-    return { kind: 'file', action: file ? `Write ${file}` : 'Write/Edit file', detail: file || undefined };
+    return {
+      kind: 'file',
+      action: file ? `Write ${file}` : 'Write/Edit file',
+      detail: file || undefined,
+    };
   }
   if (lower.includes(' exec ') || lower.includes(' command ')) {
     return { kind: 'cmd', action: 'Run command' };
@@ -188,9 +247,18 @@ async function loadGatewayRuntimeAuth() {
   const cfg = JSON.parse(cfgRaw) as RuntimeConfig;
   const device = JSON.parse(deviceRaw) as DeviceIdentity;
   const token = cfg.gateway?.auth?.token?.trim();
-  if (!token) throw new BridgeError('OPENCLAW_NOT_READY', 'Gateway auth token missing', 503);
+  if (!token)
+    throw new BridgeError(
+      'OPENCLAW_NOT_READY',
+      'Gateway auth token missing',
+      503
+    );
   if (!device?.deviceId || !device?.publicKeyPem || !device?.privateKeyPem) {
-    throw new BridgeError('OPENCLAW_NOT_READY', 'Gateway device identity missing', 503);
+    throw new BridgeError(
+      'OPENCLAW_NOT_READY',
+      'Gateway device identity missing',
+      503
+    );
   }
   return { token, device };
 }
@@ -198,7 +266,14 @@ async function loadGatewayRuntimeAuth() {
 async function openGatewaySession(timeoutMs: number) {
   const { token, device } = await loadGatewayRuntimeAuth();
   const ws = new WS(GATEWAY_WS_URL);
-  const pending = new Map<string, { resolve: (value: any) => void; reject: (error: Error) => void; timer?: NodeJS.Timeout }>();
+  const pending = new Map<
+    string,
+    {
+      resolve: (value: any) => void;
+      reject: (error: Error) => void;
+      timer?: NodeJS.Timeout;
+    }
+  >();
   let settled = false;
 
   const cleanup = () => {
@@ -206,7 +281,9 @@ async function openGatewaySession(timeoutMs: number) {
       if (entry.timer) clearTimeout(entry.timer);
     }
     pending.clear();
-    try { ws.close(); } catch {}
+    try {
+      ws.close();
+    } catch {}
   };
 
   const rejectAll = (error: Error) => {
@@ -217,12 +294,22 @@ async function openGatewaySession(timeoutMs: number) {
     pending.clear();
   };
 
-  const sendReq = <T = any>(method: string, params?: unknown, reqTimeoutMs = timeoutMs): Promise<T> => {
+  const sendReq = <T = any>(
+    method: string,
+    params?: unknown,
+    reqTimeoutMs = timeoutMs
+  ): Promise<T> => {
     const id = randomUUID();
     return new Promise<T>((resolve, reject) => {
       const timer = setTimeout(() => {
         pending.delete(id);
-        reject(new BridgeError('OPENCLAW_TIMEOUT', `Gateway request timed out: ${method}`, 504));
+        reject(
+          new BridgeError(
+            'OPENCLAW_TIMEOUT',
+            `Gateway request timed out: ${method}`,
+            504
+          )
+        );
       }, reqTimeoutMs);
       pending.set(id, { resolve, reject, timer });
       ws.send(JSON.stringify({ type: 'req', id, method, params }));
@@ -230,10 +317,15 @@ async function openGatewaySession(timeoutMs: number) {
   };
 
   const ready = new Promise<void>((resolve, reject) => {
-    const initTimer = setTimeout(() => {
-      reject(new BridgeError('OPENCLAW_TIMEOUT', 'Gateway connect timed out', 504));
-      cleanup();
-    }, Math.min(timeoutMs, 15000));
+    const initTimer = setTimeout(
+      () => {
+        reject(
+          new BridgeError('OPENCLAW_TIMEOUT', 'Gateway connect timed out', 504)
+        );
+        cleanup();
+      },
+      Math.min(timeoutMs, 15000)
+    );
 
     ws.on('open', () => {
       // Wait for connect.challenge event.
@@ -244,8 +336,14 @@ async function openGatewaySession(timeoutMs: number) {
         const msg = JSON.parse(raw.toString());
 
         if (msg.type === 'event' && msg.event === 'connect.challenge') {
-          const nonce = typeof msg.payload?.nonce === 'string' ? msg.payload.nonce : '';
-          if (!nonce) throw new BridgeError('OPENCLAW_NOT_READY', 'Gateway connect challenge missing nonce', 503);
+          const nonce =
+            typeof msg.payload?.nonce === 'string' ? msg.payload.nonce : '';
+          if (!nonce)
+            throw new BridgeError(
+              'OPENCLAW_NOT_READY',
+              'Gateway connect challenge missing nonce',
+              503
+            );
           const signedAtMs = Date.now();
           const platform = process.platform;
           const devicePayload = buildDeviceAuthPayloadV3({
@@ -260,31 +358,45 @@ async function openGatewaySession(timeoutMs: number) {
             platform,
           });
 
-          const hello = await sendReq<GatewayConnectPayload>('connect', {
-            minProtocol: GATEWAY_PROTOCOL,
-            maxProtocol: GATEWAY_PROTOCOL,
-            client: {
-              id: GATEWAY_CLIENT_ID,
-              version: '1.0.0',
-              platform,
-              mode: GATEWAY_CLIENT_MODE,
-              instanceId: randomUUID(),
+          const hello = await sendReq<GatewayConnectPayload>(
+            'connect',
+            {
+              minProtocol: GATEWAY_PROTOCOL,
+              maxProtocol: GATEWAY_PROTOCOL,
+              client: {
+                id: GATEWAY_CLIENT_ID,
+                version: '1.0.0',
+                platform,
+                mode: GATEWAY_CLIENT_MODE,
+                instanceId: randomUUID(),
+              },
+              caps: [],
+              auth: { token },
+              role: GATEWAY_ROLE,
+              scopes: GATEWAY_SCOPES,
+              device: {
+                id: device.deviceId,
+                publicKey: publicKeyRawBase64UrlFromPem(device.publicKeyPem),
+                signature: signDevicePayload(
+                  device.privateKeyPem,
+                  devicePayload
+                ),
+                signedAt: signedAtMs,
+                nonce,
+              },
             },
-            caps: [],
-            auth: { token },
-            role: GATEWAY_ROLE,
-            scopes: GATEWAY_SCOPES,
-            device: {
-              id: device.deviceId,
-              publicKey: publicKeyRawBase64UrlFromPem(device.publicKeyPem),
-              signature: signDevicePayload(device.privateKeyPem, devicePayload),
-              signedAt: signedAtMs,
-              nonce,
-            },
-          }, Math.min(timeoutMs, 15000));
+            Math.min(timeoutMs, 15000)
+          );
 
-          if (hello?.type !== 'hello-ok' && hello?.protocol !== GATEWAY_PROTOCOL) {
-            throw new BridgeError('OPENCLAW_NOT_READY', 'Gateway connect failed', 503);
+          if (
+            hello?.type !== 'hello-ok' ||
+            hello?.protocol !== GATEWAY_PROTOCOL
+          ) {
+            throw new BridgeError(
+              'OPENCLAW_NOT_READY',
+              'Gateway connect failed',
+              503
+            );
           }
           if (!settled) {
             settled = true;
@@ -300,7 +412,14 @@ async function openGatewaySession(timeoutMs: number) {
           pending.delete(msg.id);
           if (entry.timer) clearTimeout(entry.timer);
           if (msg.ok) entry.resolve(msg.payload);
-          else entry.reject(new BridgeError('OPENCLAW_GATEWAY_ERROR', msg.error?.message || 'Gateway request failed', 502));
+          else
+            entry.reject(
+              new BridgeError(
+                'OPENCLAW_GATEWAY_ERROR',
+                msg.error?.message || 'Gateway request failed',
+                502
+              )
+            );
           return;
         }
       } catch (error) {
@@ -325,13 +444,26 @@ async function openGatewaySession(timeoutMs: number) {
     });
 
     ws.on('close', (code: number, reason: Buffer | string) => {
-      const reasonText = typeof reason === 'string' ? reason : reason?.toString?.() || '';
+      const reasonText =
+        typeof reason === 'string' ? reason : reason?.toString?.() || '';
       if (!settled) {
         settled = true;
         clearTimeout(initTimer);
-        reject(new BridgeError('OPENCLAW_GATEWAY_ERROR', `Gateway closed (${code}): ${reasonText}`, 502));
+        reject(
+          new BridgeError(
+            'OPENCLAW_GATEWAY_ERROR',
+            `Gateway closed (${code}): ${reasonText}`,
+            502
+          )
+        );
       }
-      rejectAll(new BridgeError('OPENCLAW_GATEWAY_ERROR', `Gateway closed (${code}): ${reasonText}`, 502));
+      rejectAll(
+        new BridgeError(
+          'OPENCLAW_GATEWAY_ERROR',
+          `Gateway closed (${code}): ${reasonText}`,
+          502
+        )
+      );
     });
   });
 
@@ -365,39 +497,56 @@ async function sendChatViaGateway(params: {
     // If the platform's router picked a model, apply it to the session before
     // chat.send so OpenClaw uses that model for this turn only.
     // sessions.patch is the lightweight gateway WS method for per-session overrides.
-    if (params.model) {
+    const modelOverride = normalizeOpenRouterModel(params.model);
+    if (modelOverride) {
       try {
-        await gateway.sendReq('sessions.patch', {
-          sessionKey,
-          model: params.model,
-        }, 5000);
+        await gateway.sendReq(
+          'sessions.patch',
+          {
+            key: sessionKey,
+            model: modelOverride,
+          },
+          5000
+        );
         await appendActivity({
           at: Date.now(),
           agentId: params.agentId,
           kind: 'status',
-          action: `Switch model → ${params.model}`,
-          model: params.model,
+          action: `Switch model → ${modelOverride}`,
+          model: modelOverride,
         });
-        console.info(`[bridge/model-router] sessions.patch model=${params.model} sessionKey=${sessionKey}`);
+        console.info(
+          `[bridge/model-router] sessions.patch model=${modelOverride} sessionKey=${sessionKey}`
+        );
       } catch (patchErr) {
         // Non-fatal: if sessions.patch fails (e.g. older gateway), continue with agent default model
-        console.warn(`[bridge/model-router] sessions.patch failed (will use agent default): ${patchErr instanceof Error ? patchErr.message : patchErr}`);
+        console.warn(
+          `[bridge/model-router] sessions.patch failed (will use agent default): ${patchErr instanceof Error ? patchErr.message : patchErr}`
+        );
       }
     }
 
     const chatSendStartedAt = Date.now();
-    const started = await gateway.sendReq<ChatSendStartedPayload>('chat.send', {
-      sessionKey,
-      message: params.message,
-      thinking: 'off',
-      deliver: false,
-      idempotencyKey: randomUUID(),
-      timeoutMs: params.timeoutMs,
-    }, params.timeoutMs + 5000);
+    const started = await gateway.sendReq<ChatSendStartedPayload>(
+      'chat.send',
+      {
+        sessionKey,
+        message: params.message,
+        thinking: 'off',
+        deliver: false,
+        idempotencyKey: randomUUID(),
+        timeoutMs: params.timeoutMs,
+      },
+      params.timeoutMs + 5000
+    );
     const chatSendMs = Date.now() - chatSendStartedAt;
 
     if (!started?.runId) {
-      throw new BridgeError('OPENCLAW_GATEWAY_ERROR', 'Gateway chat.send did not return runId', 502);
+      throw new BridgeError(
+        'OPENCLAW_GATEWAY_ERROR',
+        'Gateway chat.send did not return runId',
+        502
+      );
     }
 
     await appendActivity({
@@ -409,40 +558,66 @@ async function sendChatViaGateway(params: {
     });
 
     const agentWaitStartedAt = Date.now();
-    const waitResult = await gateway.sendReq<AgentWaitPayload>('agent.wait', {
-      runId: started.runId,
-      timeoutMs: params.timeoutMs,
-    }, params.timeoutMs + 5000);
+    const waitResult = await gateway.sendReq<AgentWaitPayload>(
+      'agent.wait',
+      {
+        runId: started.runId,
+        timeoutMs: params.timeoutMs,
+      },
+      params.timeoutMs + 5000
+    );
     const agentWaitMs = Date.now() - agentWaitStartedAt;
 
     if (waitResult?.status !== 'ok') {
-      throw new BridgeError('OPENCLAW_GATEWAY_ERROR', `Gateway run did not complete successfully: ${waitResult?.status || 'unknown'}`, 502);
+      throw new BridgeError(
+        'OPENCLAW_GATEWAY_ERROR',
+        `Gateway run did not complete successfully: ${waitResult?.status || 'unknown'}`,
+        502
+      );
     }
 
     const chatHistoryStartedAt = Date.now();
-    const history = await gateway.sendReq<ChatHistoryPayload>('chat.history', {
-      sessionKey,
-      limit: 30,
-    }, 10000);
+    const history = await gateway.sendReq<ChatHistoryPayload>(
+      'chat.history',
+      {
+        sessionKey,
+        limit: 30,
+      },
+      10000
+    );
     const chatHistoryMs = Date.now() - chatHistoryStartedAt;
 
     let messages = Array.isArray(history?.messages) ? history.messages : [];
-    let assistant = [...messages].reverse().find((message) => message?.role === 'assistant');
+    let assistant = [...messages]
+      .reverse()
+      .find((message) => message?.role === 'assistant');
     let reply = extractTextFromHistoryMessage(assistant);
 
     // Gateway can complete a run with status "ok" but no reply on first cold-start
     // after a hot-reload or config change. Retry once after a short delay.
     if (!reply.trim()) {
       await new Promise((r) => setTimeout(r, 800));
-      const retryHistory = await gateway.sendReq<ChatHistoryPayload>('chat.history', {
-        sessionKey,
-        limit: 30,
-      }, 10000);
-      const retryMessages = Array.isArray(retryHistory?.messages) ? retryHistory.messages : [];
-      const retryAssistant = [...retryMessages].reverse().find((m) => m?.role === 'assistant');
+      const retryHistory = await gateway.sendReq<ChatHistoryPayload>(
+        'chat.history',
+        {
+          sessionKey,
+          limit: 30,
+        },
+        10000
+      );
+      const retryMessages = Array.isArray(retryHistory?.messages)
+        ? retryHistory.messages
+        : [];
+      const retryAssistant = [...retryMessages]
+        .reverse()
+        .find((m) => m?.role === 'assistant');
       const retryReply = extractTextFromHistoryMessage(retryAssistant);
       if (!retryReply.trim()) {
-        throw new BridgeError('OPENCLAW_GATEWAY_ERROR', 'Gateway returned no assistant reply', 502);
+        throw new BridgeError(
+          'OPENCLAW_GATEWAY_ERROR',
+          'Gateway returned no assistant reply',
+          502
+        );
       }
       messages = retryMessages;
       assistant = retryAssistant;
@@ -450,10 +625,12 @@ async function sendChatViaGateway(params: {
     }
 
     // Capture fine-grained tool/file/cmd activity from recent transcript entries
-    const recentToolMessages = messages.filter((m: any) => {
-      const role = String(m?.role || '').toLowerCase();
-      return role === 'tool' || role === 'toolresult';
-    }).slice(-12);
+    const recentToolMessages = messages
+      .filter((m: any) => {
+        const role = String(m?.role || '').toLowerCase();
+        return role === 'tool' || role === 'toolresult';
+      })
+      .slice(-12);
 
     for (const toolMsg of recentToolMessages) {
       const activity = toolActionFromMessage(toolMsg);
@@ -487,11 +664,11 @@ async function sendChatViaGateway(params: {
 
     console.info(
       `[bridge/openclaw timing] agent=${params.agentId}` +
-      ` connectMs=${timing.connectMs}` +
-      ` chatSendMs=${timing.chatSendMs}` +
-      ` agentWaitMs=${timing.agentWaitMs}` +
-      ` chatHistoryMs=${timing.chatHistoryMs}` +
-      ` totalGatewayMs=${timing.totalGatewayMs}`
+        ` connectMs=${timing.connectMs}` +
+        ` chatSendMs=${timing.chatSendMs}` +
+        ` agentWaitMs=${timing.agentWaitMs}` +
+        ` chatHistoryMs=${timing.chatHistoryMs}` +
+        ` totalGatewayMs=${timing.totalGatewayMs}`
     );
 
     return {
@@ -509,13 +686,28 @@ async function sendChatViaGateway(params: {
 export async function checkOpenClawHealth() {
   const res = await fetch(GATEWAY_HEALTH_URL);
   if (!res.ok) {
-    throw new BridgeError('OPENCLAW_NOT_READY', `OpenClaw health check failed: HTTP ${res.status}`, 503);
+    throw new BridgeError(
+      'OPENCLAW_NOT_READY',
+      `OpenClaw health check failed: HTTP ${res.status}`,
+      503
+    );
   }
   try {
     return await res.json();
   } catch {
-    throw new BridgeError('OPENCLAW_NOT_READY', 'OpenClaw health check returned invalid JSON', 503);
+    throw new BridgeError(
+      'OPENCLAW_NOT_READY',
+      'OpenClaw health check returned invalid JSON',
+      503
+    );
   }
+}
+
+export async function checkOpenClawReady() {
+  await checkOpenClawHealth();
+  const gateway = await openGatewaySession(15_000);
+  gateway.close();
+  return { ok: true };
 }
 
 export async function sendChatMessage(params: {
@@ -544,17 +736,48 @@ export async function sendChatMessage(params: {
   const transcriptOwner = transcriptAgentId || agentId;
 
   try {
-    const result = await sendChatViaGateway({ message, agentId, timeoutMs, model });
+    const result = await sendChatViaGateway({
+      message,
+      agentId,
+      timeoutMs,
+      model,
+    });
     if (persistTranscript) {
-      await appendChatTranscript({ role: 'user', text: transcriptMessage, agentId: transcriptOwner, channel, chatScope });
-      await appendChatTranscript({ role: 'assistant', text: result.reply || '', agentId: transcriptOwner, channel, chatScope, meta: { model: result.model, routedAgentId: agentId } });
+      await appendChatTranscript({
+        role: 'user',
+        text: transcriptMessage,
+        agentId: transcriptOwner,
+        channel,
+        chatScope,
+      });
+      await appendChatTranscript({
+        role: 'assistant',
+        text: result.reply || '',
+        agentId: transcriptOwner,
+        channel,
+        chatScope,
+        meta: { model: result.model, routedAgentId: agentId },
+      });
     }
     return result;
   } catch (error) {
     const errText = error instanceof Error ? error.message : String(error);
     if (persistTranscript) {
-      await appendChatTranscript({ role: 'user', text: transcriptMessage, agentId: transcriptOwner, channel, chatScope });
-      await appendChatTranscript({ role: 'assistant', text: errText.trim(), agentId: transcriptOwner, channel, chatScope, meta: { routedAgentId: agentId } });
+      await appendChatTranscript({
+        role: 'user',
+        text: transcriptMessage,
+        agentId: transcriptOwner,
+        channel,
+        chatScope,
+      });
+      await appendChatTranscript({
+        role: 'assistant',
+        text: errText.trim(),
+        agentId: transcriptOwner,
+        channel,
+        chatScope,
+        meta: { routedAgentId: agentId },
+      });
     }
     await appendActivity({
       at: Date.now(),

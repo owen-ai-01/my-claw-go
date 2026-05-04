@@ -9,14 +9,18 @@ import {
   userAgentDoc,
   userGroup,
 } from '@/db/schema';
+import { getUserOpenrouterKey } from '@/lib/myclawgo/openrouter-key-provisioner';
 import { and, eq } from 'drizzle-orm';
 import { jwtVerify } from 'jose';
 import { NextResponse } from 'next/server';
-import { getUserOpenrouterKey } from '@/lib/myclawgo/openrouter-key-provisioner';
 
 const execAsync = promisify(exec);
 const SSH_KEY = '/home/openclaw/.ssh/myclawgo_runtime';
 const BRIDGE_SRC = '/home/openclaw/project/my-claw-go/bridge';
+
+function elapsedMs(startedAt: number) {
+  return Date.now() - startedAt;
+}
 
 function shellQuote(value: string) {
   return `'${value.replace(/'/g, "'\\''")}'`;
@@ -46,8 +50,9 @@ async function deployBridgeToVps(
   bridgeToken: string,
   openrouterKey: string,
   appUrl: string,
-  userId: string,
+  userId: string
 ) {
+  const deployStartedAt = Date.now();
   const sshBase = [
     'ssh',
     '-i',
@@ -59,6 +64,7 @@ async function deployBridgeToVps(
     `root@${shellQuote(publicIp)}`,
   ].join(' ');
 
+  const copyStartedAt = Date.now();
   await execAsync(
     `test -d ${shellQuote(`${BRIDGE_SRC}/dist`)} && \
      scp -i ${shellQuote(SSH_KEY)} -o StrictHostKeyChecking=no -o ConnectTimeout=15 \
@@ -66,20 +72,28 @@ async function deployBridgeToVps(
       root@${shellQuote(publicIp)}:/opt/myclawgo-bridge/`,
     { timeout: 120_000 }
   );
+  console.log(
+    `[register] bridge copy completed for user ${userId} in ${elapsedMs(copyStartedAt)}ms`
+  );
 
+  const serviceStartedAt = Date.now();
   await execAsync(
     `${sshBase} "
-      cd /opt/myclawgo-bridge && npm install --omit=dev && \
+      cd /opt/myclawgo-bridge && \
+      node -e \\"require('fastify'); require('ws')\\" 2>/dev/null || npm install --omit=dev --no-audit --no-fund --prefer-offline && \
       chown -R openclaw:openclaw /opt/myclawgo-bridge && \
       printf '%s\\n' ${shellQuote(`BRIDGE_TOKEN=${bridgeToken}`)} 'GATEWAY_WS_URL=ws://127.0.0.1:18789' 'BRIDGE_PORT=18080' ${shellQuote(`MYCLAWGO_APP_URL=${appUrl}`)} > /etc/myclawgo/bridge.env && \
       sed -i 's|ExecStart=.*openclaw gateway run.*|ExecStart=/usr/bin/openclaw gateway run --allow-unconfigured --auth none --bind loopback --port 18789|' /etc/systemd/system/openclaw-gateway.service && \
       sed -i 's|ExecStart=/usr/bin/node dist/index.js|ExecStart=/usr/bin/node dist/server.js|' /etc/systemd/system/myclawgo-bridge.service && \
+      sed -i '/^Requires=openclaw-gateway/d' /etc/systemd/system/myclawgo-bridge.service && \
       systemctl daemon-reload && \
       systemctl restart openclaw-gateway && \
-      sleep 2 && \
       systemctl enable myclawgo-bridge && systemctl restart myclawgo-bridge
     "`,
     { timeout: 120_000 }
+  );
+  console.log(
+    `[register] bridge services restarted for user ${userId} in ${elapsedMs(serviceStartedAt)}ms`
   );
 
   // Fix agents directory ownership (gateway creates it as root during first-boot)
@@ -89,15 +103,20 @@ async function deployBridgeToVps(
   const authSteps = openrouterKey
     ? `mkdir -p /home/openclaw/.openclaw/agents/main/agent && \
        printf '%s' ${shellQuote(Buffer.from(buildAuthProfileJson(openrouterKey)).toString('base64'))} | base64 -d > /home/openclaw/.openclaw/agents/main/agent/auth-profiles.json && \
+       chown -R openclaw:openclaw /home/openclaw/.openclaw && \
        systemctl restart openclaw-gateway && \
-       sleep 4 && \
-       chown -R openclaw:openclaw /home/openclaw/.openclaw`
-    : `systemctl restart openclaw-gateway && \
-       sleep 4 && \
-       chown -R openclaw:openclaw /home/openclaw/.openclaw`;
+       sleep 3`
+    : `chown -R openclaw:openclaw /home/openclaw/.openclaw && \
+       systemctl restart openclaw-gateway && \
+       sleep 3`;
 
+  const authStartedAt = Date.now();
   await execAsync(`${sshBase} "${authSteps}"`, { timeout: 60_000 });
+  console.log(
+    `[register] gateway auth written for user ${userId} in ${elapsedMs(authStartedAt)}ms`
+  );
 
+  const healthStartedAt = Date.now();
   for (let i = 0; i < 12; i++) {
     await new Promise((r) => setTimeout(r, 5000));
     try {
@@ -111,20 +130,26 @@ async function deployBridgeToVps(
         let agentReady = false;
         for (let attempt = 1; attempt <= 4; attempt++) {
           if (attempt > 1) await new Promise((r) => setTimeout(r, 3000));
-          const createAgentRes = await fetch(`http://${publicIp}:18080/agents`, {
-            method: 'POST',
-            headers: {
-              Authorization: `Bearer ${bridgeToken}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              agentId: 'main',
-              name: 'Main Agent',
-              model: 'openrouter/openai/gpt-4o-mini',
-            }),
-            signal: AbortSignal.timeout(10_000),
-          }).catch((e) => {
-            console.warn(`[register] create main agent attempt ${attempt} network error:`, e);
+          const createAgentRes = await fetch(
+            `http://${publicIp}:18080/agents`,
+            {
+              method: 'POST',
+              headers: {
+                Authorization: `Bearer ${bridgeToken}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                agentId: 'main',
+                name: 'Main Agent',
+                model: 'openrouter/openai/gpt-4o-mini',
+              }),
+              signal: AbortSignal.timeout(10_000),
+            }
+          ).catch((e) => {
+            console.warn(
+              `[register] create main agent attempt ${attempt} network error:`,
+              e
+            );
             return null;
           });
           if (!createAgentRes) continue;
@@ -133,7 +158,10 @@ async function deployBridgeToVps(
             break;
           }
           const body = await createAgentRes.text().catch(() => '');
-          console.error(`[register] create main agent attempt ${attempt} failed (${createAgentRes.status}):`, body);
+          console.error(
+            `[register] create main agent attempt ${attempt} failed (${createAgentRes.status}):`,
+            body
+          );
         }
 
         if (!agentReady) {
@@ -141,10 +169,43 @@ async function deployBridgeToVps(
           // Throw a typed error so the caller can keep the VPS as ready but
           // allocation as waiting_init — the provision worker will retry.
           throw Object.assign(
-            new Error(`Main agent init failed on ${publicIp} after all retries`),
+            new Error(
+              `Main agent init failed on ${publicIp} after all retries`
+            ),
             { code: 'AGENT_INIT_FAILED' }
           );
         }
+        console.log(
+          `[register] main agent ready for user ${userId} after ${elapsedMs(healthStartedAt)}ms health/init wait`
+        );
+
+        // Agent creation rewrites openclaw.json, triggering a gateway SIGUSR1
+        // restart ~1 second later. Sleep here so the restart fires BEFORE we
+        // poll /ready — otherwise the first /ready attempt races the gateway
+        // config-change detection and passes on the old (about-to-die) instance.
+        await new Promise((r) => setTimeout(r, 8000));
+        console.log(
+          `[register] post-agent-creation restart window elapsed, polling /ready for user ${userId}`
+        );
+
+        let gatewayReady = false;
+        for (let readyAttempt = 1; readyAttempt <= 12; readyAttempt++) {
+          if (readyAttempt > 1) await new Promise((r) => setTimeout(r, 5000));
+          const readyRes = await fetch(`http://${publicIp}:18080/ready`, {
+            headers: { Authorization: `Bearer ${bridgeToken}` },
+            signal: AbortSignal.timeout(20_000),
+          }).catch(() => null);
+          if (readyRes?.ok) {
+            gatewayReady = true;
+            break;
+          }
+        }
+        if (!gatewayReady) {
+          throw new Error(`Bridge gateway ready check timeout on ${publicIp}`);
+        }
+        console.log(
+          `[register] bridge ready for user ${userId} in ${elapsedMs(deployStartedAt)}ms total deploy time`
+        );
 
         // Restore backed-up agent docs and groups from PG.
         await restoreFromPg(publicIp, bridgeToken, userId).catch((e) =>
@@ -160,7 +221,11 @@ async function deployBridgeToVps(
   throw new Error(`Bridge health check timeout on ${publicIp}`);
 }
 
-async function restoreFromPg(publicIp: string, bridgeToken: string, userId: string) {
+async function restoreFromPg(
+  publicIp: string,
+  bridgeToken: string,
+  userId: string
+) {
   const db = await getDb();
   const bridgeBase = `http://${publicIp}:18080`;
   const authHeaders = {
@@ -184,7 +249,10 @@ async function restoreFromPg(publicIp: string, bridgeToken: string, userId: stri
         signal: AbortSignal.timeout(10_000),
       }
     ).catch((e) =>
-      console.warn(`[register] restore doc ${doc.agentId}/${doc.docKey} failed:`, e)
+      console.warn(
+        `[register] restore doc ${doc.agentId}/${doc.docKey} failed:`,
+        e
+      )
     );
   }
 
@@ -213,7 +281,9 @@ async function restoreFromPg(publicIp: string, bridgeToken: string, userId: stri
     );
   }
 
-  console.log(`[register] restored ${docs.length} docs and ${groups.length} groups for user ${userId}`);
+  console.log(
+    `[register] restored ${docs.length} docs and ${groups.length} groups for user ${userId}`
+  );
 }
 
 export async function POST(req: Request) {
@@ -273,24 +343,37 @@ export async function POST(req: Request) {
     );
   }
 
-  const appUrl = process.env.NEXT_PUBLIC_BASE_URL ?? '';
+  const appUrl =
+    process.env.NEXT_PUBLIC_APP_URL ?? process.env.NEXT_PUBLIC_BASE_URL ?? '';
 
-  const isAgentInitFailed =
-    (err: unknown): err is Error =>
-      err instanceof Error && (err as any).code === 'AGENT_INIT_FAILED';
+  const isAgentInitFailed = (err: unknown): err is Error =>
+    err instanceof Error && (err as any).code === 'AGENT_INIT_FAILED';
 
   try {
-    await deployBridgeToVps(publicIp, host.bridgeToken!, openrouterKey, appUrl, userId);
+    await deployBridgeToVps(
+      publicIp,
+      host.bridgeToken!,
+      openrouterKey,
+      appUrl,
+      userId
+    );
   } catch (err) {
     if (isAgentInitFailed(err)) {
       // Bridge is up, VPS is healthy — only the agent init failed.
       // Mark VPS as ready and save bridge connection info, but keep
       // allocation in waiting_init so the chat page stays in the
       // provisioning view. The provision worker will retry agent creation.
-      console.warn(`[register] Agent init failed for user ${userId}, will retry via worker`);
+      console.warn(
+        `[register] Agent init failed for user ${userId}, will retry via worker`
+      );
       await db
         .update(runtimeHost)
-        .set({ publicIp, bridgeBaseUrl, status: 'ready', updatedAt: new Date() })
+        .set({
+          publicIp,
+          bridgeBaseUrl,
+          status: 'ready',
+          updatedAt: new Date(),
+        })
         .where(eq(runtimeHost.id, host.id));
       await db
         .insert(runtimeAllocation)

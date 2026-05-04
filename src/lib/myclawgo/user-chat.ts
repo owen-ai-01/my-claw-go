@@ -16,6 +16,18 @@ import { resolveUserBridgeTarget } from '@/lib/myclawgo/bridge-target';
 import { routeMessage } from '@/lib/myclawgo/model-router';
 import { and, asc, desc, eq } from 'drizzle-orm';
 
+const DEFAULT_OPENROUTER_MODEL = 'openrouter/openai/gpt-4o-mini';
+
+function normalizeOpenRouterModel(
+  model: string | undefined
+): string | undefined {
+  const trimmed = String(model || '').trim();
+  if (!trimmed || trimmed === 'auto' || trimmed === 'default') return undefined;
+  if (trimmed.startsWith('openrouter/')) return trimmed;
+  if (trimmed.includes('/')) return `openrouter/${trimmed}`;
+  return `openrouter/openai/${trimmed}`;
+}
+
 export async function listUserChatMessages(userId: string, agentId: string) {
   const db = await getDb();
   return db
@@ -254,11 +266,12 @@ export function resolveChatModelSelection(params: {
     !selectedModel || selectedModel === 'auto' || selectedModel === 'default';
 
   if (!isAutoModel) {
+    const resolvedModel = normalizeOpenRouterModel(selectedModel);
     return {
       selectedModel,
       isAutoModel,
       routing: null,
-      resolvedModel: selectedModel,
+      resolvedModel,
       mode: 'user-selected',
     };
   }
@@ -268,18 +281,20 @@ export function resolveChatModelSelection(params: {
       selectedModel,
       isAutoModel,
       routing: null,
-      resolvedModel: undefined,
+      resolvedModel: DEFAULT_OPENROUTER_MODEL,
       mode: 'auto-fallback',
     };
   }
 
   try {
     const routing = routeFn({ message });
+    const resolvedModel =
+      normalizeOpenRouterModel(routing.model) || DEFAULT_OPENROUTER_MODEL;
     return {
       selectedModel,
       isAutoModel,
       routing,
-      resolvedModel: routing.model,
+      resolvedModel,
       mode: 'auto',
     };
   } catch {

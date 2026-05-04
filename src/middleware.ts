@@ -55,11 +55,15 @@ export default async function middleware(req: NextRequest) {
 
   // do not use getSession() here, it will cause error related to edge runtime
   // const session = await getSession();
+  //
+  // Use localhost to avoid the round-trip through the public domain (nginx →
+  // internet → self) which causes HeadersTimeoutError on the test/prod VPS.
+  const internalBase = `http://127.0.0.1:${process.env.PORT ?? 3000}`;
   let session: Session | null = null;
   let isLoggedIn = false;
   try {
     const { data } = await betterFetch<Session>('/api/auth/get-session', {
-      baseURL: getBaseUrl(),
+      baseURL: internalBase,
       headers: {
         cookie: req.headers.get('cookie') || '', // Forward the cookies from the request
       },
@@ -68,10 +72,13 @@ export default async function middleware(req: NextRequest) {
     isLoggedIn = !!session;
   } catch (err) {
     console.warn(
-      'middleware: failed to fetch session, proceeding without auth check',
+      'middleware: failed to fetch session, falling back to cookie check',
       err
     );
-    isLoggedIn = false;
+    // Fall back to cookie presence so transient errors don't lock out users
+    // who just completed OAuth. Route handlers validate the session fully.
+    const cookieHeader = req.headers.get('cookie') ?? '';
+    isLoggedIn = cookieHeader.includes('better-auth.session_token=');
   }
   // console.log('middleware, isLoggedIn', isLoggedIn);
 

@@ -200,6 +200,17 @@ async function retryAgentInit(db: Awaited<ReturnType<typeof getDb>>) {
         signal: AbortSignal.timeout(10_000),
       });
       if (res.ok || res.status === 409) {
+        // Verify the gateway WS session is actually usable before marking ready.
+        // Agent creation can trigger a gateway hot-reload; /ready waits for WS
+        // handshake to succeed so the user won't hit "Gateway connect timed out".
+        const readyRes = await fetch(`${alloc.bridgeBaseUrl}/ready`, {
+          headers: { Authorization: `Bearer ${alloc.bridgeToken}` },
+          signal: AbortSignal.timeout(20_000),
+        }).catch(() => null);
+        if (!readyRes?.ok) {
+          console.warn(`[provision] Agent init retry: agent created but /ready not yet OK for user ${alloc.userId}`);
+          continue;
+        }
         await db
           .update(runtimeAllocation)
           .set({ status: 'ready', updatedAt: new Date() })
