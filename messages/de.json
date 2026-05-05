@@ -1,36 +1,26 @@
 {
   "Metadata": {
     "name": "MyClawGo",
-    "title": "MyClawGo: Dein eigenes OpenClaw ohne VPS und Setup",
-    "description": "Verwandeln Sie jede URL sofort in ansprechende Videos mit KI. Erstellen Sie in Minuten professionelle Inhalte für Marketing, Social Media und E-Commerce."
+    "title": "MyClawGo: Eigenes OpenClaw ohne VPS und Setup",
+    "description": "MyClawGo startet fuer jeden Nutzer einen privaten OpenClaw Workspace mit verwaltetem VPS, OpenRouter-Zugang, Speicher und Agentengruppen."
   },
   "Studio": {
-    "sidebar": {
-      "textToVideo": "Text zu Video",
-      "imageToVideo": "Bild zu Video",
-      "videoToVideo": "Video zu Video"
-    },
     "header": {
       "backToHome": "Zur Startseite"
     }
   },
   "HomePage": {
-    "title": "UrlToVideo: Jede URL zum Video machen",
-    "description": "Verwandeln Sie Web-Inhalte in Videos. UrlToVideo bietet Web-zu-Video, Text-zu-Video und Bild-zu-Video Funktionen.",
+    "title": "MyClawGo: Verwaltetes OpenClaw Hosting",
+    "description": "Starten Sie Ihren privaten OpenClaw Workspace ohne eigenen VPS, lokale Installation oder API-Key-Verwaltung.",
     "hero": {
-      "title": "Verwandeln Sie jede URL in ein Video",
-      "description": "Geben Sie eine Webseite, einen Artikel oder eine Produkt-URL ein und unsere KI generiert automatisch ein atemberaubendes Video für Sie.",
-      "primary": "Jetzt Video erstellen",
-      "tabs": {
-        "textToVideo": "Text zu Video",
-        "imageToVideo": "Bild zu Video",
-        "webToVideo": "Web zu Video"
-      },
+      "title": "Starten Sie Ihren privaten OpenClaw Workspace",
+      "description": "MyClawGo stellt eine isolierte Cloud-Laufzeit mit verwaltetem OpenRouter-Zugang, Speicher, Office-Tools und Agentengruppen bereit.",
+      "primary": "Workspace starten",
       "form": {
-        "promptPlaceholder": "Beschreibe dein Video...",
-        "uploadPlaceholder": "Bild hochladen",
-        "generate": "Video generieren",
-        "generating": "Generiere...",
+        "promptPlaceholder": "Geben Sie eine Aufgabe fuer Ihren OpenClaw Workspace ein...",
+        "uploadPlaceholder": "Datei anhaengen",
+        "generate": "Starten",
+        "generating": "Arbeitet...",
         "settings": {
           "title": "Einstellungen",
           "aspectRatio": {
@@ -53,97 +43,58 @@
             "10s": "10 Sekunden",
             "12s": "12 Sekunden"
           },
-          "analyzeButton": "Webseite analysieren & Prompt erstellen",
-          "analyzing": "Analysiere Webseite...",
-          "webUrlLabel": "Webseite URL",
-          "webAnalysisInfo": "Wir analysieren die Webseite und erstellen einen optimalen Video-Prompt."
+          "analyzeButton": "Inhalt analysieren",
+          "analyzing": "Analysiere...",
+          "webUrlLabel": "URL",
+          "webAnalysisInfo": "Wir analysieren den Inhalt und bereiten einen passenden Workspace-Prompt vor."
         },
         "placeholder": {
-          "title": "Bereit zum Erstellen",
-          "description": "Geben Sie links Ihren Prompt ein oder laden Sie ein Bild hoch, um Ihr Video zu generieren."
+          "title": "Workspace bereit",
+          "description": "Geben Sie links eine Aufgabe ein oder haengen Sie eine Datei an."
         },
         "preview": {
           "example": "Beispiel",
           "originalImage": "Original Bild",
-          "generatedVideo": "Generiertes Video",
+          "generatedVideo": "Workspace-Ergebnis",
           "prompt": "Prompt",
-          "examplePrompt": "Ein roter Sportwagen rast bei Sonnenuntergang über eine malerische Küstenstraße."
+          "examplePrompt": "Recherchiere Wettbewerber, fasse Ergebnisse zusammen und formuliere naechste Schritte."
         },
         "messages": {
           "uploadImage": "Bitte laden Sie eine Bilddatei hoch",
           "uploadSuccess": "Bild erfolgreich hochgeladen",
           "uploadError": "Fehler beim Hochladen des Bildes",
-          "enterPrompt": "Bitte geben Sie einen Prompt ein",
+          "enterPrompt": "Bitte geben Sie eine Aufgabe oder URL ein",
           "uploadImageFirst": "Bitte laden Sie zuerst ein Bild hoch",
-          "startGenerationError": "Fehler beim Starten der Generierung",
-          "videoGenerated": "Video erfolgreich generiert!",
+          "startGenerationError": "Fehler beim Starten der Workspace-Aufgabe",
+          "videoGenerated": "Aufgabe erfolgreich abgeschlossen!",
           "generationFailed": "Generierung fehlgeschlagen",
           "genericError": "Etwas ist schiefgelaufen",
-          "download": "Video herunterladen",
+          "download": "Ergebnis exportieren",
           "downloadFailed": "Download fehlgeschlagen, öffne in neuem Tab...",
           "loginRequired": "Bitte melden Sie sich an, um fortzufahren",
           "insufficientCredits": "Nicht genügend Credits. Kosten: {cost}, Verfügbar: {credits}",
-          "analyzeUrlError": "Fehler bei der Webseiten-Analyse",
+          "analyzeUrlError": "Fehler bei der Inhaltsanalyse",
           "enterUrl": "Bitte geben Sie eine URL ein",
-          "analysisSuccess": "Webseite analysiert! Prompt wurde erstellt."
+          "analysisSuccess": "Inhalt analysiert. Prompt vorbereitet."
         },
         "loginTitle": "Anmelden"
-      }
-    },
-    "textToVideoShowcase": {
-      "title": "Mit Text zum Video",
-      "subtitle": "Kreative Beispiele aus Text-Prompts",
-      "items": {
-        "item1": {
-          "prompt": "Eine futuristische Stadt mit fliegenden Autos im Cyberpunk-Stil"
-        },
-        "item2": {
-          "prompt": "Ein niedliches Kätzchen spielt Klavier bei Sonnenuntergang"
-        },
-        "item3": {
-          "prompt": "Cinematische Drohnenaufnahme einer Küstenlandschaft in Island"
-        },
-        "item4": {
-          "prompt": "Ein Roboter, der in einem Garten Blumen gießt, 3D Animation"
-        }
-      }
-    },
-    "imageToVideoShowcase": {
-      "title": "Bilder zum Leben erwecken",
-      "subtitle": "Verwandeln Sie statische Bilder in dynamische Videos",
-      "inputLabel": "Eingabebild",
-      "outputLabel": "Generiertes Video",
-      "promptLabel": "Prompt",
-      "items": {
-        "item1": {
-          "prompt": "Eine futuristische Stadt mit fliegenden Autos, filmisch, 8k"
-        },
-        "item2": {
-          "prompt": "Ein ruhiger See bei Sonnenuntergang, Spiegelungen im Wasser"
-        },
-        "item3": {
-          "prompt": "Ein Cyberpunk-Charakter in Neonlicht, Regen"
-        },
-        "item4": {
-          "prompt": "Malerischer Herbstwald mit fallenden Blättern"
-        }
       }
     },
     "features": {
       "title": "Leistungsstarke KI-Funktionen",
       "subtitle": "Alles was Sie für professionelle Videos brauchen",
-      "description": "Entdecken Sie die vielfältigen Möglichkeiten unseres KI Video Erstellens.",
+      "description": "Entdecken Sie die vielfältigen Möglichkeiten unseres OpenClaw Workspace Erstellens.",
       "items": {
         "item-1": {
-          "title": "Text zu Video",
-          "description": "Beschreiben Sie Ihre Szene mit Text und lassen Sie die KI das Video generieren. Perfekt für Storytelling und Marketing."
+          "title": "AI Workspace",
+          "description": "Beschreiben Sie Ihre Szene mit Text und lassen Sie die KI das Workspace starten. Perfekt für Storytelling und Marketing."
         },
         "item-2": {
-          "title": "Bild zu Video",
+          "title": "Agent Workspace",
           "description": "Erwecken Sie statische Bilder zum Leben. Laden Sie ein Foto hoch und lassen Sie es sich bewegen."
         },
         "item-3": {
-          "title": "Video zu Video",
+          "title": "Workflow-Automatisierung",
           "description": "Verändern Sie den Stil Ihrer bestehenden Videos. Machen Sie aus realen Aufnahmen Cartoons oder Kunstwerke."
         },
         "item-4": {
@@ -162,11 +113,11 @@
     },
     "examples": {
       "title": "Inspirierende Beispiele",
-      "description": "Sehen Sie, was mit unserem KI Video Erstellen möglich ist."
+      "description": "Sehen Sie, was mit unserem OpenClaw Workspace Erstellen möglich ist."
     },
     "tutorial": {
       "title": "So funktioniert es",
-      "subtitle": "In 3 Schritten zum KI Video",
+      "subtitle": "In 3 Schritten zum OpenClaw Workspace",
       "description": "Erstellen Sie Ihr erstes Video in weniger als einer Minute.",
       "steps": {
         "step1": {
@@ -191,10 +142,10 @@
     },
     "faqs": {
       "title": "Häufig gestellte Fragen",
-      "subtitle": "Antworten auf Ihre Fragen zum KI Video Erstellen",
+      "subtitle": "Antworten auf Ihre Fragen zum OpenClaw Workspace Erstellen",
       "items": {
         "item-1": {
-          "question": "Ist das KI Video Erstellen kostenlos?",
+          "question": "Ist das OpenClaw Workspace Erstellen kostenlos?",
           "answer": "Nein, die Nutzung ist nicht mehr kostenlos. Aufgrund der hohen Kosten für Rechenleistung ist eine Zahlung erforderlich, bevor Videos generiert werden können."
         },
         "item-2": {
@@ -210,7 +161,7 @@
           "answer": "Wir unterstützen alle gängigen Bild- und Videoformate für den Upload. Der Download erfolgt als MP4."
         },
         "item-5": {
-          "question": "Wie funktioniert Text-zu-Video?",
+          "question": "Wie funktioniert Agent Workspace?",
           "answer": "Unsere KI versteht natürliche Sprache und wandelt Ihre Beschreibung in eine visuelle Szene um."
         },
         "item-6": {
@@ -235,7 +186,7 @@
           "name": "Lisa M.",
           "role": "Content Creator",
           "image": "/testimonials/user-1.jpg",
-          "quote": "Das KI Video Erstellen hat meinen Workflow revolutioniert. Ich erstelle jetzt Tiktoks in Minuten."
+          "quote": "Das OpenClaw Workspace Erstellen hat meinen Workflow revolutioniert. Ich erstelle jetzt Tiktoks in Minuten."
         },
         "item-2": {
           "name": "Tom B.",
@@ -247,7 +198,7 @@
           "name": "Sarah K.",
           "role": "Designerin",
           "image": "/testimonials/user-3.jpg",
-          "quote": "Ich nutze die Bild-zu-Video Funktion, um meine Designs zum Leben zu erwecken. Meine Kunden lieben es."
+          "quote": "Ich nutze die Datei-gest?tzter Workspace Funktion, um meine Designs zum Leben zu erwecken. Meine Kunden lieben es."
         },
         "item-4": {
           "name": "Michael R.",
@@ -265,20 +216,20 @@
           "name": "David H.",
           "role": "Künstler",
           "image": "/testimonials/user-6.jpg",
-          "quote": "Video-zu-Video ist mein absolutes Lieblingsfeature. Die kreativen Möglichkeiten sind endlos."
+          "quote": "Workflow-Automatisierung ist mein absolutes Lieblingsfeature. Die kreativen Möglichkeiten sind endlos."
         }
       }
     },
     "calltoaction": {
-      "title": "Bereit für Ihr erstes KI Video?",
-      "description": "Starten Sie jetzt und entdecken Sie die Möglichkeiten der KI-Videogenerierung.",
-      "primaryButton": "Video erstellen",
+      "title": "Bereit für Ihr erstes OpenClaw Workspace?",
+      "description": "Starten Sie jetzt und entdecken Sie die Möglichkeiten der OpenClaw Workspacegenerierung.",
+      "primaryButton": "Workspace starten",
       "secondaryButton": "Preise"
     },
     "useCases": {
       "title": "Anwendungsbereiche",
       "subtitle": "Vielseitig einsetzbar",
-      "description": "Unser KI Video Erstellen eignet sich für viele Zwecke.",
+      "description": "Unser OpenClaw Workspace Erstellen eignet sich für viele Zwecke.",
       "ecommerce": {
         "title": "E-Commerce",
         "description": "Erstellen Sie ansprechende Produktvideos für Ihren Shop."
@@ -305,46 +256,46 @@
       }
     },
     "seoText": {
-      "title": "Alles über KI Video Erstellung",
+      "title": "Alles über OpenClaw Workspace Erstellung",
       "section1": {
-        "title": "Was ist KI Video Erstellen?",
-        "content": "KI Video Erstellen ist ein fortschrittliches Werkzeug, das künstliche Intelligenz nutzt, um aus einfachen Texteingaben oder Bildern hochwertige Videos zu erstellen. Diese Technologie revolutioniert die Art und Weise, wie wir Inhalte produzieren. Mit KI Video Erstellen können Sie ohne teures Kamera-Equipment oder jahrelange Erfahrung in der Videobearbeitung professionelle Ergebnisse erzielen. Der Prozess ist denkbar einfach: Sie geben einen Text (Prompt) ein, und der KI Video Algorithmus analysiert diesen, um passende visuelle Szenen, Bewegungen und Details zu generieren. Egal ob für Marketing, Social Media oder persönliche Projekte – ein KI Video Tool bietet unendliche Möglichkeiten. Die Qualität von KI Video Inhalten hat in den letzten Jahren dramatisch zugenommen, sodass sie kaum noch von realen Aufnahmen zu unterscheiden sind. Starten Sie noch heute mit Ihrer ersten KI Video Produktion und erleben Sie die Zukunft der Content-Erstellung."
+        "title": "Was ist OpenClaw Workspace Erstellen?",
+        "content": "OpenClaw Workspace Erstellen ist ein fortschrittliches Werkzeug, das künstliche Intelligenz nutzt, um aus einfachen Texteingaben oder Bildern hochwertige Videos zu erstellen. Diese Technologie revolutioniert die Art und Weise, wie wir Inhalte produzieren. Mit OpenClaw Workspace Erstellen können Sie ohne teures Kamera-Equipment oder jahrelange Erfahrung in der Videobearbeitung professionelle Ergebnisse erzielen. Der Prozess ist denkbar einfach: Sie geben einen Text (Prompt) ein, und der OpenClaw Workspace Algorithmus analysiert diesen, um passende visuelle Szenen, Bewegungen und Details zu generieren. Egal ob für Marketing, Social Media oder persönliche Projekte – ein OpenClaw Workspace Tool bietet unendliche Möglichkeiten. Die Qualität von OpenClaw Workspace Inhalten hat in den letzten Jahren dramatisch zugenommen, sodass sie kaum noch von realen Aufnahmen zu unterscheiden sind. Starten Sie noch heute mit Ihrer ersten OpenClaw Workspace Produktion und erleben Sie die Zukunft der Content-Erstellung."
       },
       "section2": {
-        "title": "Vorteile der KI Video Technologie",
-        "content": "Die Nutzung von KI Video Technologie bietet zahlreiche Vorteile gegenüber traditioneller Videoproduktion. Erstens sparen Sie massiv Zeit. Was früher Tage oder Wochen dauerte, erledigt KI Video Erstellen in wenigen Minuten. Zweitens sind die Kosten deutlich geringer. Sie brauchen keine Schauspieler, keine Sets und keine teure Crew – alles passiert digital in Ihrem KI Video Tool. Drittens ermöglicht KI Video eine unbegrenzte Kreativität. Möchten Sie eine Szene auf dem Mars oder eine futuristische Stadt zeigen? KI Video Erstellen macht es möglich, ohne dass Sie das Haus verlassen müssen. Zudem ist die Skalierbarkeit ein riesiger Pluspunkt. Sie können hunderte KI Video Varianten für A/B-Tests erstellen, um Ihre Marketingkampagnen zu optimieren. KI Video ist nicht nur ein Trend, sondern ein nachhaltiger Wandel in der Medienlandschaft. Unternehmen, die jetzt auf KI Video setzen, sichern sich einen entscheidenden Wettbewerbsvorteil."
+        "title": "Vorteile der OpenClaw Workspace Technologie",
+        "content": "Die Nutzung von OpenClaw Workspace Technologie bietet zahlreiche Vorteile gegenüber traditioneller Videoproduktion. Erstens sparen Sie massiv Zeit. Was früher Tage oder Wochen dauerte, erledigt OpenClaw Workspace Erstellen in wenigen Minuten. Zweitens sind die Kosten deutlich geringer. Sie brauchen keine Schauspieler, keine Sets und keine teure Crew – alles passiert digital in Ihrem OpenClaw Workspace Tool. Drittens ermöglicht OpenClaw Workspace eine unbegrenzte Kreativität. Möchten Sie eine Szene auf dem Mars oder eine futuristische Stadt zeigen? OpenClaw Workspace Erstellen macht es möglich, ohne dass Sie das Haus verlassen müssen. Zudem ist die Skalierbarkeit ein riesiger Pluspunkt. Sie können hunderte OpenClaw Workspace Varianten für A/B-Tests erstellen, um Ihre Marketingkampagnen zu optimieren. OpenClaw Workspace ist nicht nur ein Trend, sondern ein nachhaltiger Wandel in der Medienlandschaft. Unternehmen, die jetzt auf OpenClaw Workspace setzen, sichern sich einen entscheidenden Wettbewerbsvorteil."
       },
       "section3": {
-        "title": "Text zu Video: Die Magie der Worte",
-        "content": "Die 'Text zu Video' Funktion ist das Herzstück vieler KI Video Erstellungs-Tools. Hierbei geben Sie einfach eine Beschreibung ein, und die KI Video Engine wandelt diese Worte in bewegte Bilder um. Stellen Sie sich vor, Sie schreiben 'Ein goldener Retriever rennt glücklich über eine blühende Wiese bei Sonnenuntergang', und Sekunden später haben Sie genau dieses KI Video vor sich. Diese Text-zu-Video Technologie versteht Kontext, Lichtstimmung und physikalische Gesetze, um realistische KI Video Sequenzen zu erzeugen. Es ist perfekt für Storyboarding, Konzeptvisualisierung oder schnelle Social Media Clips. Je präziser Ihr Prompt, desto beeindruckender das KI Video Ergebnis. Experimentieren Sie mit verschiedenen Stilen – von fotorealistisch bis hin zu Cartoon oder Anime – alles ist mit einem guten KI Video Erstellen möglich. Text zu Video democratisiert die Videoproduktion, da nun jeder mit einer Idee ein Regisseur seines eigenen KI Video Meisterwerks sein kann."
+        "title": "AI Workspace: Die Magie der Worte",
+        "content": "Die 'AI Workspace' Funktion ist das Herzstück vieler OpenClaw Workspace Erstellungs-Tools. Hierbei geben Sie einfach eine Beschreibung ein, und die OpenClaw Workspace Engine wandelt diese Worte in bewegte Bilder um. Stellen Sie sich vor, Sie schreiben 'Ein goldener Retriever rennt glücklich über eine blühende Wiese bei Sonnenuntergang', und Sekunden später haben Sie genau dieses OpenClaw Workspace vor sich. Diese Agent Workspace Technologie versteht Kontext, Lichtstimmung und physikalische Gesetze, um realistische OpenClaw Workspace Sequenzen zu erzeugen. Es ist perfekt für Storyboarding, Konzeptvisualisierung oder schnelle Social Media Clips. Je präziser Ihr Prompt, desto beeindruckender das OpenClaw Workspace Ergebnis. Experimentieren Sie mit verschiedenen Stilen – von fotorealistisch bis hin zu Cartoon oder Anime – alles ist mit einem guten OpenClaw Workspace Erstellen möglich. AI Workspace democratisiert die Videoproduktion, da nun jeder mit einer Idee ein Regisseur seines eigenen OpenClaw Workspace Meisterwerks sein kann."
       },
       "section4": {
-        "title": "Bild zu Video: Statische Momente zum Leben erwecken",
-        "content": "Neben Text zu Video ist 'Bild zu Video' eine weitere kraftvolle Funktion moderner KI Video Tools. Haben Sie ein Produktfoto, das Sie dynamisch präsentieren möchten? Oder ein Urlaubsfoto, dem Sie Atmosphäre verleihen wollen? Die Bild-zu-Video Technologie analysiert das statische Bild und extrapoliert logische Bewegungen. Wasser beginnt zu fließen, Wolken ziehen vorbei, oder ein Lächeln entwickelt sich. Ein KI Video aus einem Bild zu erstellen, ist eine hervorragende Möglichkeit, bestehenden Content wiederzuverwenden und aufzuwerten. Besonders im E-Commerce kann ein KI Video, das aus Produktbildern generiert wurde, die Conversion-Rate signifikant steigern. Die KI Video Algorithmen sind darauf trainiert, Tiefe und Struktur in 2D-Bildern zu erkennen und diese in eine glaubwürdige 3D-Animation zu übersetzen. Nutzen Sie Bild zu Video, um Ihre Galerien interaktiver und fesselnder zu gestalten."
+        "title": "Agent Workspace: Statische Momente zum Leben erwecken",
+        "content": "Neben AI Workspace ist 'Agent Workspace' eine weitere kraftvolle Funktion moderner OpenClaw Workspace Tools. Haben Sie ein Produktfoto, das Sie dynamisch präsentieren möchten? Oder ein Urlaubsfoto, dem Sie Atmosphäre verleihen wollen? Die Datei-gest?tzter Workspace Technologie analysiert das statische Bild und extrapoliert logische Bewegungen. Wasser beginnt zu fließen, Wolken ziehen vorbei, oder ein Lächeln entwickelt sich. Ein OpenClaw Workspace aus einem Bild zu erstellen, ist eine hervorragende Möglichkeit, bestehenden Content wiederzuverwenden und aufzuwerten. Besonders im E-Commerce kann ein OpenClaw Workspace, das aus Produktbildern generiert wurde, die Conversion-Rate signifikant steigern. Die OpenClaw Workspace Algorithmen sind darauf trainiert, Tiefe und Struktur in 2D-Bildern zu erkennen und diese in eine glaubwürdige 3D-Animation zu übersetzen. Nutzen Sie Agent Workspace, um Ihre Galerien interaktiver und fesselnder zu gestalten."
       },
       "section5": {
-        "title": "Die Zukunft von KI Video",
-        "content": "Wir stehen erst am Anfang der KI Video Ära. Die Entwicklungsgeschwindigkeit ist atemberaubend. Bald werden wir KI Video Erstellungs-Tools sehen, die ganze Spielfilme mit Dialogen und komplexen Handlungssträngen erstellen können. Die Auflösung von KI Video wird weiter steigen, bis hin zu 8K und darüber hinaus. Auch die Interaktivität wird zunehmen; stellen Sie sich ein KI Video vor, das sich in Echtzeit an die Reaktionen des Zuschauers anpasst. Ethische Fragen spielen dabei natürlich eine Rolle, aber das kreative Potenzial von KI Video ist unbestreitbar. Wer lernt, KI Video Tools effektiv zu nutzen, wird in der zukünftigen Arbeitswelt sehr gefragt sein. Ob im Marketing, in der Unterhaltungsindustrie oder in der Bildung – KI Video wird allgegenwärtig sein. Bleiben Sie am Ball und experimentieren Sie regelmäßig mit neuen KI Video Features, um an der Spitze dieser technologischen Revolution zu stehen."
+        "title": "Die Zukunft von OpenClaw Workspace",
+        "content": "Wir stehen erst am Anfang der OpenClaw Workspace Ära. Die Entwicklungsgeschwindigkeit ist atemberaubend. Bald werden wir OpenClaw Workspace Erstellungs-Tools sehen, die ganze Spielfilme mit Dialogen und komplexen Handlungssträngen erstellen können. Die Auflösung von OpenClaw Workspace wird weiter steigen, bis hin zu 8K und darüber hinaus. Auch die Interaktivität wird zunehmen; stellen Sie sich ein OpenClaw Workspace vor, das sich in Echtzeit an die Reaktionen des Zuschauers anpasst. Ethische Fragen spielen dabei natürlich eine Rolle, aber das kreative Potenzial von OpenClaw Workspace ist unbestreitbar. Wer lernt, OpenClaw Workspace Tools effektiv zu nutzen, wird in der zukünftigen Arbeitswelt sehr gefragt sein. Ob im Marketing, in der Unterhaltungsindustrie oder in der Bildung – OpenClaw Workspace wird allgegenwärtig sein. Bleiben Sie am Ball und experimentieren Sie regelmäßig mit neuen OpenClaw Workspace Features, um an der Spitze dieser technologischen Revolution zu stehen."
       },
       "section6": {
-        "title": "Für wen eignet sich das KI Video Erstellen?",
-        "content": "Praktisch jeder kann von KI Video Erstellen profitieren. Marketing-Agenturen nutzen KI Video, um schnell Pitches und Kampagnen zu visualisieren. Content Creator auf TikTok und YouTube verwenden KI Video, um ihren Output zu erhöhen und virale Hits zu landen. Lehrer und Dozenten können komplexe Sachverhalte durch erklärende KI Video Animationen veranschaulichen. Immobilienmakler erstellen virtuelle Rundgänge mittels KI Video Technologie. Selbst kleine Unternehmen können sich dank KI Video nun professionelle Werbespots leisten. Die Barriere für den Einstieg ist niedrig, und die Lernkurve flach. Es war noch nie so einfach, hochwertige Videoinhalte zu produzieren wie heute mit KI Video Software. Egal ob Profi oder Anfänger – KI Video gibt Ihnen die Werkzeuge an die Hand, um Ihre Visionen ohne technische Hürden umzusetzen."
+        "title": "Für wen eignet sich das OpenClaw Workspace Erstellen?",
+        "content": "Praktisch jeder kann von OpenClaw Workspace Erstellen profitieren. Marketing-Agenturen nutzen OpenClaw Workspace, um schnell Pitches und Kampagnen zu visualisieren. Content Creator auf TikTok und YouTube verwenden OpenClaw Workspace, um ihren Output zu erhöhen und virale Hits zu landen. Lehrer und Dozenten können komplexe Sachverhalte durch erklärende OpenClaw Workspace Animationen veranschaulichen. Immobilienmakler erstellen virtuelle Rundgänge mittels OpenClaw Workspace Technologie. Selbst kleine Unternehmen können sich dank OpenClaw Workspace nun professionelle Werbespots leisten. Die Barriere für den Einstieg ist niedrig, und die Lernkurve flach. Es war noch nie so einfach, hochwertige Videoinhalte zu produzieren wie heute mit OpenClaw Workspace Software. Egal ob Profi oder Anfänger – OpenClaw Workspace gibt Ihnen die Werkzeuge an die Hand, um Ihre Visionen ohne technische Hürden umzusetzen."
       },
       "section7": {
-        "title": "Tipps für perfekte KI Video Prompts",
-        "content": "Um das Beste aus Ihrem KI Video Erstellen herauszuholen, ist das 'Prompt Engineering' entscheidend. Ein guter KI Video Prompt ist detailliert. Statt 'ein Auto', schreiben Sie 'ein roter Sportwagen, der auf einer regennassen Straße bei Neonlicht in Tokio fährt, 4k, cinematisch'. Beschreiben Sie Licht, Kameraperspektive und Stil für Ihr KI Video. Nutzen Sie Adjektive, um die Stimmung zu setzen. Viele KI Video Tools verstehen auch technische Begriffe wie 'Weitwinkel', 'Bokeh' oder 'Slow Motion'. Testen Sie verschiedene Formulierungen, um zu sehen, wie die KI Video Engine reagiert. Es ist ein iterativer Prozess. Je mehr Sie mit dem KI Video Erstellen arbeiten, desto besser verstehen Sie seine 'Sprache'. Speichern Sie Ihre besten Prompts, um konsistente KI Video Serien zu erstellen. Denken Sie daran: Die KI Video Ausgabe ist nur so gut wie die Eingabe. Investieren Sie Zeit in Ihre Prompts, und die KI Video Ergebnisse werden Sie belohnen."
+        "title": "Tipps für perfekte OpenClaw Workspace Prompts",
+        "content": "Um das Beste aus Ihrem OpenClaw Workspace Erstellen herauszuholen, ist das 'Prompt Engineering' entscheidend. Ein guter OpenClaw Workspace Prompt ist detailliert. Statt 'ein Auto', schreiben Sie 'ein roter Sportwagen, der auf einer regennassen Straße bei Neonlicht in Tokio fährt, 4k, cinematisch'. Beschreiben Sie Licht, Kameraperspektive und Stil für Ihr OpenClaw Workspace. Nutzen Sie Adjektive, um die Stimmung zu setzen. Viele OpenClaw Workspace Tools verstehen auch technische Begriffe wie 'Weitwinkel', 'Bokeh' oder 'Slow Motion'. Testen Sie verschiedene Formulierungen, um zu sehen, wie die OpenClaw Workspace Engine reagiert. Es ist ein iterativer Prozess. Je mehr Sie mit dem OpenClaw Workspace Erstellen arbeiten, desto besser verstehen Sie seine 'Sprache'. Speichern Sie Ihre besten Prompts, um konsistente OpenClaw Workspace Serien zu erstellen. Denken Sie daran: Die OpenClaw Workspace Ausgabe ist nur so gut wie die Eingabe. Investieren Sie Zeit in Ihre Prompts, und die OpenClaw Workspace Ergebnisse werden Sie belohnen."
       },
       "section8": {
-        "title": "KI Video Qualität und Auflösung",
-        "content": "Ein wichtiges Kriterium bei der Wahl eines KI Video Erstellens ist die Ausgabequalität. Moderne KI Video Modelle können bereits HD und teilweise 4K Auflösung generieren. Die Frame-Konsistenz ist dabei entscheidend; ein gutes KI Video sollte nicht flackern oder morphing-Artefakte aufweisen. Unsere Plattform nutzt fortschrittliche Upscaling-Algorithmen, um sicherzustellen, dass Ihr KI Video auch auf großen Bildschirmen gestochen scharf aussieht. Achten Sie auch auf die Framerate (FPS). Ein flüssiges KI Video mit 30 oder 60 FPS wirkt deutlich professioneller. Die Renderzeit für hochauflösendes KI Video kann variieren, aber dank Cloud-Computing wird dieser Prozess immer schneller. Wir optimieren unsere KI Video Pipeline kontinuierlich, um das beste Verhältnis aus Qualität und Geschwindigkeit zu bieten. Qualität ist König, und mit dem richtigen KI Video Tool müssen Sie keine Kompromisse eingehen."
+        "title": "OpenClaw Workspace Qualität und Auflösung",
+        "content": "Ein wichtiges Kriterium bei der Wahl eines OpenClaw Workspace Erstellens ist die Ausgabequalität. Moderne OpenClaw Workspace Modelle können bereits HD und teilweise 4K Auflösung generieren. Die Frame-Konsistenz ist dabei entscheidend; ein gutes OpenClaw Workspace sollte nicht flackern oder morphing-Artefakte aufweisen. Unsere Plattform nutzt fortschrittliche Upscaling-Algorithmen, um sicherzustellen, dass Ihr OpenClaw Workspace auch auf großen Bildschirmen gestochen scharf aussieht. Achten Sie auch auf die Framerate (FPS). Ein flüssiges OpenClaw Workspace mit 30 oder 60 FPS wirkt deutlich professioneller. Die Renderzeit für hochauflösendes OpenClaw Workspace kann variieren, aber dank Cloud-Computing wird dieser Prozess immer schneller. Wir optimieren unsere OpenClaw Workspace Pipeline kontinuierlich, um das beste Verhältnis aus Qualität und Geschwindigkeit zu bieten. Qualität ist König, und mit dem richtigen OpenClaw Workspace Tool müssen Sie keine Kompromisse eingehen."
       },
       "section9": {
-        "title": "KI Video und Urheberrecht",
-        "content": "Ein oft diskutiertes Thema ist das Urheberrecht bei KI Video Inhalten. Wem gehört das KI Video? In den meisten Fällen haben Sie als Ersteller mit einem kostenpflichtigen Plan die vollen kommerziellen Nutzungsrechte an Ihrem generierten KI Video. Das bedeutet, Sie können das KI Video für Werbung, auf YouTube oder im Fernsehen nutzen. Es ist jedoch wichtig, die spezifischen Nutzungsbedingungen Ihres KI Video Anbieters zu lesen. Da KI Video Modelle auf riesigen Datensätzen trainiert werden, ist die Rechtslage komplex, aber für den Endanwender in der Regel sicher, solange keine geschützten Marken oder Personenrechte verletzt werden. Nutzen Sie KI Video verantwortungsbewusst. Transparenz ist ebenfalls wichtig; es kann sinnvoll sein, KI Video Inhalte als solche zu kennzeichnen, um Vertrauen bei Ihrem Publikum aufzubauen. Die Welt des KI Video Rechts entwickelt sich weiter, aber die kommerzielle Nutzung ist heute bereits Standard."
+        "title": "OpenClaw Workspace und Urheberrecht",
+        "content": "Ein oft diskutiertes Thema ist das Urheberrecht bei OpenClaw Workspace Inhalten. Wem gehört das OpenClaw Workspace? In den meisten Fällen haben Sie als Ersteller mit einem kostenpflichtigen Plan die vollen kommerziellen Nutzungsrechte an Ihrem generierten OpenClaw Workspace. Das bedeutet, Sie können das OpenClaw Workspace für Werbung, auf YouTube oder im Fernsehen nutzen. Es ist jedoch wichtig, die spezifischen Nutzungsbedingungen Ihres OpenClaw Workspace Anbieters zu lesen. Da OpenClaw Workspace Modelle auf riesigen Datensätzen trainiert werden, ist die Rechtslage komplex, aber für den Endanwender in der Regel sicher, solange keine geschützten Marken oder Personenrechte verletzt werden. Nutzen Sie OpenClaw Workspace verantwortungsbewusst. Transparenz ist ebenfalls wichtig; es kann sinnvoll sein, OpenClaw Workspace Inhalte als solche zu kennzeichnen, um Vertrauen bei Ihrem Publikum aufzubauen. Die Welt des OpenClaw Workspace Rechts entwickelt sich weiter, aber die kommerzielle Nutzung ist heute bereits Standard."
       },
       "section10": {
-        "title": "Fazit: Starten Sie Ihre KI Video Reise",
-        "content": "Zusammenfassend lässt sich sagen, dass KI Video eine der spannendsten Technologien unserer Zeit ist. Sie demokratisiert Kreativität und ermöglicht es jedem, beeindruckende visuelle Geschichten zu erzählen. Ob Sie Zeit sparen, Kosten senken oder einfach nur experimentieren wollen – KI Video Erstellen ist das richtige Werkzeug. Die Möglichkeiten von Text-zu-Video und Bild-zu-Video sind schier endlos. Warten Sie nicht, bis die Konkurrenz Sie überholt. Tauchen Sie ein in die Welt von KI Video, lernen Sie die Tools kennen und erschaffen Sie Inhalte, die begeistern. Die Zukunft gehört dem KI Video, und Sie können heute schon Teil dieser Zukunft sein. Melden Sie sich an, schreiben Sie Ihren ersten Prompt und lassen Sie sich von der Magie von KI Video verzaubern. Ihr Publikum wartet auf Ihre Geschichten, erzählt durch die Kraft von KI Video."
+        "title": "Fazit: Starten Sie Ihre OpenClaw Workspace Reise",
+        "content": "Zusammenfassend lässt sich sagen, dass OpenClaw Workspace eine der spannendsten Technologien unserer Zeit ist. Sie demokratisiert Kreativität und ermöglicht es jedem, beeindruckende visuelle Geschichten zu erzählen. Ob Sie Zeit sparen, Kosten senken oder einfach nur experimentieren wollen – OpenClaw Workspace Erstellen ist das richtige Werkzeug. Die Möglichkeiten von Agent Workspace und Datei-gest?tzter Workspace sind schier endlos. Warten Sie nicht, bis die Konkurrenz Sie überholt. Tauchen Sie ein in die Welt von OpenClaw Workspace, lernen Sie die Tools kennen und erschaffen Sie Inhalte, die begeistern. Die Zukunft gehört dem OpenClaw Workspace, und Sie können heute schon Teil dieser Zukunft sein. Melden Sie sich an, schreiben Sie Ihren ersten Prompt und lassen Sie sich von der Magie von OpenClaw Workspace verzaubern. Ihr Publikum wartet auf Ihre Geschichten, erzählt durch die Kraft von OpenClaw Workspace."
       }
     },
     "features2": {
@@ -412,54 +363,6 @@
           "title": "Zufriedenheit"
         }
       }
-    },
-    "urlToVideoFeatures": {
-      "title": "URL zu Video Funktionen",
-      "description": "Leistungsstarke Funktionen, die URL zu Video zur besten Wahl für automatisierte Videoerstellung machen.",
-      "item-1": {
-        "title": "Jede URL funktioniert",
-        "description": "URL zu Video unterstützt Produktseiten, Blog-Artikel, Landing Pages, Portfolios und jede öffentliche Webseite."
-      },
-      "item-2": {
-        "title": "Blitzschnell",
-        "description": "URL zu Video generiert komplette Videos in nur wenigen Minuten, nicht Stunden. Schnelle KI-Verarbeitung im großen Maßstab."
-      },
-      "item-3": {
-        "title": "Multi-Plattform",
-        "description": "URL zu Video gibt Videos in jedem Format aus: YouTube 16:9, TikTok 9:16, Instagram 1:1 und mehr."
-      },
-      "item-4": {
-        "title": "KI-Narration",
-        "description": "URL zu Video erstellt automatisch professionelle Sprachausgabe aus Ihrem Webseiten-Inhalt."
-      }
-    },
-    "urlToVideoSeo": {
-      "title": "Kompletter Leitfaden zu URL zu Video",
-      "subtitle": "Alles, was Sie über URL zu Video Technologie wissen müssen",
-      "what": {
-        "title": "Was ist URL zu Video?",
-        "content": "URL zu Video ist eine revolutionäre KI-gestützte Technologie, die automatisch jede Webseite in ein professionelles, ansprechendes Video verwandelt. Mit URL zu Video fügen Sie einfach einen Link zu einer beliebigen Webseite, Produktseite, Blog-Artikel oder Landing Page ein, und unsere fortschrittliche KI analysiert den Inhalt, extrahiert wichtige Informationen, erstellt ein überzeugendes Storyboard und produziert ein ausgefeiltes Video."
-      },
-      "why": {
-        "title": "Warum URL zu Video wählen?",
-        "content": "URL zu Video bietet enorme Vorteile gegenüber traditionellen Videoproduktionsmethoden. Erstens spart URL zu Video Ihnen unzählige Stunden. Zweitens ist URL zu Video unglaublich kosteneffektiv. Drittens gewährleistet URL zu Video Konsistenz in Ihrem Video-Branding."
-      },
-      "how": {
-        "title": "Wie URL zu Video funktioniert",
-        "content": "Der URL zu Video Prozess ist mühelos gestaltet. Schritt 1 - URL einreichen: Fügen Sie einfach eine beliebige Webseiten-URL ein. Schritt 2 - KI-Analyse: URL zu Video analysiert Ihren Seiteninhalt. Schritt 3 - Storyboard-Erstellung. Schritt 4 - Asset-Erstellung. Schritt 5 - Videokomposition. Schritt 6 - Download."
-      },
-      "features": {
-        "title": "URL zu Video Funktionen",
-        "content": "URL zu Video bietet leistungsstarke Funktionen für maximale Flexibilität und Qualität. Unsere Plattform unterstützt mehrere Seitenverhältnisse, Auflösungsoptionen und automatische Narration."
-      },
-      "useCases": {
-        "title": "URL zu Video Anwendungsfälle",
-        "content": "URL zu Video dient einer Vielzahl von Anwendungen in verschiedenen Branchen. E-Commerce, Content-Marketing, Immobilien, SaaS-Unternehmen und mehr."
-      },
-      "conclusion": {
-        "title": "Starten Sie heute mit URL zu Video",
-        "content": "URL zu Video repräsentiert die Zukunft der automatisierten Video-Content-Erstellung. Schließen Sie sich tausenden von Unternehmen an, die bereits die Kraft von URL zu Video entdeckt haben."
-      }
     }
   },
   "PricingPage": {
@@ -497,13 +400,13 @@
     },
     "navbar": {
       "bildZuVideo": {
-        "title": "Bild zu Video"
+        "title": "Agent Workspace"
       },
       "textZuVideo": {
-        "title": "Text zu Video"
+        "title": "AI Workspace"
       },
       "videoZuVideo": {
-        "title": "Video zu Video"
+        "title": "Workflow-Automatisierung"
       },
       "kiEffekt": {
         "title": "KI-Effekt"
@@ -579,7 +482,7 @@
       }
     },
     "footer": {
-      "tagline": "KI Video Erstellen – Erstelle atemberaubende Videos automatisch mit KI.",
+      "tagline": "OpenClaw Workspace Erstellen – Erstelle atemberaubende Videos automatisch mit KI.",
       "product": {
         "title": "Produkt",
         "items": {
@@ -649,7 +552,7 @@
     }
   },
   "Newsletter": {
-    "title": "Newsletter zum KI Video Erstellen",
+    "title": "Newsletter zum OpenClaw Workspace Erstellen",
     "subtitle": "Tipps, Updates und Angebote direkt in dein Postfach",
     "description": "Erhalte regelmäßig Neuigkeiten zu unserem KI-Tool zur Videogenerierung, Produkt-Updates und exklusive Aktionen.",
     "form": {
@@ -674,20 +577,20 @@
   },
   "AboutPage": {
     "title": "About Us",
-    "description": "Learn more about UrlToVideo and our team",
-    "authorName": "UrlToVideo Team",
+    "description": "Learn more about MyClawGo and our team",
+    "authorName": "MyClawGo Team",
     "authorBio": "We develop innovative AI tools for video production",
-    "introduction": "Welcome to UrlToVideo. We offer professional AI-based solutions for video creation. Our tools help you turn ideas into motion – perfect for marketing, social media and creative projects.",
+    "introduction": "Welcome to MyClawGo. We offer professional AI-based solutions for video creation. Our tools help you turn ideas into motion – perfect for marketing, social media and creative projects.",
     "talkWithMe": "Get in touch"
   },
   "ChangelogPage": {
     "title": "Changelog",
-    "description": "Alle Updates und Verbesserungen unseres KI Video Tools",
-    "subtitle": "Verfolgen Sie alle Updates und Verbesserungen unseres KI Video Erstellens"
+    "description": "Alle Updates und Verbesserungen unseres OpenClaw Workspace Tools",
+    "subtitle": "Verfolgen Sie alle Updates und Verbesserungen unseres OpenClaw Workspace Erstellens"
   },
   "ContactPage": {
     "title": "Kontakt",
-    "description": "Kontaktieren Sie uns für Fragen zum KI Video Erstellen",
+    "description": "Kontaktieren Sie uns für Fragen zum OpenClaw Workspace Erstellen",
     "subtitle": "Haben Sie Fragen? Wir helfen Ihnen gerne weiter",
     "form": {
       "title": "Kontaktformular",
@@ -708,7 +611,7 @@
   },
   "WaitlistPage": {
     "title": "Warteliste",
-    "description": "Treten Sie der Warteliste bei für exklusive KI Video Features",
+    "description": "Treten Sie der Warteliste bei für exklusive OpenClaw Workspace Features",
     "subtitle": "Seien Sie einer der Ersten, die neue Video-Funktionen erhalten",
     "form": {
       "title": "Zur Warteliste anmelden",
@@ -751,37 +654,33 @@
     "title": "KI-Chat",
     "description": "Chatten Sie mit KI-Assistenten"
   },
-  "AIVideoPage": {
-    "title": "KI-Video",
-    "description": "Erstellen Sie Videos mit KI"
-  },
   "AIAudioPage": {
     "title": "KI-Audio",
     "description": "Erstellen Sie Audio mit KI"
   },
   "Mail": {
     "forgotPassword": {
-      "subject": "Passwort zurücksetzen – UrlToVideo",
+      "subject": "Passwort zurücksetzen – MyClawGo",
       "title": "Passwort zurücksetzen",
       "body": "Wir haben eine Anfrage zum Zurücksetzen Ihres Passworts erhalten. Bitte klicken Sie auf den untenstehenden Button, um Ihr Passwort zu ändern.",
       "resetPassword": "Passwort zurücksetzen"
     },
     "verifyEmail": {
-      "subject": "E-Mail-Adresse bestätigen – UrlToVideo",
+      "subject": "E-Mail-Adresse bestätigen – MyClawGo",
       "title": "E-Mail-Adresse bestätigen",
       "body": "Bitte bestätigen Sie Ihre E-Mail-Adresse, um Ihre Registrierung abzuschließen.",
       "confirmEmail": "E-Mail bestätigen"
     },
     "common": {
       "team": "Dein {name} Team",
-      "copyright": "© {year} UrlToVideo. Alle Rechte vorbehalten."
+      "copyright": "© {year} MyClawGo. Alle Rechte vorbehalten."
     },
     "subscribeNewsletter": {
-      "subject": "Newsletter-Anmeldung bestätigt – UrlToVideo",
+      "subject": "Newsletter-Anmeldung bestätigt – MyClawGo",
       "body": "Vielen Dank für Ihre Anmeldung! Sie werden ab sofort mit spannenden Neuigkeiten und Updates versorgt."
     },
     "contactMessage": {
-      "subject": "Neue Kontaktanfrage – UrlToVideo",
+      "subject": "Neue Kontaktanfrage – MyClawGo",
       "name": "Name: {name}",
       "email": "E-Mail: {email}",
       "message": "Nachricht: {message}"
@@ -789,7 +688,7 @@
   },
   "BlogPage": {
     "title": "Blog",
-    "description": "Blog-Artikel und Neuigkeiten zur KI-Videogenerierung",
+    "description": "Blog-Artikel und Neuigkeiten zur OpenClaw Workspacegenerierung",
     "subtitle": "Erfahren Sie mehr über Videoproduktion, KI-Tools und Trends",
     "author": "Autor",
     "categories": "Kategorien",
@@ -813,7 +712,7 @@
     "dashboard": {
       "title": "Dashboard",
       "welcomeMessage": "Willkommen im Dashboard",
-      "getStarted": "Video erstellen starten"
+      "getStarted": "Workspace starten starten"
     },
     "admin": {
       "title": "Administration",
@@ -1043,7 +942,7 @@
         "description": "Verwalten Sie Ihre Benachrichtigungseinstellungen",
         "newsletter": {
           "title": "Newsletter-Abonnement",
-          "description": "Erhalte regelmäßig Tipps, Updates und Angebote zu unserem KI Video Tool.",
+          "description": "Erhalte regelmäßig Tipps, Updates und Angebote zu unserem OpenClaw Workspace Tool.",
           "label": "Newsletter abonnieren",
           "emailRequired": "Für das Newsletter‑Abo wird eine E‑Mail‑Adresse benötigt.",
           "subscribeSuccess": "Du hast den Newsletter erfolgreich abonniert.",
@@ -1083,7 +982,7 @@
     "signIn": "Jetzt anmelden",
     "checkingAccess": "Zugriffsrechte werden geprüft…",
     "title": "Premium-Inhalte freischalten",
-    "description": "Mit einem Premium-Zugang erhältst du Zugriff auf tiefere Guides, Best Practices und exklusive Inhalte rund um KI Video.",
+    "description": "Mit einem Premium-Zugang erhältst du Zugriff auf tiefere Guides, Best Practices und exklusive Inhalte rund um OpenClaw Workspace.",
     "upgradeCta": "Jetzt auf Premium upgraden",
     "benefit1": "Unbegrenzter Zugriff auf Premium‑Artikel",
     "benefit2": "Detaillierte Workflows und Best Practices",
@@ -1290,214 +1189,6 @@
         "feature-4": "Kein VPS- oder API-Key-Setup nötig",
         "feature-5": "Credits 1 Jahr gültig",
         "feature-6": "Priorisierter Support"
-      }
-    }
-  },
-  "TextToVideoPage": {
-    "title": "Text zu Video Erstellen",
-    "description": "Erstellen Sie professionelle Videos einfach per Texteingabe.",
-    "tutorial": {
-      "title": "So funktioniert Text zu Video",
-      "subtitle": "In wenigen Schritten zum Video",
-      "description": "Verwandeln Sie Ihre Ideen in bewegte Bilder.",
-      "steps": {
-        "step1": {
-          "title": "1. Text eingeben",
-          "description": "Beschreiben Sie Ihre Szene so detailliert wie möglich. Nutzen Sie Adjektive für Stimmung und Licht."
-        },
-        "step2": {
-          "title": "2. Einstellungen wählen",
-          "description": "Wählen Sie das Seitenverhältnis (z.B. 16:9) und den Stil (z.B. Realistisch oder Cartoon)."
-        },
-        "step3": {
-          "title": "3. Video generieren",
-          "description": "Klicken Sie auf Generieren und laden Sie Ihr fertiges Video herunter."
-        }
-      }
-    },
-    "faqs": {
-      "title": "Häufige Fragen zu Text-zu-Video",
-      "subtitle": "Alles was Sie wissen müssen",
-      "items": {
-        "item-1": {
-          "question": "Wie detailliert muss mein Prompt sein?",
-          "answer": "Je detaillierter, desto besser. Beschreiben Sie nicht nur das Hauptmotiv, sondern auch Hintergrund, Beleuchtung, Kamerabewegung und Stil."
-        },
-        "item-2": {
-          "question": "Welche Sprachen werden unterstützt?",
-          "answer": "Unser Modell versteht am besten Englisch, aber auch Deutsch wird sehr gut unterstützt."
-        },
-        "item-3": {
-          "question": "Wie lange dauert die Generierung?",
-          "answer": "In der Regel dauert es etwa 30-60 Sekunden für ein 5-sekündiges Video."
-        },
-        "item-4": {
-          "question": "Darf ich die Videos kommerziell nutzen?",
-          "answer": "Ja, mit einem Pro-Plan gehören die Rechte Ihnen."
-        },
-        "item-5": {
-          "question": "Kann ich den Stil beeinflussen?",
-          "answer": "Ja, Sie können Schlagworte wie 'Cinematisch', 'Anime', '3D Render' oder 'Ölgemälde' verwenden."
-        },
-        "item-6": {
-          "question": "Gibt es Längenbeschränkungen?",
-          "answer": "Aktuell generieren wir kurze Clips (5-10 Sekunden), die sich perfekt für Social Media eignen."
-        },
-        "item-7": {
-          "question": "Was mache ich, wenn das Ergebnis nicht passt?",
-          "answer": "Passen Sie Ihren Prompt an und versuchen Sie es erneut. Oft helfen kleine Änderungen in der Formulierung."
-        },
-        "item-8": {
-          "question": "Brauche ich Vorkenntnisse?",
-          "answer": "Nein, unser Tool ist so konzipiert, dass jeder ohne Vorwissen tolle Ergebnisse erzielen kann."
-        }
-      }
-    },
-    "seoText": {
-      "title": "Text zu Video: Die Revolution der Content-Erstellung",
-      "section1": {
-        "title": "Was ist Text zu Video?",
-        "content": "Text zu Video ist eine bahnbrechende Technologie, die es ermöglicht, geschriebenen Text in visuelle Videoinhalte umzuwandeln. Mithilfe fortschrittlicher künstlicher Intelligenz (KI) analysieren Algorithmen die Semantik und den Kontext Ihrer Eingabe und generieren daraus Pixel für Pixel eine bewegte Szene. Diese Innovation demokratisiert die Videoproduktion, da sie die Notwendigkeit für teures Equipment, Schauspieler und Drehort-Scouting eliminiert. Egal ob Sie Marketingfachmann, Content Creator oder Geschichtenerzähler sind – Text zu Video gibt Ihnen die Macht, Ihre Visionen sofort zu visualisieren. Die Technologie entwickelt sich rasant weiter und bietet mittlerweile eine Qualität, die oft kaum von realen Aufnahmen zu unterscheiden ist. Mit Text zu Video können Sie Konzepte testen, Storyboards erstellen oder fertige Clips für Social Media produzieren, und das alles bequem von Ihrem Schreibtisch aus. Es ist der schnellste Weg von der Idee zum Video."
-      },
-      "section2": {
-        "title": "Wie funktioniert die Text-zu-Video-Generierung?",
-        "content": "Der Prozess der Text-zu-Video-Generierung basiert auf Deep Learning Modellen, die auf Millionen von Video-Text-Paaren trainiert wurden. Wenn Sie einen Prompt wie 'Ein Astronaut reitet auf einem Pferd auf dem Mars' eingeben, zerlegt die KI diesen Satz in Konzepte: Astronaut, Pferd, Reiten, Mars. Sie greift auf ihr gelerntes Wissen über das Aussehen dieser Objekte und deren Bewegungen zurück. Dann beginnt ein Diffusionsprozess, bei dem aus einem zufälligen Rauschen schrittweise ein klares Bild und anschließend eine Bildfolge entsteht, die die zeitliche Kohärenz wahrt. Das bedeutet, dass sich der Astronaut und das Pferd natürlich bewegen und der Hintergrund konstant bleibt. Moderne Modelle berücksichtigen auch physikalische Gesetze wie Schwerkraft und Lichtreflexionen, um das Ergebnis so realistisch wie möglich zu machen. Text zu Video ist also nicht einfach nur 'Bilder aneinanderreihen', sondern eine komplexe Berechnung von Bewegung und Raum."
-      },
-      "section3": {
-        "title": "Anwendungsbereiche für Text zu Video",
-        "content": "Die Einsatzmöglichkeiten für Text zu Video sind vielfältig und wachsen ständig. Im Marketing können Unternehmen in Sekundenschnelle Variationen von Werbespots erstellen, um verschiedene Zielgruppen anzusprechen. Für Social Media Manager ist es ein Game-Changer: Täglicher Video-Content für TikTok, Instagram Reels oder YouTube Shorts lässt sich ohne Drehaufwand produzieren. Im E-Learning können komplexe Sachverhalte durch generierte Animationen veranschaulicht werden, ohne dass teure Animatoren beauftragt werden müssen. Auch in der Filmindustrie wird Text zu Video für die Pre-Visualisierung von Szenen genutzt. Autoren können ihre Geschichten lebendig werden lassen, und Spieleentwickler können Texturen und Hintergrundszenen generieren. Selbst im privaten Bereich bietet Text zu Video Unterhaltung: Erstellen Sie personalisierte Grußbotschaften oder visualisieren Sie Ihre Träume. Die Barrierefreiheit dieser Technologie öffnet Türen für kreative Köpfe weltweit."
-      },
-      "section4": {
-        "title": "Tipps für effektive Text-zu-Video Prompts",
-        "content": "Ein guter Prompt ist der Schlüssel zu einem großartigen Text-zu-Video Ergebnis. Seien Sie spezifisch. Statt 'Hund' schreiben Sie 'Ein glücklicher Golden Retriever Welpe, der im hohen Gras spielt, sonniger Tag, 4k Auflösung'. Beschreiben Sie den Stil: 'Cinematisch', 'Cartoon', 'Cyberpunk', 'Ölgemälde'. Geben Sie Anweisungen zur Kameraführung: 'Drohnenaufnahme', 'Nahaufnahme', 'Kameraschwenk'. Beleuchtung ist ebenfalls wichtig: 'Goldene Stunde', 'Neonlicht', 'Düster'. Vermeiden Sie negative Anweisungen im Hauptprompt und nutzen Sie, wenn möglich, das Feld für negative Prompts, um Dinge auszuschließen (z.B. 'unscharf', 'verzerrt'). Experimentieren Sie mit der Länge Ihres Prompts; oft liefern längere, beschreibende Sätze bessere Ergebnisse als kurze Stichworte. Denken Sie daran, dass die KI 'wörtlich' denkt. Metaphern können funktionieren, führen aber manchmal zu überraschenden surrealen Ergebnissen. Das Meistern von Prompts ist eine Fähigkeit, die Ihre Text-zu-Video Kreationen auf das nächste Level hebt."
-      },
-      "section5": {
-        "title": "Vorteile gegenüber traditioneller Videoproduktion",
-        "content": "Der offensichtlichste Vorteil von Text zu Video ist die Geschwindigkeit. Eine Produktion, die Wochen dauern würde, ist nun in Minuten erledigt. Dies ermöglicht eine agile Reaktion auf Trends. Kosten sind ein weiterer Faktor; Text zu Video, spart Budget für Equipment, Reisekosten und Personal. Zudem sind Sie nicht an physikalische Grenzen gebunden. Möchten Sie eine Szene unter Wasser oder im Weltraum? Mit Text zu Video kein Problem und ohne Risiko. Die Skalierbarkeit ist enorm; Sie können hunderte Videos parallel generieren. Auch die Konsistenz kann ein Vorteil sein, wenn Sie einen bestimmten visuellen Stil für eine Marke beibehalten wollen. Natürlich kann Text zu Video (noch) nicht das emotionale Schauspiel eines echten Menschen oder die Nuancen eines Arthouse-Films vollständig ersetzen, aber für viele kommerzielle und kreative Anwendungen ist es eine extrem effiziente und leistungsstarke Alternative."
-      },
-      "section6": {
-        "title": "Herausforderungen und Grenzen von Text zu Video",
-        "content": "Trotz der rasanten Fortschritte gibt es Herausforderungen bei Text zu Video. Die Konsistenz über längere Clips hinweg kann schwierig sein; manchmal verändert sich das Gesicht einer Person oder der Hintergrund flackert. Komplexe Handlungen mit mehreren interagierenden Charakteren sind für die KI oft noch schwer zu koordinieren. Hände und Textdarstellungen im Video sind bekannte Schwachstellen, die jedoch mit jeder Modellgeneration besser werden. Auch der Rechenaufwand ist hoch, was Text zu Video Dienste kostenpflichtig macht. Urheberrechtliche Fragen sind im Fluss, da Modelle oft mit öffentlich zugänglichen Daten trainiert wurden. Es ist wichtig, seriöse Anbieter zu nutzen, die faire Nutzungsbedingungen bieten. Ein weiteres Thema ist die Authentizität; da Deepfakes einfacher zu erstellen sind, steigt die Verantwortung der Nutzer. Dennoch überwiegen für kreative Anwendungen die Vorteile, und die Technologie wird täglich robuster und vielseitiger."
-      },
-      "section7": {
-        "title": "Die Zukunft der Text zu Video Technologie",
-        "content": "Wir stehen erst am Anfang. Zukünftige Text zu Video Modelle werden längere Sequenzen mit perfekter Kohärenz generieren können. Wir werden mehr Kontrolle über Details haben, etwa durch das nachträgliche Bearbeiten von Objekten im generierten Video ('Inpainting'). Die Integration von Audio und Sprache wird nahtloser werden, sodass Lippenbewegungen synchron zum generierten Text sind. Echtzeit-Generierung wird möglich sein, was interaktive Videospiele und VR-Erlebnisse revolutionieren könnte. Personalisierte Filme, in denen der Zuschauer die Handlung bestimmt, rücken in greifbare Nähe. Text zu Video wird ein Standardwerkzeug in jeder Kreativ-Software werden, ähnlich wie heute Bildbearbeitungstools. Die Grenze zwischen Realität und generiertem Inhalt wird weiter verschwimmen, was neue Kunstformen und Erzählweisen hervorbringen wird. Wer heute lernt, mit Text zu Video umzugehen, bereitet sich auf die Medienlandschaft von morgen vor."
-      },
-      "section8": {
-        "title": "Text zu Video für E-Commerce",
-        "content": "Im E-Commerce ist Video-Content König. Text zu Video ermöglicht es Shop-Betreibern, Produktvideos zu erstellen, ohne jedes Produkt physisch filmen zu müssen. Beschreiben Sie einfach das Produkt in Aktion. 'Ein Paar weiße Sneaker, die durch eine Pfütze laufen, wasserabweisend, Zeitlupe'. Dies erhöht die Engagement-Rate und senkt die Retourenquote, da Kunden das Produkt besser verstehen. Sie können saisonale Kampagnen schnell anpassen, ohne neue Shootings zu organisieren. Text zu Video hilft auch beim A/B-Testing von Werbeanzeigen: Welches Video-Thumbnail klickt besser? Welche Szene konvertiert mehr? Mit generierten Videos können Sie datengetriebene Entscheidungen treffen. Auch personalisierte Video-Ads für Kunden sind denkbar. Text zu Video ist ein mächtiger Hebel für mehr Umsatz im Online-Handel."
-      },
-      "section9": {
-        "title": "Bildung und Training mit Text zu Video",
-        "content": "Lernen ist effektiver mit visuellen Hilfsmitteln. Text zu Video kann abstrakte Konzepte sichtbar machen. Geschichtslehrer können historische Ereignisse visualisieren: 'Der Bau der Pyramiden im Zeitraffer'. Biologielehrer können zelluläre Prozesse zeigen. In der betrieblichen Weiterbildung können Schulungsvideos für Sicherheitsunterweisungen oder Soft-Skills schnell und kostengünstig erstellt werden, und das in mehreren Sprachen. Text zu Video macht Bildungsinhalte zugänglicher und unterhaltsamer. Es ermöglicht individuelles Lernen, indem Schüler sich Erklärungen generieren lassen können, die auf ihren Wissensstand zugeschnitten sind. Die Kombination von Text zu Video mit Text-zu-Sprache schafft vollautomatische Lernlektionen. Dies ist besonders wertvoll in Regionen mit begrenztem Zugang zu Lehrmaterialien. Text zu Video hat das Potenzial, Bildung weltweit zu transformieren."
-      },
-      "section10": {
-        "title": "Fazit: Warum Sie Text zu Video nutzen sollten",
-        "content": "Text zu Video ist nicht nur ein Spielzeug, sondern ein mächtiges Werkzeug für Produktivität und Kreativität. Es spart Zeit, senkt Kosten und erweitert Ihre Möglichkeiten exponentiell. Egal in welcher Branche Sie tätig sind, Video-Content wird immer wichtiger. Mit Text zu Video können Sie diese Nachfrage bedienen, ohne ein Videoproduktionsstudio aufzubauen. Die Qualität ist bereits heute beeindruckend und wird sich weiter verbessern. Starten Sie jetzt, experimentieren Sie mit Prompts und entdecken Sie, wie Text zu Video Ihren Workflow bereichern kann. Seien Sie ein Pionier. Nutzen Sie die Kraft der künstlichen Intelligenz, um Geschichten zu erzählen, die gehört und gesehen werden wollen. Die Welt der Videogenerierung steht Ihnen offen – alles beginnt mit einem einfachen Text."
-      }
-    }
-  },
-  "BildZuVideoPage": {
-    "title": "Kostenlos Erstellen: Bilder beleben",
-    "description": "Bild zu Video leicht gemacht: Erwecken Sie Ihre statischen Bilder zum Leben mit unserer revolutionären Bild zu Video KI.",
-    "tutorial": {
-      "title": "So funktioniert Bild zu Video: Einfach erklärt",
-      "subtitle": "In drei Schritten: Vom Foto zur Bild zu Video Animation",
-      "description": "Erstellen Sie beeindruckende Bild zu Video Animationen in Sekundenschnelle.",
-      "steps": {
-        "step1": {
-          "title": "1. Bild für Bild zu Video hochladen",
-          "description": "Wählen Sie ein Bild. Für beste Bild zu Video Ergebnisse empfiehlt sich hohe Qualität."
-        },
-        "step2": {
-          "title": "2. Prompt für Bild zu Video",
-          "description": "Beschreiben Sie die gewünschte Bewegung für Ihr Bild zu Video Projekt."
-        },
-        "step3": {
-          "title": "3. Bild zu Video Generierung",
-          "description": "Starten Sie den Bild zu Video Prozess und laden Sie das Ergebnis herunter."
-        }
-      }
-    },
-    "faqs": {
-      "title": "Häufige Fragen zu Bild zu Video",
-      "subtitle": "Alles über unsere Bild zu Video Technologie",
-      "items": {
-        "item-1": {
-          "question": "Welche Formate unterstützt das Bild zu Video Erstellen?",
-          "answer": "Unser Bild zu Video Tool unterstützt JPG, PNG und WEBP. Bild zu Video funktioniert am besten mit klaren Motiven."
-        },
-        "item-2": {
-          "question": "Kann Bild zu Video Gesichter animieren?",
-          "answer": "Ja, Bild zu Video ist ideal für Porträts. Die Bild zu Video KI erkennt Gesichtsstrukturen präzise."
-        },
-        "item-3": {
-          "question": "Wie beeinflusst Bild zu Video die Qualität?",
-          "answer": "Hochwertige Bild zu Video Algorithmen erhalten die Details, auch wenn Bild zu Video eine Kompression nutzt."
-        },
-        "item-4": {
-          "question": "Bild zu Video: Wie steuere ich die Bewegung?",
-          "answer": "Durch Prompts sagen Sie der Bild zu Video Engine, was passieren soll. Bild zu Video folgt Ihren Anweisungen."
-        },
-        "item-5": {
-          "question": "Funktioniert Bild zu Video mit Kunst?",
-          "answer": "Ja, Bild zu Video belebt auch Zeichnungen. Verwandeln Sie Skizzen in Bild zu Video Animationen."
-        },
-        "item-6": {
-          "question": "Wie lange dauert ein Bild zu Video Clip?",
-          "answer": "Ein typischer Bild zu Video Clip ist 5 Sekunden lang. Perfekt für Bild zu Video Loops auf Social Media."
-        },
-        "item-7": {
-          "question": "Bild zu Video Motion Bucket erklärt?",
-          "answer": "Der Motion Bucket im Bild zu Video Prozess steuert die Dynamik. Mehr Bild zu Video Bewegung oder mehr Stabilität?"
-        },
-        "item-8": {
-          "question": "Bild zu Video für alte Fotos?",
-          "answer": "Bild zu Video ist perfekt für Restauration. Machen Sie aus alten Bildern berührende Bild zu Video Momente."
-        }
-      }
-    },
-    "seoText": {
-      "title": "Bild zu Video: Die Zukunft der visuellen Inhalte",
-      "section1": {
-        "title": "Was ist Bild zu Video Technologie?",
-        "content": "Bild zu Video ist eine transformative Technologie, die statische Bilder in dynamische Videos verwandelt. Mit Bild zu Video können Sie einem einfachen Foto Bewegung und Leben einhauchen. Die Bild zu Video KI analysiert den Bildinhalt und extrapoliert logische Bewegungen, sei es fließendes Wasser oder wehendes Haar. Bild zu Video revolutioniert, wie wir visuelle Medien konsumieren, indem es die Lücke zwischen Fotografie und Film schließt. Bild zu Video Erstellen öffnet Türen zu völlig neuen kreativen Ausdrucksformen. Nutzen Sie Bild zu Video, um aus stillen Momenten fesselnde Geschichten zu machen. Die Qualität von Bild zu Video Inhalten steigt stetig und bietet immer realistischere Ergebnisse. Bild zu Video ist mehr als ein Trend; es ist ein neues Medium."
-      },
-      "section2": {
-        "title": "Wie funktioniert Bild zu Video?",
-        "content": "Der Prozess hinter Bild zu Video basiert auf fortschrittlichen Diffusionsmodellen. Wenn Sie ein Bild in den Bild zu Video Konverter laden, berechnet die KI mögliche Folgebilder. Bild zu Video nutzt dabei komplexe Algorithmen, um Konsistenz zu wahren. Ein Text-Prompt kann den Bild zu Video Prozess lenken: 'Bild zu Video mit Kameraschwenk' oder 'Bild zu Video mit Zoom'. Das Modell 'träumt' die Bewegung in das Bild hinein, was Bild zu Video so einzigartig macht. Moderne Grafikkarten beschleunigen diesen Bild zu Video Vorgang enorm, sodass Bild zu Video heute für jeden zugänglich ist. Verstehen Sie Bild zu Video als Zusammenarbeit zwischen Ihrer Bildvorlage und der künstlichen Intelligenz."
-      },
-      "section3": {
-        "title": "Bild zu Video für Social Media",
-        "content": "Auf Plattformen wie Instagram und TikTok dominiert Video, und genau hier glänzt Bild zu Video. Bild zu Video verwandelt Ihre Fotos in Reels, die Aufmerksamkeit erregen. Statt eines statischen Posts nutzen Sie Bild zu Video für mehr Engagement. Ein Bild zu Video Clip wird vom Algorithmus oft bevorzugt behandelt. Influencer nutzen Bild zu Video, um ihren Feed abwechslungsreicher zu gestalten. Auch für Stories ist Bild zu Video perfekt geeignet. Mit Bild zu Video heben Sie sich von der Masse ab. Ein gut gemachter Bild zu Video Post kann viral gehen. Investieren Sie in Bild zu Video, um Ihre Reichweite organisch zu steigern."
-      },
-      "section4": {
-        "title": "Bild zu Video im E-Commerce",
-        "content": "Für Online-Shops ist Bild zu Video ein mächtiges Verkaufsinstrument. Zeigen Sie Produkte nicht nur, sondern nutzen Sie Bild zu Video für Dynamik. Ein Bild zu Video von einem Kleid im Wind wirkt verkaufsfördernd. Bild zu Video macht Produktseiten interaktiver. Kunden verweilen länger bei Bild zu Video Inhalten als bei Fotos. Erstellen Sie kostengünstige Werbeanzeigen mit Bild zu Video, ohne teure Videoproduktion. Bild zu Video erlaubt es, Variationen schnell zu testen. Nutzen Sie Bild zu Video für A/B-Tests Ihrer Creatives. Bild zu Video steigert nachweislich die Conversion-Rate im E-Commerce."
-      },
-      "section5": {
-        "title": "Tipps für perfekte Bild zu Video Ergebnisse",
-        "content": "Um das Beste aus Bild zu Video herauszuholen, ist die Wahl des Ausgangsbildes entscheidend. Bild zu Video funktioniert am besten mit Motiven, die natürliche Bewegung implizieren. Wasser, Wolken, Rauch sind ideal für Bild zu Video. Achten Sie auf hohe Auflösung, da Bild zu Video Details benötigt. Nutzen Sie spezifische Prompts für Ihr Bild zu Video Erstellen. 'Sanfte Bewegung' oder 'Sturm' geben dem Bild zu Video eine Richtung. Experimentieren Sie mit den Einstellungen Ihres Bild zu Video Tools. Manchmal ist weniger mehr bei Bild zu Video; subtile Animationen wirken oft professioneller. Bild zu Video erfordert etwas Übung, aber die Ergebnisse lohnen sich."
-      },
-      "section6": {
-        "title": "Bild zu Video für Künstler und Kreative",
-        "content": "Künstler entdecken Bild zu Video als neues Werkzeug. Digitale Gemälde werden durch Bild zu Video zu lebendigen Kunstwerken. Bild zu Video ermöglicht 'Motion Art', eine Mischung aus Stillleben und Film. Illustratoren nutzen Bild zu Video, um Charaktere atmen zu lassen. Bild zu Video erweitert das Portfolio eines jeden Kreativen. Sie können Bild zu Video nutzen, um NFTs zu erstellen oder digitale Installationen zu beleben. Die Ästhetik von Bild zu Video ist oft traumartig und surreal. Nutzen Sie diese Eigenart von Bild zu Video für Ihren künstlerischen Ausdruck. Bild zu Video ist die Leinwand des 21. Jahrhunderts."
-      },
-      "section7": {
-        "title": "Bild zu Video vs. Text zu Video",
-        "content": "Während Text zu Video alles generiert, baut Bild zu Video auf einer Vorlage auf. Bild zu Video bietet daher mehr Kontrolle über die Komposition. Wenn Sie ein spezifisches Motiv haben, ist Bild zu Video die bessere Wahl. Bild zu Video bewahrt den Stil Ihres Originals. Text zu Video ist zufälliger, Bild zu Video ist präziser. Oft ist eine Kombination sinnvoll: Erst Bild generieren, dann Bild zu Video anwenden. Dieser zweistufige Bild zu Video Workflow ist bei Profis beliebt. Bild zu Video ist das Werkzeug für Veredelung, Text zu Video für Erschaffung. Verstehen Sie die Stärken von Bild zu Video."
-      },
-      "section8": {
-        "title": "Die Technik hinter Bild zu Video",
-        "content": "Bild zu Video nutzt sogenannte 'Temporal Awareness'. Die KI muss bei Bild zu Video verstehen, wie Zeit vergeht. Bild zu Video Modelle wie Stable Video Diffusion sind darauf trainiert, Bewegungsvektoren vorherzusagen. Das macht Bild zu Video so rechenintensiv. Doch Cloud-Computing macht Bild zu Video schnell und verfügbar. Die Auflösung bei Bild zu Video verbessert sich ständig. Upscaling-Technologien werden oft nach dem Bild zu Video Prozess eingesetzt. Bild zu Video ist ein Feld aktiver Forschung. Wir sehen wöchentlich neue Durchbrüche in der Bild zu Video Qualität."
-      },
-      "section9": {
-        "title": "Bild zu Video: Historische Fotos beleben",
-        "content": "Ein emotionaler Aspekt von Bild zu Video ist die Animation von Erinnerungen. Machen Sie aus dem Hochzeitsfoto der Großeltern ein Bild zu Video. Sehen Sie, wie sie sich im Bild zu Video wieder bewegen. Bild zu Video bringt Geschichte zurück. Dokumentarfilmer setzen Bild zu Video ein, um Archivmaterial lebendig zu machen. Es schafft eine Nähe, die nur Bild zu Video bieten kann. Natürlich muss Bild zu Video hier respektvoll eingesetzt werden. Aber die Möglichkeit, durch Bild zu Video in die Vergangenheit zu blicken, ist faszinierend."
-      },
-      "section10": {
-        "title": "Fazit: Starten Sie mit Bild zu Video",
-        "content": "Zusammenfassend ist Bild zu Video eine Technologie, die bleibt. Egal ob für Marketing, Kunst oder Spaß – Bild zu Video bietet Mehrwert. Die Hürden für Bild zu Video sind niedrig. Jeder kann heute ein Bild zu Video Creator sein. Nutzen Sie unsere Tools für Ihre ersten Bild zu Video Experimente. Die Welt der bewegten Bilder wartet. Bild zu Video ist Ihr Schlüssel dazu. Abonnieren Sie unseren Service für unbegrenzte Bild zu Video Möglichkeiten. Werden Sie Teil der Bild zu Video Revolution. Ihre Bilder verdienen es, durch Bild zu Video gesehen zu werden."
       }
     }
   }

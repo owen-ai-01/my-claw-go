@@ -1,5 +1,5 @@
 {
-  "name": "mksaas-template",
+  "name": "my-claw-go",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -129,7 +129,6 @@
     "react-tweet": "^3.2.2",
     "react-use-measure": "^2.1.7",
     "recharts": "^2.15.1",
-    "replicate": "^1.4.0",
     "resend": "^4.4.1",
     "s3mini": "^0.2.0",
     "shiki": "^2.4.2",

@@ -3,7 +3,6 @@
 import { LocaleLink, useLocalePathname } from '@/i18n/navigation';
 import { cn } from '@/lib/utils';
 import type { LucideIcon } from 'lucide-react';
-import { useTranslations } from 'next-intl';
 
 interface NavItem {
   icon: LucideIcon;
@@ -13,7 +12,6 @@ interface NavItem {
 }
 
 export function StudioSidebar() {
-  const t = useTranslations('Studio.sidebar');
   const pathname = useLocalePathname();
 
   const isActive = (path: string) => pathname === path;
